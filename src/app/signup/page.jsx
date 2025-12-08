@@ -176,7 +176,7 @@ const SignUp = () => {
                         First Name
                       </label>
                       <div className="relative">
-                        <User className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none ${firstName ? 'text-black' : 'text-white/70'}`} />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
                         <input
                           type="text"
                           id="firstName"
@@ -193,7 +193,7 @@ const SignUp = () => {
                         Last Name
                       </label>
                       <div className="relative">
-                        <User className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none ${lastName ? 'text-black' : 'text-white/40'}`} />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
                         <input
                           type="text"
                           id="lastName"
@@ -213,7 +213,7 @@ const SignUp = () => {
                       Email
                     </label>
                     <div className="relative">
-                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none ${email ? 'text-black' : 'text-white/40'}`} />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
                       <input
                         type="email"
                           id="email"
@@ -237,7 +237,7 @@ const SignUp = () => {
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none ${password ? 'text-black' : 'text-white/40'}`} />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
                       <input
                         id="password"
                        name="password"
@@ -274,7 +274,7 @@ const SignUp = () => {
                       Organisation Name
                     </label>
                     <div className="relative">
-                      <UsersIcon className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none ${organisationName ? 'text-black' : 'text-white/40'}`} />
+                      <UsersIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
                       <input
                         type="text"
                         id="name"
@@ -293,7 +293,7 @@ const SignUp = () => {
                       Email
                     </label>
                     <div className="relative">
-                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none ${organiserEmail ? 'text-black' : 'text-white/40'}`} />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
                       <input
                         type="email"
                           id="email"
@@ -317,7 +317,7 @@ const SignUp = () => {
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none ${organiserPassword ? 'text-black' : 'text-white/40'}`} />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
                       <input
                         id="password"
                     name="password"
@@ -348,7 +348,7 @@ const SignUp = () => {
             <button
           type="submit"
            disabled={loading || !isFormValid()}
-          className={`w-[80%] mx-auto bg-[#FF3A66] ${isFormValid() ? 'hover:bg-[#cf153e]' : ''} text-[#FFFFFF] font-semibold py-4 rounded-full mt-6 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`w-[90%] mx-auto bg-[#FF3A66] ${isFormValid() ? 'hover:bg-[#cf153e]' : ''} text-[#FFFFFF] font-semibold py-4 rounded-full mt-6 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed`}
            >
             {loading ? (<><Loader2 className="animate-spin mr-2" />Creating account...</>) : 'Create Account'}
            {!loading && <ArrowRight className="ml-2 h-5 w-5" />}
