@@ -1,5 +1,5 @@
-import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
-import { Toaster } from 'react-hot-toast';
+import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -23,7 +23,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${plusJakartaSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Toaster position='top-center' />
+        <Toaster position="top-center" />
         {children}
       </body>
     </html>
