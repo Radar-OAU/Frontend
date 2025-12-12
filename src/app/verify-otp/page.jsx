@@ -12,6 +12,7 @@ const VerifyOTP = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
+  const role = searchParams.get("role") || "";
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -143,7 +144,7 @@ const VerifyOTP = () => {
             Verify Your Email
           </h1>
           <p className="text-base text-gray-400 mb-8 text-center">
-            We've sent a 6-digit code to <span className="text-white font-semibold">{email}</span> your email address.
+            We've sent a 6-digit code to <span className="text-white font-semibold">{email}</span> {role ? `for your ${role} account` : 'to your email address'}.
           </p>
 
           <form onSubmit={handleVerifyOtp} className="space-y-6">

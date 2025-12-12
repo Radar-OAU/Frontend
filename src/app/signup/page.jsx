@@ -84,14 +84,23 @@ const SignUp = () => {
 
       // POST to the correct backend register endpoint depending on role
       const res = await api.post(endpoint, payload);
-      // Only log the user in if the backend returned a token (some backends issue tokens after verification)
-      if (res.data?.token) {
-        loginUser(res.data.user, res.data.token);
+
+      const data = res.data || {};
+      const token = data.token || data.access || data.access_token || null;
+      let user = data.user || null;
+      if (!user) {
+        user = {
+          id: data.user_id || data.id || null,
+          email: data.email || (role === "Student" ? email : organiserEmail) || null,
+        };
       }
-      toast.success('Account Created Successfully. Please verify your email.')
-      // Redirect to OTP verification page for both students and organizers
+
+      // Always require email verification for both Students and Organizers.
+      // Redirect to the OTP verification page and include the role so the
+      // verification page can display role-specific messaging if desired.
+      toast.success('Account created. Please verify your email using the OTP sent.');
       const userEmail = role === "Student" ? email : organiserEmail;
-      router.push(`/verify-otp?email=${encodeURIComponent(userEmail)}`);
+      router.push(`/verify-otp?email=${encodeURIComponent(userEmail)}&role=${encodeURIComponent(role)}`);
     } catch (err) {
       toast.error(err.response?.data?.message || "Signup failed.");
     } finally {
