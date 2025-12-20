@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { useGoogleLogin } from '@react-oauth/google'
 import api from "../../lib/axios";
 import useAuthStore from "../../store/authStore";
+import { getErrorMessage } from "../../lib/utils";
 import { Mail, Lock, User, Eye, EyeOff, UsersIcon, Loader2, ArrowRight } from "lucide-react";
 
 const SignUp = () => {
@@ -60,6 +61,7 @@ const SignUp = () => {
   const submitForm = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const toastId = toast.loading('Creating account...');
 
     try {
       let payload;
@@ -87,18 +89,20 @@ const SignUp = () => {
       const res = await api.post(endpoint, payload);
       
       if (role === "Student") {
-         toast.success(res.data.message || 'OTP sent to email.')
+         toast.success(res.data.message || 'OTP sent to email.', { id: toastId })
          router.push(`/verify-otp?email=${email}`);
       } else {
          // Organizer registration is immediate
          const { email, access, refresh } = res.data;
          loginUser({ email }, access);
-         toast.success('Account Created Successfully')
+         toast.success('Account Created Successfully', { id: toastId })
          router.push("/dashboard");
       }
 
     } catch (err) {
-      toast.error(err.response?.data?.error || "Signup failed.");
+      console.error("Signup error:", err);
+      const message = getErrorMessage(err);
+      toast.error(message, { id: toastId });
     } finally {
       setLoading(false);
     }
