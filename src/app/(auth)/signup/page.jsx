@@ -63,6 +63,7 @@ const SignUp = () => {
   const submitForm = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const toastId = toast.loading('Creating account...');
 
     try {
       let payload;
@@ -108,26 +109,34 @@ const SignUp = () => {
     }
   };
 
+  // const googleLogin = useGoogleLogin({
+  //   onSuccess: async (tokenResponse) => {
+  //     setLoading(true);
+  //     try {
+  //       const endpoint = role === "Student" ? '/student/google-signup/' : '/organizer/google-signup/';
+  //       const res = await api.post(endpoint, {
+  //         token: tokenResponse.access_token,
+  //       });
+        
+  //       const { email, access, refresh } = res.data;
+  //       loginUser({ email }, access);
+        
+  //       toast.success('Account Created Successfully');
+  //       router.push("/dashboard");
+  //     } catch (err) {
+  //       console.error('Google signup error:', err);
+  //       toast.error(err.response?.data?.error || "Google signup failed");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   },
+  //   onError: () => toast.error('Google signup failed'),
+  // });
 
-  const handleSocialLogin = async (provider) => {
-    setLoading(true);
-    
-  try {
-    // Call your backend social login endpoint
-    const res = await api.post(`/auth/social-login`, {
-      provider, // 'Google' or 'Apple'
-      role,
-    });
-
-    // Store user and token
-    loginUser(res.data.user, res.data.token);
-    toast.success('Login successful');
-    router.push("/dashboard");
-  } catch (err) {
-    toast.error(err.response?.data?.message || `${provider} login failed.`);
-  } finally {
-    setLoading(false);
-  }
+  const handleSocialLogin = (provider) => {
+    if (provider === 'Google') {
+      googleLogin();
+    }
   }
 
   return (
