@@ -10,6 +10,7 @@ import api from "../../../lib/axios";
 import useAuthStore from "../../../store/authStore";
 import { Mail, Lock, User, Eye, EyeOff, UsersIcon, Loader2, ArrowRight } from "lucide-react";
 import login from "../../components/login/page";
+import BackgroundCarousel from "../../../components/BackgroundCarousel";
 
 const SignUp = () => {
   const router = useRouter();
@@ -142,20 +143,17 @@ const SignUp = () => {
   return (
     <div className="min-h-screen w-full flex bg-[#0A0A14]">
       {/* Left Image */}
-      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center z-0 opacity-40 "
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1568289523939-61125d216fe5?q=80&w=436&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
-            filter: "grayscale(30%)",
-          }}
+      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden group">
+        <BackgroundCarousel
+          images={['/IMG (1).jpg', '/ticket image (1).jpeg']}
+          interval={5000}
         />
-        <div className="relative z-10 w-[40%] flex items-center justify-center">
+        {/* <div className="relative z-10 w-[40%] flex items-center justify-center">
           <img
             alt="Center Image"
             src='/assets/image 2 (1).png'
           />
-        </div>
+        </div> */}
       </div>
 
       <motion.div
@@ -251,7 +249,7 @@ const SignUp = () => {
                         type="email"
                           id="email"
                         name="email"
-                        placeholder="your.name@student.edu.ng"
+                        placeholder="your.name@student.oauife.edu.ng"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-xl py-3.5 pl-12 pr-4 text-white hover:border-rose-500/60 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 dark:placeholder:text-gray-600"

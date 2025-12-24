@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import api from '../../../lib/axios'
 import useAuthStore from '../../../store/authStore'
 import { Button } from '../../../components/ui/button'
+import BackgroundCarousel from '../../../components/BackgroundCarousel'
 
 const LoginPage = () => {
   const router = useRouter()
@@ -97,20 +98,11 @@ const LoginPage = () => {
     <div className="min-h-screen w-full flex bg-[#0A0A14]">
 
             {/* left Side - Image */}
-      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center z-0 opacity-40"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1568289523939-61125d216fe5?q=80&w=436&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
-            filter: "grayscale(30%)",
-          }}
+      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden group">
+        <BackgroundCarousel
+          images={['/IMG (1).jpg', '/ticket image (1).jpeg']}
+          interval={5000}
         />
-        <div className="relative z-10  w-[40%] flex items-center justify-center">
-          <img
-            alt="Center Image"
-            src='assets/image 2 (1).png'
-          />
-        </div>
       </div>
       {/* Right Side - Form */}
       <motion.div
