@@ -2,14 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import api from "@/lib/axios";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, Calendar, Tag } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, MapPin, Calendar as CalendarIcon, Search, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -26,6 +27,10 @@ const EventsPage = () => {
     fetchEvents();
   }, []);
 
+  const filteredEvents = events.filter((event) =>
+    event.event_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -35,75 +40,114 @@ const EventsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Discover Events</h1>
-        <p className="text-muted-foreground">
-          Find and book tickets for the latest events.
-        </p>
+    <div className="space-y-6 pb-20 md:pb-0">
+      {/* Header & Search */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Discovery Page</h1>
+        </div>
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search for events"
+            className="pl-9 bg-secondary/50 border-0"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
+      {/* Content */}
       {events.length === 0 ? (
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">No events found.</p>
+        // Empty State
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
+          <CalendarIcon className="h-24 w-24 text-muted-foreground/50" />
+          <h2 className="text-2xl font-bold text-foreground">No Events Yet</h2>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {events.map((event, index) => (
-            <motion.div
-              key={event.event_id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-            >
-              <Card className="h-full flex flex-col overflow-hidden">
-                <div className="aspect-video w-full bg-muted relative overflow-hidden">
-                  {event.event_image ? (
-                    <img
-                      src={event.event_image}
-                      alt={event.event_name}
-                      className="object-cover w-full h-full transition-transform hover:scale-105 duration-300"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full bg-secondary text-secondary-foreground">
-                      No Image
+        // Events Grid
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold">Upcoming Events</h2>
+          
+          {filteredEvents.length === 0 ? (
+             <div className="text-center py-10">
+                <p className="text-muted-foreground">No events match your search.</p>
+             </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredEvents.map((event, index) => (
+                <motion.div
+                  key={event.event_id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  <Link href={`/dashboard/student/events/${event.event_id}`}>
+                    <div className="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted cursor-pointer">
+                      {/* Background Image */}
+                      {event.event_image ? (
+                        <img
+                          src={event.event_image}
+                          alt={event.event_name}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gray-800 flex items-center justify-center">
+                           <CalendarIcon className="h-12 w-12 text-gray-600" />
+                        </div>
+                      )}
+
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+                      {/* Content Overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                        <h3 className="text-lg font-bold leading-tight mb-2">
+                          {event.event_name}
+                        </h3>
+                        
+                        <div className="flex flex-wrap gap-y-1 gap-x-3 text-xs text-gray-300 mb-2">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            <span className="line-clamp-1 max-w-[120px]">{event.event_location}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            <span>
+                              {new Date(event.event_date).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-1">
+                          <div className="flex items-center gap-1 text-xs text-gray-300">
+                            <Clock className="h-3 w-3" />
+                            <span>
+                              {new Date(event.event_date).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </span>
+                          </div>
+                          
+                          <span className={`font-bold text-sm ${
+                            event.pricing_type === 'free' ? 'text-green-400' : 'text-yellow-400'
+                          }`}>
+                            {event.pricing_type === 'free' ? 'Free' : `₦${event.event_price}`}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      event.pricing_type === 'free' 
-                        ? 'bg-green-500/90 text-white' 
-                        : 'bg-primary/90 text-primary-foreground'
-                    }`}>
-                      {event.pricing_type === 'free' ? 'Free' : `₦${event.event_price}`}
-                    </span>
-                  </div>
-                </div>
-                <CardHeader>
-                  <div className="flex justify-between items-start gap-2">
-                    <CardTitle className="line-clamp-1">{event.event_name}</CardTitle>
-                  </div>
-                  <CardDescription className="flex items-center gap-1">
-                    <Tag className="h-3 w-3" />
-                    <span className="capitalize">{event.event_type}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>{new Date(event.event_date).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span className="line-clamp-1">{event.event_location}</span>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">View Details</Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          ))}
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
