@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Calendar, QrCode, ShieldCheck, Zap, Users, BarChart3, ArrowRight } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const LandingPage = () => {
   return (

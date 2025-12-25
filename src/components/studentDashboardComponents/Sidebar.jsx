@@ -12,6 +12,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import useAuthStore from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import Logo from "@/components/Logo";
 
 const StudentDashboardNavLinks = [
   { name: "Overview", link: "/dashboard/student", icon: <Home size={30} /> },
@@ -44,6 +45,9 @@ const Sidebar = () => {
 
   return (
     <>
+      <div className="hidden md:flex justify-center mb-6">
+        <Logo />
+      </div>
       <div className="flex flex-row justify-around max-sm:items-center md:flex-col md:gap-8">
         {StudentDashboardNavLinks.map((link) => (
           <Link
