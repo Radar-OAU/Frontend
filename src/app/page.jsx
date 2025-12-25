@@ -13,12 +13,7 @@ const LandingPage = () => {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/10 bg-[#0A0A14]/80 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="h-5 w-5 text-white fill-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">Radar</span>
-          </div>
+          <Logo />
           <div className="flex items-center gap-4">
             <Link href="/login">
               <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10">
@@ -150,12 +145,7 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="border-t border-white/10 py-12 bg-[#05050A]">
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
-              <Zap className="h-4 w-4 text-white fill-white" />
-            </div>
-            <span className="font-bold text-lg">Radar</span>
-          </div>
+          <Logo iconSize="h-4 w-4" textSize="text-lg" className="scale-90" />
           <div className="text-gray-500 text-sm">
             © {new Date().getFullYear()} Radar. All rights reserved.
           </div>
