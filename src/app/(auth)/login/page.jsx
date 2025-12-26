@@ -8,8 +8,11 @@ import { Mail, Lock, Loader2, User, Sparkles, Eye, EyeOff, Check, ArrowRight } f
 import toast from 'react-hot-toast'
 import api from '../../../lib/axios'
 import useAuthStore from '../../../store/authStore'
+// import { useGoogleLogin } from '@react-oauth/google'
 import { Button } from '../../../components/ui/button'
 import BackgroundCarousel from '../../../components/BackgroundCarousel'
+import { getErrorMessage } from '@/lib/utils'
+
 
 const LoginPage = () => {
   const router = useRouter()
@@ -45,6 +48,14 @@ const LoginPage = () => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     return re.test(email)
   }
+    
+    const parseJwt = (token) => {
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+      return null;
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -53,35 +64,53 @@ const LoginPage = () => {
 
   // const handleGoogleLogin = useGoogleLogin({
   //   onSuccess: async (tokenResponse) => {
+  //     setLoading(true);
   //     try {
-  //       // Assuming student login for now, logic might need adjustment based on user role selection if available on login page
-  //       const res = await api.post('/student/google-signup/', {
+  //       const res = await api.post('/login/google/', {
   //         token: tokenResponse.access_token,
   //       });
-  //       const { user_id, email, access, refresh, is_new_user } = res.data;
+  //       const { user_id, email, access, refresh } = res.data;
   //       login({ user_id, email }, access);
   //       toast.success('Login successful!');
   //       router.push('/dashboard');
   //     } catch (err) {
   //       console.error('Google login error:', err);
-  //       toast.error('Google login failed');
+  //       toast.error(err.response?.data?.error || 'Google login failed');
+  //     } finally {
+  //       setLoading(false);
   //     }
   //   },
-  //   onError: () => {
-  //     toast.error('Google login failed');
-  //   },
+  //   onError: () => toast.error('Google login failed'),
   // });
 
-  const handleSubmit = async (e) => {
+  // const getErrorMessage = (err) => {
+  //   if (err.response?.data?.error) {
+  //     return err.response.data.error;
+  //   }
+  //   if (err.response?.data?.message) {
+  //     return err.response.data.message;
+  //   }
+  //   return 'An unexpected error occurred. Please try again.';
+  // };
+
+    const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     const toastId = toast.loading('Logging in...')
 
-    try {
+       try {
       const response = await api.post('/login/', formData)
-      const { user_id, email, access, refresh } = response.data
-      login({ user_id, email }, access)
+      const { user_id, email, access, refresh, role: responseRole } = response.data
+      
+      let userRole = responseRole;
+      if (!userRole && access) {
+        const decoded = parseJwt(access);
+        // Check for common role claims
+        userRole = decoded?.role || decoded?.user_type || (decoded?.is_organizer ? 'organizer' : 'student');
+      }
+
+      login({ user_id, email }, access, userRole)
       toast.success('Login successful! Redirecting...', { id: toastId })
       router.push('/dashboard')
     } catch (err) {
@@ -252,13 +281,14 @@ const LoginPage = () => {
                    <Button
                       variant="outline"
                       onClick={() => handleGoogleLogin()}
-                      className="w-full h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200"
+                      disabled={loading}
+                      className="w-full h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <div className="flex items-center justify-center gap-3">
                         <div className="h-5 w-5 flex items-center justify-center">
                           <img
                            src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
-                            alt="Google" 
+                            alt="Google"
                           />
                         </div>
                         <span>Continue with Google</span>

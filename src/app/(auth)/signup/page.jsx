@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import api from "../../../lib/axios";
 import useAuthStore from "../../../store/authStore";
+// import { useGoogleLogin } from '@react-oauth/google';
 import { Mail, Lock, User, Eye, EyeOff, UsersIcon, Loader2, ArrowRight } from "lucide-react";
 import login from "../../components/login/page";
 import BackgroundCarousel from "../../../components/BackgroundCarousel";
@@ -118,11 +119,15 @@ const SignUp = () => {
   //       const res = await api.post(endpoint, {
   //         token: tokenResponse.access_token,
   //       });
-        
-  //       const { email, access, refresh } = res.data;
+
+  //       const { email, access, refresh, is_new_user } = res.data;
   //       loginUser({ email }, access);
-        
-  //       toast.success('Account Created Successfully');
+
+  //       if (is_new_user) {
+  //         toast.success('Account Created Successfully');
+  //       } else {
+  //         toast.success('Login Successful');
+  //       }
   //       router.push("/dashboard");
   //     } catch (err) {
   //       console.error('Google signup error:', err);
@@ -134,11 +139,11 @@ const SignUp = () => {
   //   onError: () => toast.error('Google signup failed'),
   // });
 
-  const handleSocialLogin = (provider) => {
-    if (provider === 'Google') {
-      googleLogin();
-    }
-  }
+  // const handleSocialLogin = (provider) => {
+  //   if (provider === 'Google') {
+  //     googleLogin();
+  //   }
+  // }
 
   return (
     <div className="min-h-screen w-full flex bg-[#0A0A14]">
@@ -409,14 +414,15 @@ const SignUp = () => {
 
                 <Button
               variant="outline"
-              onClick={() => toast.error('Social login currently unavailable')}
-              className="w-full h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200"
+              onClick={() => googleLogin()}
+              disabled={loading}
+              className="w-full h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-center gap-3">
                 <div className="h-5 w-5 flex items-center justify-center">
                   <img
                    src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
-                    alt="Google" 
+                    alt="Google"
                   />
                 </div>
                 <span>Sign Up with Google</span>

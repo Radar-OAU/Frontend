@@ -85,7 +85,7 @@ const BackgroundCarousel = ({ images, interval = 5000 }) => {
        <div className="text-center text-white max-w-lg px-6">
          <div className="mb-6">
      
-          <h2 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent tracking-wide">
+          <h2 className="text-4xl font-bold mb-2 bg-linear-to-r from-white to-gray-300 bg-clip-text text-transparent tracking-wide">
              Welcome to <Marker className='text-[#ff3a66] font-bold text-5xl'> Radar</Marker>
            </h2>
             <p className="text-lg text-gray-300 font-light leading-relaxed">

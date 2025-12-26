@@ -20,7 +20,7 @@ const DashboardPage = () => {
   }, [user, router]);
 
   return (
-    <div>
+    <div className= "">
       {/* student dashboard */}
       <p>Student</p>
     </div>
