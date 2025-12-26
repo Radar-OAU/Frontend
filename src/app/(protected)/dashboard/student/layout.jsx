@@ -6,7 +6,7 @@ const StudentDashboardLayout = ({children}) => {
    <>
     <section className='flex flex-col md:flex-row min-h-screen'>
       {/* sidebar content - Hidden on mobile, shown on desktop */}
-      <nav className='hidden md:block fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] border-r border-gray-800 bg-[#0A0A14] z-40 overflow-y-auto py-6'>
+      <nav className='hidden md:block fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] border-r border-gray-800 bg-black z-40 overflow-y-auto py-6'>
         <Sidebar />
       </nav>
       {/* main content */}

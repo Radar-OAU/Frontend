@@ -21,7 +21,7 @@ Complete API documentation for frontend developers. This document covers all end
 
 ```
 Development: http://localhost:8000
-Production: https://your-domain.onrender.com
+Production: https://radar-ufvb.onrender.com/
 ```
 
 ### Response Format
