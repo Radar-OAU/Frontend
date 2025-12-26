@@ -6,12 +6,25 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Calendar, QrCode, ShieldCheck, Zap, Users, BarChart3, ArrowRight } from "lucide-react";
 import Logo from "@/components/Logo";
+import useAuthStore from "@/store/authStore";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const LandingPage = () => {
+  const { token } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, [token, router]);
+
   return (
     <div className="min-h-screen bg-[#0A0A14] text-white selection:bg-primary/30">
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/10 bg-[#0A0A14]/80 backdrop-blur-md">
+
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Logo />
           <div className="flex items-center gap-4">
