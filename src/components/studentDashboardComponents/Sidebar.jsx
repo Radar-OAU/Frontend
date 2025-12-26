@@ -15,18 +15,18 @@ import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 
 const StudentDashboardNavLinks = [
-  { name: "Overview", link: "/dashboard/student", icon: <Home size={30} /> },
+  { name: "Overview", link: "/dashboard/student", icon: <Home className="h-5 w-5 md:h-7 md:w-7" /> },
   {
     name: "Events",
     link: "/dashboard/student/events",
-    icon: <Calendar size={30} />,
+    icon: <Calendar className="h-5 w-5 md:h-7 md:w-7" />,
   },
   {
     name: "My Tickets",
     link: "/dashboard/student/my-tickets",
-    icon: <Ticket size={30} />,
+    icon: <Ticket className="h-5 w-5 md:h-7 md:w-7" />,
   },
-  { name: "Profile", link: "/dashboard/student/profile", icon: <User size={30} /> },
+  { name: "Profile", link: "/dashboard/student/profile", icon: <User className="h-5 w-5 md:h-7 md:w-7" /> },
 ];
 
 const Sidebar = () => {
@@ -48,17 +48,17 @@ const Sidebar = () => {
       <div className="hidden md:flex justify-center mb-6">
         <Logo />
       </div>
-      <div className="flex flex-row justify-around max-sm:items-center md:flex-col md:gap-8">
+      <div className="flex flex-row justify-around items-center md:flex-col md:gap-8 w-full">
         {StudentDashboardNavLinks.map((link) => (
           <Link
             href={link.link}
             key={link.name}
-            className={`${active ? (active.link === link.link ? "bg-gray-200 p-2 md:p-2 rounded-xl text-gray-800 font-bold" : "") : null}`}
+            className={`${active ? (active.link === link.link ? "bg-gray-200 p-2 md:p-2 rounded-xl text-gray-800 font-bold" : "text-gray-400") : "text-gray-400"} transition-all duration-200`}
           >
             <div className="flex flex-col md:flex-row items-center md:gap-3 gap-1">
               <span className="">{link.icon}</span>
               <p
-                className={`${active ? (active.link === link.link ? "text-xs md:text-base" : "hidden md:block") : "hidden md:block"}`}
+                className={`${active ? (active.link === link.link ? "text-[10px] md:text-base" : "hidden md:block") : "hidden md:block"}`}
               >
                 {link.name}
               </p>
