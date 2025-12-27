@@ -1,54 +1,64 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, Loader2, User, Sparkles, Eye, EyeOff, Check, ArrowRight } from 'lucide-react'
-import toast from 'react-hot-toast'
-import api from '../../../lib/axios'
-import useAuthStore from '../../../store/authStore'
-import { Button } from '../../../components/ui/button'
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  User,
+  Sparkles,
+  Eye,
+  EyeOff,
+  Check,
+  ArrowRight,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import api from "../../../lib/axios";
+import useAuthStore from "../../../store/authStore";
+import { Button } from "../../../components/ui/button";
 
 const LoginPage = () => {
-  const router = useRouter()
-  const login = useAuthStore((state) => state.login)
-  
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [greeting, setGreeting] = useState('')
-  const [isValidEmail, setIsValidEmail] = useState(false)
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [greeting, setGreeting] = useState("");
+  const [isValidEmail, setIsValidEmail] = useState(false);
 
   const extractUsername = (email) => {
-    if (!email || !email.includes('@')) return ''
-    return email.split('@')[0]
-  }
+    if (!email || !email.includes("@")) return "";
+    return email.split("@")[0];
+  };
 
   useEffect(() => {
-    const username = extractUsername(formData.email)
+    const username = extractUsername(formData.email);
     if (username) {
-      setGreeting(`Hello, ${username}! 👋`)
-      setIsValidEmail(validateEmail(formData.email))
+      setGreeting(`Hello, ${username}! 👋`);
+      setIsValidEmail(validateEmail(formData.email));
     } else {
-      setGreeting('')
-      setIsValidEmail(false)
+      setGreeting("");
+      setIsValidEmail(false);
     }
-  }, [formData.email])
+  }, [formData.email]);
 
   const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return re.test(email)
-  }
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-    setError('')
-  }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError("");
+  };
 
   // const handleGoogleLogin = useGoogleLogin({
   //   onSuccess: async (tokenResponse) => {
@@ -72,30 +82,29 @@ const LoginPage = () => {
   // });
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      const response = await api.post('/login/', formData)
-      const { user_id, email, access, refresh } = response.data
-      login({ user_id, email }, access)
-      toast.success('Login successful! Redirecting...')
-      router.push('/dashboard')
+      const response = await api.post("/login/", formData);
+      const { user_id, email, access, refresh } = response.data;
+      login({ user_id, email }, access, refresh);
+      toast.success("Login successful! Redirecting...");
+      router.push("/dashboard");
     } catch (err) {
-      console.error('Login error:', err)
-      const message = err.response?.data?.error || 'Invalid email or password'
-      setError(message)
-      toast.error(message)
+      console.error("Login error:", err);
+      const message = err.response?.data?.error || "Invalid email or password";
+      setError(message);
+      toast.error(message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen w-full flex bg-[#0A0A14]">
-
-            {/* left Side - Image */}
+      {/* left Side - Image */}
       <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center z-0 opacity-40"
@@ -105,10 +114,7 @@ const LoginPage = () => {
           }}
         />
         <div className="relative z-10  w-[40%] flex items-center justify-center">
-          <img
-            alt="Center Image"
-            src='assets/image 2 (1).png'
-          />
+          <img alt="Center Image" src="assets/image 2 (1).png" />
         </div>
       </div>
       {/* Right Side - Form */}
@@ -126,7 +132,7 @@ const LoginPage = () => {
           <h1 className="text-4xl font-bold text-white mb-2 text-center">
             Welcome Back
           </h1>
-          
+
           <AnimatePresence mode="wait">
             {greeting ? (
               <motion.div
@@ -151,7 +157,10 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-white/80 text-xs font-semibold uppercase tracking-wide mb-2">
+              <label
+                htmlFor="email"
+                className="block text-white/80 text-xs font-semibold uppercase tracking-wide mb-2"
+              >
                 Email Address
               </label>
               <div className="relative group">
@@ -175,11 +184,13 @@ const LoginPage = () => {
                 )}
               </div>
             </div>
-
             {/* Password Field */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-white/80 text-xs font-semibold uppercase tracking-wide">
+                <label
+                  htmlFor="password"
+                  className="block text-white/80 text-xs font-semibold uppercase tracking-wide"
+                >
                   Password
                 </label>
                 <Link
@@ -216,7 +227,6 @@ const LoginPage = () => {
                 </button>
               </div>
             </div>
-
             {/* Submit Button */}
             <Button
               type="submit"
@@ -234,12 +244,13 @@ const LoginPage = () => {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
-            </Button> //btn
+            </Button>{" "}
+            //btn
           </form>
 
           <div className="mt-8 flex flex-col space-y-4">
             <div className="text-sm text-center text-gray-400">
-              Don&apos;t have an account?{' '}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
                 className="font-semibold text-rose-400 hover:text-rose-300 hover:underline transition-colors"
@@ -262,7 +273,9 @@ const LoginPage = () => {
               className="w-full h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200"
             >
               <div className="flex items-center justify-center gap-3">
-                <div className="h-5 w-5 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500">G</div>
+                <div className="h-5 w-5 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500">
+                  G
+                </div>
                 <span>Continue with Google</span>
               </div>
             </Button>
@@ -270,7 +283,7 @@ const LoginPage = () => {
         </div>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default LoginPage
+export default LoginPage;
