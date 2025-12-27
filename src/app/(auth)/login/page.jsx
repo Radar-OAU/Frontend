@@ -70,6 +70,8 @@ const LoginPage = () => {
           // Check for common role claims
           userRole = decoded?.role || decoded?.user_type || (decoded?.is_organizer ? 'organizer' : 'student');
         }
+        // Fallback to 'student' if no role information is available
+        userRole = userRole || 'student';
         
         login({ user_id, email }, access, userRole);
         toast.success('Login successful!');
