@@ -41,20 +41,20 @@ const LandingPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#0A0A14] text-white selection:bg-primary/30">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/10 bg-[#0A0A14]/80 backdrop-blur-md">
+      <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/80 backdrop-blur-md">
 
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Logo />
           <div className="flex items-center gap-4">
             <Link href="/login">
-              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10">
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground hover:bg-muted">
                 Log in
               </Button>
             </Link>
             <Link href="/signup">
-              <Button className="bg-primary hover:bg-primary/90 text-white font-semibold">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
                 Get Started
               </Button>
             </Link>
@@ -77,7 +77,7 @@ const LandingPage = () => {
             transition={{ duration: 0.5 }}
             className="max-w-3xl mx-auto space-y-6"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted border border-border text-sm text-muted-foreground mb-4">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -92,7 +92,7 @@ const LandingPage = () => {
               </span>
             </h1>
             
-            <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Discover, book, and experience events like never before. 
               The all-in-one ticketing platform for students and organizers.
             </p>
@@ -105,7 +105,7 @@ const LandingPage = () => {
                 </Button>
               </Link>
               <Link href="/login">
-                <Button size="lg" variant="outline" className="h-12 px-8 text-base border-white/20 bg-transparent text-white hover:bg-white/10">
+                <Button size="lg" variant="outline" className="h-12 px-8 text-base border-border bg-transparent text-foreground hover:bg-muted">
                   Organizer Dashboard
                 </Button>
               </Link>
@@ -115,15 +115,15 @@ const LandingPage = () => {
       </section>
 
       {/* Discover Events Section */}
-      <section className="py-20 bg-black/20">
+      <section className="py-20 bg-muted/20">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-12">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-2">Discover Events</h2>
-              <p className="text-gray-400">Explore trending events happening around you</p>
+              <p className="text-muted-foreground">Explore trending events happening around you</p>
             </div>
             <Link href="/events">
-              <Button variant="outline" className="hidden md:flex border-white/20 hover:bg-white/10 text-white">
+              <Button variant="outline" className="hidden md:flex border-border hover:bg-muted text-foreground">
                 View All Events
               </Button>
             </Link>
@@ -132,7 +132,7 @@ const LandingPage = () => {
           {loadingEvents ? (
              <div className="grid md:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-96 rounded-2xl bg-white/5 animate-pulse" />
+                  <div key={i} className="h-96 rounded-2xl bg-muted animate-pulse" />
                 ))}
             </div>
           ) : events.length > 0 ? (
@@ -141,9 +141,9 @@ const LandingPage = () => {
                 <Link href={`/dashboard/student/events/${event.event_id}`} key={event.event_id}>
                   <motion.div 
                     whileHover={{ y: -5 }}
-                    className="group h-full rounded-2xl bg-white/5 border border-white/10 overflow-hidden hover:border-primary/50 transition-colors"
+                    className="group h-full rounded-2xl bg-card border border-border overflow-hidden hover:border-primary/50 transition-colors"
                   >
-                    <div className="aspect-video relative bg-white/5">
+                    <div className="aspect-video relative bg-muted">
                       {event.event_image ? (
                         <img 
                           src={event.event_image} 
@@ -151,7 +151,7 @@ const LandingPage = () => {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600 bg-white/5">
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-muted">
                           <Calendar className="h-12 w-12 opacity-20" />
                         </div>
                       )}
@@ -173,10 +173,10 @@ const LandingPage = () => {
                       <h3 className="text-xl font-bold mb-2 line-clamp-1 group-hover:text-primary transition-colors">
                         {event.event_name}
                       </h3>
-                      <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                      <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                         {event.event_location}
                       </p>
-                      <div className="flex items-center text-sm font-medium text-white/50 group-hover:text-white transition-colors">
+                      <div className="flex items-center text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                         Get Tickets <ArrowRight className="ml-2 h-4 w-4" />
                       </div>
                     </div>
@@ -185,9 +185,9 @@ const LandingPage = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/10">
-               <Calendar className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-               <p className="text-gray-400">No upcoming events found at the moment.</p>
+            <div className="text-center py-20 bg-card rounded-2xl border border-border">
+               <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+               <p className="text-muted-foreground">No upcoming events found at the moment.</p>
             </div>
           )}
           
@@ -200,11 +200,11 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-      <section className="py-20 bg-white/5">
+      <section className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything you need</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Whether you're hosting a massive concert or looking for the next tech meetup, 
               Radar has the tools to make it happen.
             </p>
@@ -249,11 +249,11 @@ const LandingPage = () => {
       <section className="py-20 relative overflow-hidden">
         <div className="container mx-auto px-4 text-center relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to get started?</h2>
-          <p className="text-gray-400 mb-8 max-w-xl mx-auto">
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
             Join thousands of students and organizers transforming the event experience today.
           </p>
           <Link href="/signup">
-            <Button size="lg" className="h-14 px-10 text-lg rounded-full bg-white text-black hover:bg-gray-200">
+            <Button size="lg" className="h-14 px-10 text-lg rounded-full bg-foreground text-background hover:bg-foreground/90">
               Create Free Account
             </Button>
           </Link>
@@ -269,13 +269,13 @@ const LandingPage = () => {
 const FeatureCard = ({ icon, title, description }) => (
   <motion.div 
     whileHover={{ y: -5 }}
-    className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 transition-colors"
+    className="p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-colors"
   >
-    <div className="mb-4 p-3 rounded-xl bg-white/5 w-fit">
+    <div className="mb-4 p-3 rounded-xl bg-muted w-fit">
       {icon}
     </div>
     <h3 className="text-xl font-bold mb-2">{title}</h3>
-    <p className="text-gray-400 leading-relaxed">
+    <p className="text-muted-foreground leading-relaxed">
       {description}
     </p>
   </motion.div>
