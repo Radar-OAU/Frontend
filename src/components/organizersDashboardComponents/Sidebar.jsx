@@ -173,7 +173,7 @@ import {
   User2,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { motion } from "framer-motion";
 import useAuthStore from "@/store/authStore";
@@ -200,7 +200,14 @@ const OrganizationDashboardNavLinks = [
 
 const Sidebar = () => {
   const location = usePathname();
-  console.log(location);
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
   const active = OrganizationDashboardNavLinks.find(
     (link) => location === `${link.link}`
   );
@@ -238,7 +245,10 @@ const Sidebar = () => {
           </span>
           <p>Settings</p>
         </Link>
-        <button className="hover:bg-gray-200 p-2 md:p-2 hover:rounded-xl font-bold md:flex md:flex-row hidden md:gap-3 items-center text-red-500 cursor-pointer">
+        <button 
+          onClick={handleLogout}
+          className="hover:bg-gray-200 p-2 md:p-2 hover:rounded-xl font-bold md:flex md:flex-row hidden md:gap-3 items-center text-red-500 cursor-pointer w-full text-left"
+        >
           <span>
             <LogOut />
           </span>
