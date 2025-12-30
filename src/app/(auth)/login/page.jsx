@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -18,62 +18,59 @@ import BackgroundCarousel from '../../../components/BackgroundCarousel'
 import { useGoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
 
-  const router = useRouter()
-  const login = useAuthStore((state) => state.login)
-  
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const [isValidEmail, setIsValidEmail] = useState(false)
-
-
+  const [isValidEmail, setIsValidEmail] = useState(false);
 
   useEffect(() => {
-    setIsValidEmail(validateEmail(formData.email))
-  }, [formData.email])
+    setIsValidEmail(validateEmail(formData.email));
+  }, [formData.email]);
 
   const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return re.test(email)
-  }
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
 
   const parseJwt = (token) => {
     try {
-      return JSON.parse(atob(token.split('.')[1]));
+      return JSON.parse(atob(token.split(".")[1]));
     } catch (e) {
       return null;
     }
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-    setError('')
-  }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError("");
+  };
 
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
         // Assuming student login for now, logic might need adjustment based on user role selection if available on login page
-        const res = await api.post('/student/google-signup/', {
+        const res = await api.post("/student/google-signup/", {
           token: tokenResponse.access_token,
         });
-        const { user_id, email, access, refresh, is_new_user } = res.data;
-        login({ user_id, email }, access);
-        toast.success('Login successful!');
-        router.push('/dashboard');
+        const { user_id, email, access, refresh, role } = res.data;
+        login({ user_id, email }, access, refresh, role || "Student");
+        toast.success("Login successful!");
+        router.push("/dashboard");
       } catch (err) {
-        console.error('Google login error:', err);
-        toast.error('Google login failed');
+        console.error("Google login error:", err);
+        toast.error("Google login failed");
       }
     },
     onError: () => {
-      toast.error('Google login failed');
+      toast.error("Google login failed");
     },
   });
 
@@ -98,14 +95,14 @@ const LoginPage = () => {
       toast.success('Login successful! Redirecting...', { id: toastId })
       router.push('/dashboard')
     } catch (err) {
-      console.error('Login error:', err)
-      const message = getErrorMessage(err)
-      setError(message)
-      toast.error(message, { id: toastId })
+      console.error("Login error:", err);
+      const message = err.response?.data?.error || "Invalid email or password";
+      setError(message);
+      toast.error(message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen w-full flex bg-[#0A0A14]">
@@ -127,14 +124,17 @@ const LoginPage = () => {
         <div className="w-full max-w-md">
           <div className="flex justify-center mb-6 md:mb-8">
             <Logo
-            href= "/" textColor="white"
-            textSize="text-2xl md:text-3xl" iconSize="h-6 w-6 md:h-8 md:w-8" />
+              href="/"
+              textColor="white"
+              textSize="text-2xl md:text-3xl"
+              iconSize="h-6 w-6 md:h-8 md:w-8"
+            />
           </div>
 
           <h1 className="text-2xl md:text-4xl font-bold text-white mb-2 text-center">
             Welcome Back
           </h1>
-          
+
           <p className="text-sm md:text-base text-gray-400 mb-6 md:mb-8 text-center">
             Sign in to get your tickets
           </p>
@@ -142,7 +142,10 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-white/80 text-xs font-semibold uppercase tracking-wide mb-2">
+              <label
+                htmlFor="email"
+                className="block text-white/80 text-xs font-semibold uppercase tracking-wide mb-2"
+              >
                 Email Address
               </label>
               <div className="relative group">
@@ -166,11 +169,13 @@ const LoginPage = () => {
                 )}
               </div>
             </div>
-
             {/* Password Field */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-white/80 text-xs font-semibold uppercase tracking-wide">
+                <label
+                  htmlFor="password"
+                  className="block text-white/80 text-xs font-semibold uppercase tracking-wide"
+                >
                   Password
                 </label>
                 <Link
@@ -207,7 +212,6 @@ const LoginPage = () => {
                 </button>
               </div>
             </div>
-
             {/* Submit Button */}
             <Button
               type="submit"
@@ -230,7 +234,7 @@ const LoginPage = () => {
 
           <div className="mt-6 md:mt-8 flex flex-col space-y-3 md:space-y-4">
             <div className="text-xs md:text-sm text-center text-gray-400">
-              Don&apos;t have an account?{' '}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
                 className="font-semibold text-rose-400 hover:text-rose-300 hover:underline transition-colors"
@@ -242,7 +246,9 @@ const LoginPage = () => {
             {/* Divider */}
             <div className="relative flex items-center justify-center w-full">
               <div className="grow border-t border-gray-800"></div>
-              <span className="mx-4 text-[10px] md:text-xs text-gray-500 font-medium">OR</span>
+              <span className="mx-4 text-[10px] md:text-xs text-gray-500 font-medium">
+                OR
+              </span>
               <div className="grow border-t border-gray-800"></div>
             </div>
 
@@ -266,7 +272,7 @@ const LoginPage = () => {
         </div>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default LoginPage
+export default LoginPage;

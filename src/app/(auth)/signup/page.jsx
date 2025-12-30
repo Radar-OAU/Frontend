@@ -90,17 +90,17 @@ const SignUp = () => {
         };
         endpoint = "/organizer/register/";
       }
-
+      
+      console.log("Submitting to", endpoint, "with payload", payload);
       const res = await api.post(endpoint, payload);
       
       if (role === "Student") {
          toast.success(res.data.message || 'OTP sent to email.', { id: toastId })
          router.push(`/verify-otp?email=${email}`);
       } else {
-         // Organizer registration - account created immediately, no OTP required
-         const { email, access, refresh } = res.data;
-
-         loginUser({ email }, access, role);
+         // Organizer registration is immediate
+         const { email, access, refresh, role: respRole } = res.data;
+         loginUser({ email }, access, refresh, respRole || role);
          toast.success('Account Created Successfully', { id: toastId })
          router.push("/dashboard");
       }
