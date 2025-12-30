@@ -24,7 +24,6 @@ export default function Overview() {
         const eventsRes = await api.get("/organizer/events/");
         const events = eventsRes.data.events || [];
         setRecentEvents(events.slice(0, 5));
-         toast.success("Overview data loaded successfully");
          
         setLoading(false);
       } catch (err) {
@@ -42,7 +41,7 @@ export default function Overview() {
   if (loading || !analytics) return <p className="text-white">Loading...</p>;
 
   return (
-    <div className="min-h-screen p-4 md:p-4 space-y-5 md:space-y-6  pt-6 md:pt-10">
+    <div className="min-h-screen p-4 md:p-6 space-y-5 md:space-y-8 pt-8 md:pt-12">
       {/* Welcome Section */}
       <div className="flex items-center justify-between mb-6">
         <div>

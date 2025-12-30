@@ -86,8 +86,8 @@ const VerifyOTPContent = () => {
       const { user_id, email: verifiedEmail, access, refresh, role } = res.data;
       login({ user_id, email: verifiedEmail }, access, refresh, role);
 
-toast.success("Email verified successfully! Redirecting...", { id: toastId });
-router.push("/dashboard");
+      toast.success("Email verified successfully! Redirecting...", { id: toastId });
+      router.push("/dashboard");
 
     } catch (err) {
       console.error("Verify OTP error:", err.response || err);
