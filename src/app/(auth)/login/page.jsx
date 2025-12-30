@@ -1,27 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Mail,
-  Lock,
-  Loader2,
-  User,
-  Sparkles,
-  Eye,
-  EyeOff,
-  Check,
-  ArrowRight,
-} from "lucide-react";
-import toast from "react-hot-toast";
-import api from "../../../lib/axios";
-import useAuthStore from "../../../store/authStore";
-import { Button } from "../../../components/ui/button";
-import Logo from "@/components/Logo";
-import { getErrorMessage } from "@/lib/utils";
-import { useGoogleLogin } from "@react-oauth/google";
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mail, Lock, Loader2, User, Sparkles, Eye, EyeOff, Check, ArrowRight } from 'lucide-react'
+import toast from 'react-hot-toast'
+import api from '../../../lib/axios'
+import useAuthStore from '../../../store/authStore'
+// import { useGoogleLogin } from '@react-oauth/google'
+import { Button } from '../../../components/ui/button'
+import Logo from '@/components/Logo'
+import { getErrorMessage } from '@/lib/utils'
+import BackgroundCarousel from '../../../components/BackgroundCarousel'
+
+
+import { useGoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
   const router = useRouter();
@@ -80,17 +74,26 @@ const LoginPage = () => {
     },
   });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+    const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const toastId = toast.loading('Logging in...')
 
-    try {
-      const response = await api.post("/login/", formData);
-      const { user_id, email, access, refresh, role } = response.data;
-      login({ user_id, email }, access, refresh, role);
-      toast.success("Login successful! Redirecting...");
-      router.push("/dashboard");
+       try {
+      const response = await api.post('/login/', formData)
+      const { user_id, email, access, refresh, role: responseRole } = response.data
+
+      let userRole = responseRole;
+      if (!userRole && access) {
+        const decoded = parseJwt(access);
+        // Check for common role claims
+        userRole = decoded?.role || decoded?.user_type || (decoded?.is_organizer ? 'organizer' : 'student');
+      }
+
+      login({ user_id, email }, access, userRole)
+      toast.success('Login successful! Redirecting...', { id: toastId })
+      router.push('/dashboard')
     } catch (err) {
       console.error("Login error:", err);
       const message = err.response?.data?.error || "Invalid email or password";
@@ -103,18 +106,13 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen w-full flex bg-[#0A0A14]">
-      {/* left Side - Image */}
-      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center z-0 opacity-40"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1568289523939-61125d216fe5?q=80&w=436&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
-            filter: "grayscale(30%)",
-          }}
+
+            {/* left Side - Image */}
+      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden group">
+        <BackgroundCarousel
+          images={['/IMG (1).jpg', '/ticket image (1).jpeg']}
+          interval={5000}
         />
-        <div className="relative z-10  w-[40%] flex items-center justify-center">
-          <img alt="Center Image" src="assets/image 2 (1).png" />
-        </div>
       </div>
       {/* Right Side - Form */}
       <motion.div
@@ -255,23 +253,21 @@ const LoginPage = () => {
             </div>
 
             {/* Social Login Option */}
-            <Button
-              variant="outline"
-              onClick={() => handleGoogleLogin()}
-              className="w-full h-10 md:h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200"
-            >
-              <div className="flex items-center justify-center gap-3">
-                <div className="h-4 w-4 md:h-5 md:w-5 flex items-center justify-center">
-                  <img
-                    src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
-                    alt="Google"
-                  />
-                </div>
-                <span className="text-sm md:text-base">
-                  Continue with Google
-                </span>
-              </div>
-            </Button>
+                   <Button
+                      variant="outline"
+                      onClick={() => handleGoogleLogin()}
+                      className="w-full h-10 md:h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200"
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="h-4 w-4 md:h-5 md:w-5 flex items-center justify-center">
+                          <img
+                           src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
+                            alt="Google"
+                          />
+                        </div>
+                        <span className="text-sm md:text-base">Continue with Google</span>
+                      </div>
+                    </Button>
           </div>
         </div>
       </motion.div>

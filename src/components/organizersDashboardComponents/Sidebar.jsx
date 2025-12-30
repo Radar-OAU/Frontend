@@ -1,3 +1,164 @@
+// 'use client';
+
+// import React, { useState, useEffect } from 'react';
+// import {
+//   GroupIcon,
+//   Home,
+//   LogOut,
+//   PlusIcon,
+//   QrCodeIcon,
+//   Settings,
+//   User,
+// } from 'lucide-react';
+// import Link from 'next/link';
+// import { usePathname } from 'next/navigation';
+// import { motion, AnimatePresence } from 'framer-motion';
+// import Logo from '@/components/Logo';
+
+// const OrganizationDashboardNavLinks = [
+//   { name: 'Overview', link: '/dashboard/org', icon: <Home size={24} /> },
+//   { name: 'Create Event', link: '/dashboard/org/create-event', icon: <PlusIcon size={24} /> },
+//   { name: 'My Event', link: '/dashboard/org/my-event', icon: <GroupIcon size={24} /> },
+//   { name: 'QR Scanner', link: '/dashboard/org/qr-scanner', icon: <QrCodeIcon size={24} /> },
+//   { name: 'Profile', link: '/dashboard/org/profile', icon: <User size={24} /> },
+// ];
+
+// const Sidebar = () => {
+//   const pathname = usePathname();
+//   const [isOpen, setIsOpen] = useState(false);
+
+//   return (
+//     <>
+//       {/* Mobile Header */}
+//       <div className="flex md:hidden items-center justify-between bg-gray-900 p-4 text-white fixed top-0 left-0 right-0 z-50">
+//         <Logo />
+//         <button onClick={() => setIsOpen(!isOpen)}>
+//           <svg
+//             className="w-6 h-6"
+//             fill="none"
+//             stroke="currentColor"
+//             strokeWidth={2}
+//             viewBox="0 0 24 24"
+//           >
+//             <path
+//               strokeLinecap="round"
+//               strokeLinejoin="round"
+//               d={isOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'}
+//             />
+//           </svg>
+//         </button>
+//       </div>
+
+//       {/* Mobile Sidebar with Motion */}
+//       <AnimatePresence>
+//         {isOpen && (
+//           <>
+//             {/* Backdrop */}
+//             <motion.div
+//               initial={{ opacity: 0 }}
+//               animate={{ opacity: 0.5 }}
+//               exit={{ opacity: 0 }}
+//               transition={{ duration: 0.2 }}
+//               className="fixed inset-0 bg-black z-40"
+//               onClick={() => setIsOpen(false)}
+//             />
+
+//             {/* Slide-in Sidebar */}
+//             <motion.div
+//               initial={{ x: '-100%' }}
+//               animate={{ x: 0 }}
+//               exit={{ x: '-100%' }}
+//               transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+//               className="fixed inset-y-0 left-0 w-64 bg-gray-900 z-50 p-6 flex flex-col"
+//             >
+//               <Logo />
+//               <nav className="flex flex-col gap-4 mt-6">
+//                 {OrganizationDashboardNavLinks.map((link) => (
+//                   <Link
+//                     key={link.name}
+//                     href={link.link}
+//                     onClick={() => setIsOpen(false)}
+//                     className={`flex items-center gap-3 p-2 rounded-lg ${
+//                       pathname === link.link
+//                         ? 'bg-gray-200 text-gray-900 font-bold'
+//                         : 'text-gray-200 hover:bg-gray-800'
+//                     }`}
+//                   >
+//                     {link.icon}
+//                     <span>{link.name}</span>
+//                   </Link>
+//                 ))}
+//               </nav>
+
+//               <div className="mt-auto space-y-4">
+//                 <Link
+//                   href="/dashboard/org/settings"
+//                   onClick={() => setIsOpen(false)}
+//                   className={`flex items-center gap-3 p-2 rounded-lg ${
+//                     pathname === '/dashboard/org/settings'
+//                       ? 'bg-gray-200 text-gray-900 font-bold'
+//                       : 'text-gray-200 hover:bg-gray-800'
+//                   }`}
+//                 >
+//                   <Settings />
+//                   <span>Settings</span>
+//                 </Link>
+//                 <button className="flex items-center gap-3 p-2 rounded-lg text-red-500 hover:bg-gray-800">
+//                   <LogOut />
+//                   <span>Logout</span>
+//                 </button>
+//               </div>
+//             </motion.div>
+//           </>
+//         )}
+//       </AnimatePresence>
+
+//       {/* Desktop Sidebar */}
+//       <aside className="hidden md:flex flex-col w-64 h-screen bg-gray-900 text-white p-6 fixed left-0 top-0">
+//         <div className="mb-6 flex justify-center">
+//           <Logo />
+//         </div>
+//         <nav className="flex-1 flex flex-col gap-4">
+//           {OrganizationDashboardNavLinks.map((link) => (
+//             <Link
+//               key={link.name}
+//               href={link.link}
+//               className={`flex items-center gap-3 p-2 rounded-lg ${
+//                 pathname === link.link
+//                   ? 'bg-gray-200 text-gray-900 font-bold'
+//                   : 'text-gray-200 hover:bg-gray-800'
+//               }`}
+//             >
+//               {link.icon}
+//               <span className="text-sm">{link.name}</span>
+//             </Link>
+//           ))}
+//         </nav>
+//         <div className="mt-auto space-y-4">
+//           <Link
+//             href="/dashboard/org/settings"
+//             className={`flex items-center gap-3 p-2 rounded-lg ${
+//               pathname === '/dashboard/org/settings'
+//                 ? 'bg-gray-200 text-gray-900 font-bold'
+//                 : 'text-gray-200 hover:bg-gray-800'
+//             }`}
+//           >
+//             <Settings />
+//             <span>Settings</span>
+//           </Link>
+//           <button className="flex items-center gap-3 p-2 rounded-lg text-red-500 hover:bg-gray-800">
+//             <LogOut />
+//             <span>Logout</span>
+//           </button>
+//         </div>
+//       </aside>
+//     </>
+//   );
+// };
+
+// export default Sidebar;
+
+
 "use client";
 
 import {
@@ -14,6 +175,8 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Logo from "@/components/Logo";
+import { motion } from "framer-motion";
+import useAuthStore from "@/store/authStore";
 
 const OrganizationDashboardNavLinks = [
   { name: "Overview", link: "/dashboard/org", icon: <Home size={30} /> },

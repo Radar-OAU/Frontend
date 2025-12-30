@@ -1,88 +1,122 @@
 "use client";
 
 import React, { useState } from "react";
+import { Button } from "../../../components/ui/button";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, Loader2 } from "lucide-react";
+import { motion } from 'framer-motion'
+import toast from 'react-hot-toast'
+import api from "../../../lib/axios";
+import { Mail, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import BackgroundCarousel from "../../../components/BackgroundCarousel";
 import Logo from "@/components/Logo";
-import toast from "react-hot-toast";
 
 const ForgotPassword = () => {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const invalidEmail = email.length > 0 && !validateEmail(email);
+
+  const isFormValid = email.trim() && validateEmail(email);
+
+  const submitForm = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    const toastId = toast.loading('Sending reset OTP...');
+
+    try {
+      const res = await api.post('/password-reset/request/', {
+        email: email,
+      });
+
+      toast.success(res.data.message || 'OTP sent to your email.', { id: toastId });
+      router.push(`/reset-password?email=${email}`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to send reset OTP.", { id: toastId });
+    } finally {
       setLoading(false);
-      toast.success("If an account exists, a reset link has been sent.");
-    }, 2000);
+    }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0A0A14] p-4">
-      <div className="w-full max-w-md space-y-6 md:space-y-8">
-        <div className="flex justify-center">
-          <Logo iconSize="h-8 w-8 md:h-10 md:w-10" textSize="text-2xl md:text-3xl" className="text-white" />
-        </div>
-        
-        <div className="bg-[#12121A] border border-white/10 rounded-2xl p-6 md:p-8 shadow-xl">
-          <div className="text-center mb-6 md:mb-8">
-            <h1 className="text-xl md:text-2xl font-bold text-white mb-2">Forgot Password?</h1>
-            <p className="text-gray-400 text-sm md:text-base">
-              Enter your email address and we'll send you a link to reset your password.
-            </p>
+    <div className="min-h-screen w-full flex bg-[#0A0A14]">
+      {/* Left Image */}
+      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden group">
+        <BackgroundCarousel
+          images={['/IMG (1).jpg', '/ticket image (1).jpeg']}
+          interval={5000}
+        />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-12 lg:px-16 xl:px-24 overflow-y-auto">
+        <div className="w-full max-w-md">
+            <div className="flex justify-center mb-6 md:mb-8">
+            <Logo
+            href= "/" textColor="white"
+            textSize="text-2xl md:text-3xl" iconSize="h-6 w-6 md:h-8 md:w-8" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-300">Email Address</Label>
+          <h1 className="text-4xl font-bold text-white mb-8 text-center">
+            Reset Password
+          </h1>
+
+          <p className="text-gray-400 text-center mb-8">
+            Enter your email address and we'll send you an OTP to reset your password.
+          </p>
+
+          <form onSubmit={submitForm} className="space-y-4">
+            <div>
+              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wide mb-2">
+                Email Address
+              </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-500" />
-                <Input
-                  id="email"
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                <input
                   type="email"
-                  placeholder="name@example.com"
+                  id="email"
+                  name="email"
+                  placeholder="your.email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 bg-[#1A1A24] border-white/10 text-white placeholder:text-gray-600 focus:border-primary/50"
-                  required
+                  className="w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-xl py-3.5 pl-12 pr-4 text-white hover:border-rose-500/60 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 dark:placeholder:text-gray-600"
                 />
               </div>
+              {invalidEmail && (
+                <p className="text-red-500 text-xs mt-1">
+                  Please enter a valid email address.
+                </p>
+              )}
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-primary hover:bg-primary/90 text-white h-10 md:h-11"
-              disabled={loading}
+            <button
+              type="submit"
+              disabled={loading || !isFormValid}
+              className={`w-full mx-auto bg-rose-600 ${isFormValid ? 'hover:bg-rose-700' : ''} text-[#FFFFFF] font-semibold py-4 rounded-full mt-6 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending Link...
-                </>
-              ) : (
-                "Send Reset Link"
-              )}
-            </Button>
+              {loading ? (<><Loader2 className="animate-spin mr-2" />Sending OTP...</>) : 'Send Reset OTP'}
+              {!loading && <ArrowRight className="ml-2 h-5 w-5" />}
+            </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <Link 
-              href="/login" 
-              className="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Login
+          {/* Back to login */}
+          <div className="text-center mt-6">
+            <Link href="/login" className="text-gray-400 hover:text-white text-sm flex items-center justify-center gap-2 transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Sign In
             </Link>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
