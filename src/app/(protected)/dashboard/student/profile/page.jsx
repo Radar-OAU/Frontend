@@ -24,7 +24,7 @@ const StudentProfile = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await api.get("/student/profile/");
+      const response = await api.get("student/profile/");
       const data = response.data.profile || response.data;
       setProfile(data);
       setFormData({
@@ -43,7 +43,7 @@ const StudentProfile = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.patch("/student/profile/", formData);
+      await api.patch("student/profile/", formData);
       toast.success("Profile updated successfully");
       setProfile(prev => ({...prev, ...formData}));
     } catch (error) {

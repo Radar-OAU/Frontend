@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import api from "@/lib/axios";
-import { Loader2, Ticket, Calendar, History, CreditCard, TrendingUp, ArrowRight, User } from "lucide-react";
+import { Loader2, Ticket, Calendar, ArrowRight, User } from "lucide-react";
 import { motion } from "framer-motion";
 import useAuthStore from "@/store/authStore";
 import Link from "next/link";
@@ -19,8 +19,8 @@ const StudentDashboardOverview = () => {
       setLoading(true);
       try {
         const [profileRes, ticketsRes] = await Promise.all([
-          api.get("/student/profile/"),
-          api.get("/tickets/my-tickets/"),
+          api.get("student/profile/"),
+          api.get("tickets/my-tickets/"),
         ]);
 
         // Handle Profile Data
@@ -65,15 +65,6 @@ const StudentDashboardOverview = () => {
 
   const upcomingEventsCount = upcomingTickets.length;
 
-  const pastEventsCount = tickets.filter((ticket) => {
-    const eventDate = new Date(ticket.event_date);
-    return eventDate < new Date();
-  }).length;
-
-  const totalSpent = tickets.reduce((acc, ticket) => {
-      return acc + (parseFloat(ticket.total_price) || 0);
-  }, 0);
-
   // Name Logic
   const displayName = profile?.firstname || 
                       profile?.Firstname || 
@@ -101,38 +92,6 @@ const StudentDashboardOverview = () => {
             Discover Events
           </button>
         </Link>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard
-          icon={<Ticket className="w-5 h-5 text-rose-400" />}
-          label="Total Tickets"
-          value={tickets.length}
-          trend="Lifetime"
-          trendUp={true}
-        />
-        <StatCard
-          icon={<Calendar className="w-5 h-5 text-blue-400" />}
-          label="Upcoming"
-          value={upcomingEventsCount}
-          trend="Next 30 days"
-          trendUp={true}
-        />
-        <StatCard
-          icon={<History className="w-5 h-5 text-purple-400" />}
-          label="Past Events"
-          value={pastEventsCount}
-          trend="Attended"
-          trendUp={true}
-        />
-        <StatCard
-          icon={<CreditCard className="w-5 h-5 text-green-400" />}
-          label="Total Spent"
-          value={`₦${totalSpent.toLocaleString()}`}
-          trend="Verified"
-          trendUp={true}
-        />
       </div>
 
       {/* Upcoming Tickets Section */}
@@ -201,32 +160,6 @@ const StudentDashboardOverview = () => {
   );
 };
 
-function StatCard({ icon, label, value, trend, trendUp }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-[#111] p-6 rounded-xl border border-gray-800/50 hover:bg-[#1a1a1a] transition-all group hover:border-gray-700"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-2.5 bg-[#1a1a1a] rounded-xl border border-gray-800 group-hover:border-gray-700 group-hover:bg-[#222] transition-all">
-          {icon}
-        </div>
-        <div className={`flex items-center text-[10px] md:text-xs font-semibold px-2 py-1 rounded-full ${
-          trendUp ? 'bg-green-500/5 text-green-400' : 'bg-red-500/5 text-red-400'
-        }`}>
-          <TrendingUp className={`w-3 h-3 mr-1 ${trendUp ? '' : 'rotate-180'}`} />
-          {trend}
-        </div>
-      </div>
-      <div className="flex flex-col">
-        <p className="text-2xl md:text-3xl text-white font-bold mb-1 tracking-tight">
-          {value}
-        </p>
-        <p className="text-gray-400 text-xs md:text-sm font-medium">{label}</p>
-      </div>
-    </motion.div>
-  );
-}
+
 
 export default StudentDashboardOverview;

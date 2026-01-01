@@ -4,12 +4,11 @@ import useAuthStore from "../store/authStore";
 
 const api = axios.create({
   // Prefer NEXT_PUBLIC_API_URL from environment; fall back to the provided endpoint
-  baseURL: process.env.NEXT_PUBLIC_API_URL = "https://radar-ufvb.onrender.com/",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://radar-ufvb.onrender.com",
   headers: {
     "Content-Type": "application/json", // Axios will override if FormData is used
   },
 });
-
 
 // --------------------
 // Helper functions
@@ -43,13 +42,16 @@ function getRefreshToken() {
 // --------------------
 // Request interceptor
 // --------------------
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => Promise.reject(error));
+api.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // --------------------
 // Response interceptor (refresh token handling)
@@ -58,7 +60,7 @@ let isRefreshing = false;
 let failedQueue = [];
 
 function processQueue(error, token = null) {
-  failedQueue.forEach(p => {
+  failedQueue.forEach((p) => {
     if (error) p.reject(error);
     else p.resolve(token);
   });
@@ -66,7 +68,7 @@ function processQueue(error, token = null) {
 }
 
 api.interceptors.response.use(
-  response => response,
+  (response) => response,
 
   (error) => {
     const originalRequest = error.config;
@@ -78,10 +80,12 @@ api.interceptors.response.use(
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch(err => Promise.reject(err));
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
       }
 
       isRefreshing = true;
@@ -93,13 +97,18 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      const refreshUrl = `${api.defaults.baseURL?.replace(/\/$/, "")}/token/refresh/`;
+      const refreshUrl = `${api.defaults.baseURL?.replace(
+        /\/$/,
+        ""
+      )}/token/refresh/`;
 
       return new Promise((resolve, reject) => {
-        axios.post(refreshUrl, { refresh: refreshToken })
-          .then(res => {
+        axios
+          .post(refreshUrl, { refresh: refreshToken })
+          .then((res) => {
             const newAccess = res?.data?.access;
-            if (!newAccess) throw new Error("No access token in refresh response");
+            if (!newAccess)
+              throw new Error("No access token in refresh response");
 
             // Persist new token in local storage
             try {
@@ -121,7 +130,7 @@ api.interceptors.response.use(
             originalRequest.headers.Authorization = `Bearer ${newAccess}`;
             resolve(api(originalRequest));
           })
-          .catch(err => {
+          .catch((err) => {
             processQueue(err, null);
             localStorage.removeItem("auth-storage");
             reject(err);

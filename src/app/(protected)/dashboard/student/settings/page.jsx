@@ -18,8 +18,8 @@ const StudentSettings = () => {
     const fetchData = async () => {
       try {
         const [configRes, profileRes] = await Promise.all([
-          api.get("/config/"),
-          api.get("/student/profile/")
+          api.get("config/"),
+          api.get("student/profile/")
         ]);
 
         if (configRes.data && configRes.data.event_types) {
@@ -57,7 +57,7 @@ const StudentSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.patch("/student/profile/", {
+      await api.patch("student/profile/", {
         event_preferences: preferences
       });
       toast.success("Preferences updated successfully");
