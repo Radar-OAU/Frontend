@@ -12,7 +12,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { Mail, Lock, User, Eye, EyeOff, UsersIcon, Loader2, ArrowRight, Phone } from "lucide-react";
 import Logo from "@/components/Logo";
 import BackgroundCarousel from "../../../components/BackgroundCarousel";
-
+import axios from 'axios';
 
 const SignUp = () => {
   const router = useRouter();
@@ -122,12 +122,29 @@ const SignUp = () => {
       setLoading(true);
       const toastId = toast.loading('Authenticating with Google...');
       try {
+        // 1. Fetch User Info using the access token
+        const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+
+        const googleUser = userInfoResponse.data;
+        console.log("Google User Info:", googleUser);
+        const googleId = googleUser.sub; // 'sub' is the unique Google ID
+
         const endpoint = role === "Student" ? '/student/google-signup/' : '/organizer/google-signup/';
         console.log(`Sending request to: ${endpoint}`);
-        console.log("Payload:", { token: tokenResponse.access_token });
+        
+        // REVERTING: Sending access_token because the backend error "Wrong number of segments" 
+        // indicates it wants a JWT. Access tokens from Google aren't JWTs, but ID Tokens are.
+        // Since we can't easily get an ID Token with this custom UI, we send the access_token 
+        // and hope the backend can validate it (or needs to be fixed to do so).
+        // If the backend strictly requires an ID Token, we might need to use the standard Google Login button.
+        const payloadToken = tokenResponse.access_token; 
+        
+        console.log("Payload:", { token: payloadToken }); 
         
         const res = await api.post(endpoint, {
-          token: tokenResponse.access_token,
+          token: payloadToken,
         });
 
         console.log("Backend Response:", res.data);

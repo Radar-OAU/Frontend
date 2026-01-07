@@ -1,6 +1,6 @@
-
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { 
   Users, 
@@ -82,7 +82,7 @@ export default function AdminDashboardPage() {
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard 
           title="Total Users" 
-          value={stats?.total_users || 0} 
+          value={(stats?.total_students || 0) + (stats?.total_organisers || 0)} 
           icon={Users}
           description={`${stats?.total_students || 0} Students, ${stats?.total_organisers || 0} Organizers`}
         />
@@ -142,16 +142,27 @@ export default function AdminDashboardPage() {
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 space-y-2">
-            <p className="text-xs text-muted-foreground mb-3">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-xs text-muted-foreground">
               Manage platform settings and approvals.
             </p>
-            <div className="p-3 border rounded-md bg-gray-50/50">
-              <p className="text-[10px] font-semibold text-gray-500 mb-1 uppercase tracking-wide">SYSTEM STATUS</p>
-              <div className="flex items-center gap-1.5">
-                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                 <span className="text-xs font-medium text-gray-700">All systems operational</span>
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Link href="/lighthouse/events" className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium">
+                <Calendar className="w-3 h-3" />
+                Events
+              </Link>
+              <Link href="/lighthouse/users" className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium">
+                <Users className="w-3 h-3" />
+                Users
+              </Link>
+              <Link href="/lighthouse/organizations" className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium">
+                <Building2 className="w-3 h-3" />
+                Orgs
+              </Link>
+              <Link href="/lighthouse/revenue" className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium">
+                <DollarSign className="w-3 h-3" />
+                Revenue
+              </Link>
             </div>
           </CardContent>
         </Card>
