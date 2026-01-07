@@ -117,88 +117,95 @@ const Header = () => {
               className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             />
             
-            {/* Slider Menu */}
+            {/* Slider Menu (Right Side) */}
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="md:hidden fixed top-0 right-0 h-full w-[80%] bg-black-800 z-[100]"
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+              className="md:hidden fixed top-0 right-0 h-full w-[80%] max-w-sm bg-background border-l shadow-2xl z-[100]"
             >
               <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                  <span className="font-bold text-lg">Menu</span>
-                  <button
-                    onClick={closeMenu}
-                    className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
+                <div className="flex items-center justify-between p-4 border-b">
+                  <span className="font-bold text-lg bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                    Menu
+                  </span>
+                  <Button variant="ghost" size="icon" onClick={closeMenu}>
+                    <X className="h-5 w-5" />
+                  </Button>
                 </div>
 
-                <div className="p-4 flex flex-col gap-4">
+                <div className="p-4 flex flex-col gap-2 overflow-y-auto">
                   {user ? (
                     <>
-                      <div className="flex items-center gap-3 px-2 py-2 border-b border-gray-800 mb-2">
-                        <div className="h-10 w-10 rounded-full bg-rose-600 flex items-center justify-center text-white font-bold text-lg">
+                      <div className="flex items-center gap-3 px-2 py-3 mb-2 bg-muted/50 rounded-lg">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg border border-primary/20">
                             {user.email?.[0].toUpperCase()}
                         </div>
                         <div className="flex flex-col overflow-hidden">
-                            <span className="text-sm font-medium text-white truncate">{user.email}</span>
-                            <span className="text-xs text-gray-500">{displayRole}</span>
+                            <span className="text-sm font-medium truncate">{user.email}</span>
+                            <span className="text-xs text-muted-foreground">{displayRole}</span>
                         </div>
                       </div>
                       
-                      {/* Dashboard Links */}
+                      {/* Navigation Links */}
                       <div className="space-y-1">
-                        <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</p>
+                        <p className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Navigation</p>
                         {sidebarLinks.map((link) => (
                           <Link
                             key={link.name}
                             href={link.href}
                             onClick={closeMenu}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${
+                            className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors w-full text-sm font-medium ${
                               pathname === link.href 
-                                ? "bg-rose-600/10 text-rose-500" 
-                                : "hover:bg-gray-800 text-gray-300 hover:text-white"
+                                ? "bg-primary/10 text-primary" 
+                                : "hover:bg-muted text-muted-foreground hover:text-foreground"
                             }`}
                           >
                             {link.icon}
                             {link.name}
                           </Link>
                         ))}
+                         <Link
+                            href="/events"
+                            onClick={closeMenu}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors w-full text-sm font-medium hover:bg-muted text-muted-foreground hover:text-foreground`}
+                          >
+                            <Calendar className="h-5 w-5" />
+                            Discover Events
+                          </Link>
                       </div>
 
-                      <div className="border-t border-gray-800 my-2"></div>
+                      <div className="border-t my-4"></div>
 
                       <button
                         onClick={() => {
                           handleLogout();
                           closeMenu();
                         }}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors w-full text-left"
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-red-50 text-red-500 transition-colors w-full text-left text-sm font-medium"
                       >
-                        <LogOut className="h-5 w-5" />
+                        <LogOut className="h-4 w-4" />
                         Logout
                       </button>
                     </>
                   ) : (
-                    <div className="flex flex-col gap-3 mt-4">
+                    <div className="flex flex-col gap-4 mt-2">
                        <Link 
                          href="/events" 
                          onClick={closeMenu}
-                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
+                         className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors w-full text-sm font-medium"
                        >
                          <Calendar className="h-5 w-5" />
                          Discover Events
                        </Link>
                       <Link href="/login" onClick={closeMenu}>
-                        <Button variant="outline" className="w-full border-gray-700 text-gray-300 h-12">
+                        <Button variant="outline" className="w-full h-10 font-semibold">
                           Login
                         </Button>
                       </Link>
                       <Link href="/signup" onClick={closeMenu}>
-                        <Button className="w-full bg-rose-600 hover:bg-rose-700 text-white h-12">
+                        <Button className="w-full h-10 font-semibold">
                           Sign Up
                         </Button>
                       </Link>
