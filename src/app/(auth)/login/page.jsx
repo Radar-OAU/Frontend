@@ -64,6 +64,7 @@ const LoginPage = () => {
         router.push("/dashboard");
       } catch (err) {
         console.error("Google login error:", err);
+        console.log("Error details:", err.response?.data);
         toast.error("Google login failed", { id: toastId });
       }
     },

@@ -12,6 +12,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { Mail, Lock, User, Eye, EyeOff, UsersIcon, Loader2, ArrowRight, Phone } from "lucide-react";
 import Logo from "@/components/Logo";
 import BackgroundCarousel from "../../../components/BackgroundCarousel";
+import axios from 'axios';
 
 const SignUp = () => {
   const router = useRouter();
@@ -112,15 +113,33 @@ const SignUp = () => {
     }
   };
 
+
+
+
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
+      console.log("Google OAuth Success. Token Response:", tokenResponse);
       setLoading(true);
       const toastId = toast.loading('Authenticating with Google...');
       try {
-        const endpoint = role === "Student" ? '/student/google-signup/' : '/organizer/google-signup/';
-        const res = await api.post(endpoint, {
-          token: tokenResponse.access_token,
+        // 1. Fetch User Info using the access token
+        const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         });
+
+        const googleUser = userInfoResponse.data;
+        console.log("Google User Info:", googleUser);
+        const googleId = googleUser.sub; // 'sub' is the unique Google ID
+
+        const endpoint = role === "Student" ? '/student/google-signup/' : '/organizer/google-signup/';
+        console.log(`Sending request to: ${endpoint}`);
+        console.log("Payload:", { token: googleId }); // Sending ID as requested
+        
+        const res = await api.post(endpoint, {
+          token: googleId,
+        });
+
+        console.log("Backend Response:", res.data);
 
         const { email, access, refresh, is_new_user } = res.data;
         // The backend likely returns the user role or we infer it from the context
@@ -133,13 +152,20 @@ const SignUp = () => {
         }
         router.push("/dashboard");
       } catch (err) {
-        console.error('Google signup error:', err);
+        console.error('Google signup error object:', err);
+        console.log('Error Response Data:', err.response?.data);
+        console.log('Error Status:', err.response?.status);
+        console.log('Error Headers:', err.response?.headers);
+        
         toast.error(err.response?.data?.error || "Google signup failed", { id: toastId });
       } finally {
         setLoading(false);
       }
     },
-    onError: () => toast.error('Google signup failed'),
+    onError: (errorResponse) => {
+        console.error("Google OAuth Failed (Client Side):", errorResponse);
+        toast.error('Google signup failed');
+    },
   });
 
   return (

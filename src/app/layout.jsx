@@ -3,6 +3,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -31,19 +32,25 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${plusJakartaSans.variable} ${geistMono.variable} antialiased bg-background text-foreground flex flex-col min-h-screen`}
       >
-        
-        <GoogleAuthProvider>
-          <Toaster position="top-center" />
-          <Header />
-          <main className="grow">
-            {children}
-          </main>
-          <Footer />
-        </GoogleAuthProvider>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+          <GoogleAuthProvider>
+            <Toaster position="top-center" />
+            <Header />
+            <main className="grow">
+              {children}
+            </main>
+            <Footer />
+          </GoogleAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
