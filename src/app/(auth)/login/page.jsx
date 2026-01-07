@@ -273,6 +273,7 @@ const LoginPage = () => {
             </div>
 
             {/* Social Login Option */}
+            {role === "Organizer" && (
                    <Button
                       variant="outline"
                       onClick={() => handleGoogleLogin()}
@@ -288,6 +289,7 @@ const LoginPage = () => {
                         <span className="text-sm md:text-base">Continue with Google</span>
                       </div>
                     </Button>
+            )}
           </div>
         </div>
       </motion.div>

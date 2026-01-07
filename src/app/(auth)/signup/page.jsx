@@ -416,7 +416,8 @@ const SignUp = () => {
               </span>
             </div>
 
-              {/* --- Social Login Buttons --- */}
+      {/* --- Social Login Buttons --- */}
+            {role === "Organizer" && (
         <div className="flex gap-4 justify-center mb-4">
                 <Button
               variant="outline"
@@ -435,6 +436,7 @@ const SignUp = () => {
               </div>
             </Button>
         </div>
+            )}
           </form>
 
           {/* Already have an account? Sign in */}
