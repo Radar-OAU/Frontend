@@ -45,12 +45,12 @@ const sidebarItems = [
   },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ className }) {
   const pathname = usePathname();
   const logout = useAuthStore((state) => state.logout);
 
   return (
-    <div className="flex flex-col w-56 border-r bg-card h-screen sticky top-0">
+    <div className={`flex flex-col w-56 border-r bg-card h-full ${className || ''}`}>
       <div className="p-4 border-b">
         <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
           Radar Admin

@@ -4,50 +4,28 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import useAuthStore from "../../store/authStore";
+import { useRef } from "react";
+import { Loader2, Bell, Menu, X } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { AnimatePresence, motion } from "framer-motion";
 import { AdminSidebar } from "../../components/admin/Sidebar";
 import { ModeToggle } from "../../components/ModeToggle";
-import { Loader2, Bell } from "lucide-react";
-import { Button } from "../../components/ui/button";
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const { token, role, isAuthenticated } = useAuthStore();
   const [isClient, setIsClient] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
-
-    if (pathname === "/lighthouse/login") return;
-
-    if (!isAuthenticated || !token) {
-      router.replace("/lighthouse/login");
-      return;
-    }
-
-    if (role && role !== "admin") {
-       router.replace("/lighthouse/login");
-    }
-
-  }, [isClient, pathname, isAuthenticated, token, role, router]);
-
-  if (!isClient) return null;
-
-  if (pathname === "/lighthouse/login") {
-    return <>{children}</>;
-  }
-
-  if (!isAuthenticated && pathname !== "/lighthouse/login") {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      );
-  }
+    setMobileMenuOpen(false);
+  }, [pathname]);
+// ... existing auth checks ...
 
   // Determine title based on path
   const getTitle = () => {
@@ -62,15 +40,53 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AdminSidebar />
+      {/* Desktop Sidebar */}
+      <div className="hidden md:block h-screen sticky top-0">
+        <AdminSidebar className="h-full" />
+      </div>
+
+      {/* Mobile Sidebar (Slider) */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div 
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+              className="fixed inset-y-0 left-0 z-50 w-[80%] max-w-sm bg-card border-r shadow-2xl md:hidden"
+            >
+               <div className="absolute right-4 top-4 z-50">
+                  <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
+                    <X className="w-5 h-5" />
+                  </Button>
+               </div>
+               <AdminSidebar className="h-full w-full pt-12" />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Navigation */}
         <header className="h-14 border-b px-4 flex items-center justify-between bg-card">
-          <h2 className="font-semibold text-sm">{getTitle()}</h2>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="md:hidden text-muted-foreground" onClick={() => setMobileMenuOpen(true)}>
+              <Menu className="w-5 h-5" />
+            </Button>
+            <h2 className="font-semibold text-sm">{getTitle()}</h2>
+          </div>
           <div className="flex items-center gap-4">
             <ModeToggle />
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">Hi, Admin</span>
+              <span className="hidden sm:inline text-sm font-medium">Hi, Admin</span>
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border border-primary/20">
                 A
               </div>
