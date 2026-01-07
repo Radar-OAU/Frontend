@@ -10,14 +10,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [filterRole, setFilterRole] = useState("all");
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(filterRole);
+  }, [filterRole]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (role) => {
+    setLoading(true);
     try {
-      const usersData = await adminService.getAllUsers();
+      const params = {};
+      if (role !== "all") {
+        params.role = role;
+      }
+      
+      const usersData = await adminService.getAllUsers(params);
       
       // API returns { users: [...], pagination: ..., message: ... }
       let combinedUsers = [];
@@ -37,13 +44,11 @@ export default function UsersPage() {
     }
   };
 
-  if (loading) {
-     return (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
-      );
-  }
+  const tabs = [
+    { id: "all", label: "All Users" },
+    { id: "student", label: "Students" },
+    { id: "organizer", label: "Organizers" },
+  ];
 
   return (
     <div className="space-y-4">
@@ -54,9 +59,33 @@ export default function UsersPage() {
         </p>
       </div>
 
-       <Card className="shadow-sm">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-base">All Users</CardTitle>
+       {/* Role Filters */}
+       <div className="flex p-1 bg-muted/40 rounded-lg w-fit border border-border">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilterRole(tab.id)}
+              className={`
+                px-4 py-1.5 text-xs font-semibold rounded-md transition-all duration-200
+                ${filterRole === tab.id 
+                  ? "bg-background text-foreground shadow-sm ring-1 ring-border" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
+       </div>
+
+       <Card className="shadow-sm border-border">
+        <CardHeader className="p-4 pb-2 border-b">
+          <CardTitle className="text-base flex items-center justify-between">
+            <span>
+              {filterRole === 'all' ? 'All Users' : filterRole === 'student' ? 'Students' : 'Organizers'} 
+              <span className="ml-2 text-xs font-normal text-muted-foreground">({users.length})</span>
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
              <div className="border border-t-0">
@@ -70,7 +99,16 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {users.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="p-10 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        <span className="text-xs text-muted-foreground">Loading users...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : users.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="p-6 text-center text-xs text-muted-foreground">
                       No users found.
