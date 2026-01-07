@@ -69,9 +69,6 @@ export default function AdminLayout({ children }) {
           <h2 className="font-semibold text-sm">{getTitle()}</h2>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button variant="ghost" size="icon" className="text-muted-foreground w-8 h-8">
-              <Bell className="w-4 h-4" />
-            </Button>
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border border-primary/20">
               A
             </div>

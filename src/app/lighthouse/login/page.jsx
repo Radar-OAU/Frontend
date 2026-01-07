@@ -56,22 +56,22 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0A0A14] px-4">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <Logo
             href="/"
-            textColor="white"
             textSize="text-3xl"
             iconSize="h-8 w-8"
+            className="text-foreground"
           />
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2 text-center">
           Admin Portal
         </h1>
 
-        <p className="text-base text-gray-400 mb-8 text-center">
+        <p className="text-base text-muted-foreground mb-8 text-center">
           Secure access for system administrators
         </p>
 
@@ -80,27 +80,27 @@ export default function AdminLoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-white/80 text-xs font-semibold uppercase tracking-wide mb-2"
+              className="block text-muted-foreground text-xs font-semibold uppercase tracking-wide mb-2"
             >
               Email Address
             </label>
             <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                 <Mail className="h-5 w-5" />
               </div>
               <input
                 id="email"
                 type="email"
                 placeholder="admin@radar.com"
-                className={`w-full bg-transparent border rounded-xl py-3.5 pl-12 pr-4 text-white transition-all duration-200 
-                  ${errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-800 hover:border-rose-500/60 focus:border-rose-500'}
-                  focus:ring-2 focus:ring-rose-500/20 outline-none placeholder:text-gray-600`}
+                className={`w-full bg-background border rounded-xl py-3.5 pl-12 pr-4 text-foreground transition-all duration-200 
+                  ${errors.email ? 'border-destructive focus:border-destructive' : 'border-input hover:border-primary/60 focus:border-primary'}
+                  focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-muted-foreground/50`}
                 {...register("email", { required: "Email is required" })}
                 disabled={isLoading}
               />
             </div>
             {errors.email && (
-              <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
+              <p className="text-xs text-destructive mt-1">{errors.email.message}</p>
             )}
           </div>
 
@@ -108,28 +108,28 @@ export default function AdminLoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-white/80 text-xs font-semibold uppercase tracking-wide mb-2"
+              className="block text-muted-foreground text-xs font-semibold uppercase tracking-wide mb-2"
             >
               Password
             </label>
             <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                 <Lock className="h-5 w-5" />
               </div>
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className={`w-full bg-transparent border rounded-xl py-3.5 pl-12 pr-12 text-white transition-all duration-200 
-                  ${errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-800 hover:border-rose-500/60 focus:border-rose-500'}
-                  focus:ring-2 focus:ring-rose-500/20 outline-none placeholder:text-gray-600`}
+                className={`w-full bg-background border rounded-xl py-3.5 pl-12 pr-12 text-foreground transition-all duration-200 
+                  ${errors.password ? 'border-destructive focus:border-destructive' : 'border-input hover:border-primary/60 focus:border-primary'}
+                  focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-muted-foreground/50`}
                 {...register("password", { required: "Password is required" })}
                  disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 disabled={isLoading}
               >
                 {showPassword ? (
@@ -140,7 +140,7 @@ export default function AdminLoginPage() {
               </button>
             </div>
             {errors.password && (
-               <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+               <p className="text-xs text-destructive mt-1">{errors.password.message}</p>
             )}
           </div>
           
