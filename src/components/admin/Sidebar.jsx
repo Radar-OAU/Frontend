@@ -24,11 +24,6 @@ const sidebarItems = [
     icon: Users,
   },
   {
-    title: "Organizations",
-    href: "/lighthouse/organizations",
-    icon: Building2,
-  },
-  {
     title: "Events",
     href: "/lighthouse/events",
     icon: CalendarDays,

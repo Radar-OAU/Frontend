@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
         { email: response.email, is_staff: response.is_staff },
         response.access,
         response.refresh,
-        "admin"
+        "Admin"
       );
 
       toast.success("Welcome back, Admin");

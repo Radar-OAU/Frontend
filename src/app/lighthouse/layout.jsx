@@ -17,6 +17,8 @@ export default function AdminLayout({ children }) {
   const { token, role, isAuthenticated } = useAuthStore();
   const [isClient, setIsClient] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const isLoginPage = pathname === "/lighthouse/login";
 
   useEffect(() => {
     setIsClient(true);
@@ -25,7 +27,27 @@ export default function AdminLayout({ children }) {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
-// ... existing auth checks ...
+
+  useEffect(() => {
+    // Wait for hydration
+    if (!isClient) return;
+
+    // Check auth
+    // Note: Role check is case-sensitive, backend might return 'admin'.
+    // Also, allow 'superuser' or other potential admin roles if applicable.
+    // For now, checking 'Admin' and 'admin'.
+    if (!token || (role !== 'Admin' && role !== 'admin' && !role?.toLowerCase().includes('admin'))) {
+      if (!isLoginPage) {
+        router.push("/lighthouse/login");
+      }
+    } else {
+      // If authenticated and on login page, redirect to dashboard
+      if (isLoginPage) {
+        router.push("/lighthouse/dashboard");
+      }
+    }
+  }, [isClient, token, role, isLoginPage, router]);
+
 
   // Determine title based on path
   const getTitle = () => {
@@ -37,6 +59,14 @@ export default function AdminLayout({ children }) {
     if (pathname.includes("/tickets")) return "Tickets";
     return "Admin";
   };
+
+  if (isLoginPage) {
+      return (
+          <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+             {children}
+          </div>
+      )
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
