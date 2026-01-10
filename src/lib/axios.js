@@ -51,7 +51,13 @@ api.interceptors.request.use(
       config.method?.toLowerCase() === "get" &&
       (config.url?.includes("/event/") || config.url?.includes("/events/"));
 
-    if (token && !isPublicEventGet) {
+    // Do not attach token for auth endpoints
+    const isAuthEndpoint =
+      config.url?.includes("/login/") ||
+      config.url?.includes("/signup/") ||
+      config.url?.includes("/token/refresh/");
+
+    if (token && !isPublicEventGet && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -124,7 +130,7 @@ api.interceptors.response.use(
                 parsed.state.token = newAccess;
                 localStorage.setItem("auth-storage", JSON.stringify(parsed));
               }
-            } catch {}
+            } catch { }
 
             // Update default header for future requests
             api.defaults.headers.Authorization = `Bearer ${newAccess}`;

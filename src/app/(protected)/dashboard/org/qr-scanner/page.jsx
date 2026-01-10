@@ -241,197 +241,188 @@ export default function QrScanner() {
   };
 
   return (
-    <main className="min-h-screen text-slate-100 bg-linear-gradient(180deg,#020205_0%,_#000_100%) p-6">
-      <div className="max-w-5xl mx-auto">
-        <div
-          className="rounded-2xl overflow-hidden border"
-          style={{
-            borderColor: "rgba(148,163,184,0.04)",
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.01))",
-            backdropFilter: "blur(6px)",
-          }}
-        >
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <div>
-                <h1 className="text-xl font-semibold text-slate-100">
-                  QR Scanner
-                </h1>
-                <p className="text-sm text-slate-400 mt-1">
-                  Scan ticket QR codes for check-in.
-                </p>
-              </div>
+    <div className="min-h-screen p-4 md:p-8 space-y-8 max-w-7xl mx-auto text-white">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold mb-1">
+            QR Scanner
+          </h1>
+          <p className="text-gray-400 text-xs">Scan ticket QR codes for check-in.</p>
+        </div>
 
-              {/* Event Selector */}
-              <div className="w-full md:w-64">
-                <select
-                  className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
-                  value={selectedEventId}
-                  onChange={(e) => setSelectedEventId(e.target.value)}
-                >
-                  <option value="">-- Select Event --</option>
-                  {events.map(ev => (
-                    <option key={ev.event_id || ev.id} value={ev.event_id || ev.id}>
-                      {ev.title || ev.name || "Unnamed Event"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-2 mb-4">
-              {!isScanning ? (
-                <button
-                  onClick={startScanning}
-                  disabled={!selectedEventId}
-                  className="px-4 py-2 rounded-md font-semibold text-sm bg-purple-600 hover:bg-purple-700 text-white transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Camera className="h-4 w-4" />
-                  Start Camera
-                </button>
-              ) : (
-                <button
-                  onClick={stopScanning}
-                  className="px-4 py-2 rounded-md font-semibold text-sm bg-red-600 hover:bg-red-700 text-white transition flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Stop
-                </button>
-              )}
-
-              <button
-                onClick={handleSwitchCamera}
-                disabled={!isScanning}
-                className="px-3 py-2 rounded-md border border-slate-700 hover:bg-slate-800 text-sm text-slate-200 flex items-center gap-2 disabled:opacity-50"
-              >
-                <RotateCw className="h-4 w-4" />
-                Switch Cam
-              </button>
-
-              <button
-                onClick={() => setHistory([])}
-                className="px-3 py-2 rounded-md border border-slate-700 hover:bg-slate-800 text-sm text-slate-200 flex items-center gap-2 ml-auto"
-              >
-                <Trash2 className="h-4 w-4" />
-                Clear History
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="flex justify-center lg:col-span-2 bg-black/20 rounded-xl p-4 border border-white/5">
-                <div
-                  className="relative rounded-2xl overflow-hidden bg-black shadow-2xl border border-slate-800"
-                  style={{
-                    width: "100%",
-                    maxWidth: "400px",
-                    height: "300px",
-                  }}
-                >
-                  {/* Scanner Container */}
-                  <div id={regionId} className="w-full h-400"></div>
-
-                  {/* Placeholder when not scanning */}
-                  {!isScanning && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/90 z-10">
-                      <div className="text-center text-slate-500">
-                        <QrIcon className="h-200 w-16 mx-auto mb-2 opacity-20" />
-                        <p>Camera is off</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Result Overlay */}
-                  {scanResult && (
-                    <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md animate-in fade-in zoom-in duration-200 ${scanResult.type === 'success' ? 'bg-green-500/20' :
-                      scanResult.type === 'warning' ? 'bg-yellow-500/20' : 'bg-red-500/20'
-                      }`}>
-                      <div className={`h-20 w-20 rounded-full flex items-center justify-center mb-4 ${scanResult.type === 'success' ? 'bg-green-500 text-white' :
-                        scanResult.type === 'warning' ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'
-                        }`}>
-                        {scanResult.type === 'success' ? <Check className="h-10 w-10" /> :
-                          scanResult.type === 'warning' ? <AlertCircle className="h-10 w-10" /> : <X className="h-10 w-10" />}
-                      </div>
-                      <h2 className="text-2xl font-bold text-white mb-1">{scanResult.message}</h2>
-                      <p className="text-white/80">{scanResult.detail}</p>
-                    </div>
-                  )}
-
-                  {/* Scan Line Animation - Vertical */}
-                  {isScanning && !scanResult && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                      <div className="w-[250px] h-[250px] border-2 border-purple-500/30 rounded-lg relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-purple-500 shadow-[0_0_15px_#a855f7] animate-[scan_2s_ease-in-out_infinite]"></div>
-                      </div>
-                      {/* Darken area outside scan box */}
-                      <div className="absolute inset-0 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] z-0 rounded-lg"></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <aside className="rounded-lg border border-slate-800 p-4 bg-slate-900/30 flex flex-col h-[500px]">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-slate-100">
-                    Scan History
-                  </h3>
-                  <div className="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded-full">{history.length}</div>
-                </div>
-
-                <div className="flex-1 overflow-auto space-y-2 pr-1 custom-scrollbar">
-                  {history.length === 0 ? (
-                    <div className="text-sm text-slate-500 text-center py-8">No scans yet.</div>
-                  ) : (
-                    history.map((scan, i) => (
-                      <div key={i} className={`p-3 rounded-md border text-left ${scan.status === 'success' ? 'border-green-500/20 bg-green-500/5' :
-                        scan.status === 'warning' ? 'border-yellow-500/20 bg-yellow-500/5' :
-                          'border-red-500/20 bg-red-500/5'
-                        }`}>
-                        <div className="flex justify-between items-start mb-1">
-                          <span className={`text-xs font-bold uppercase ${scan.status === 'success' ? 'text-green-400' :
-                            scan.status === 'warning' ? 'text-yellow-400' : 'text-red-400'
-                            }`}>
-                            {scan.status === 'success' ? 'Verified' : scan.status === 'warning' ? 'Warning' : 'Failed'}
-                          </span>
-                          <span className="text-[10px] text-slate-500">
-                            {scan.timestamp.toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <div className="text-sm text-slate-200 font-medium truncate" title={scan.detail}>
-                          {scan.detail || scan.id}
-                        </div>
-                        <div className="text-xs text-slate-500 truncate font-mono mt-1">
-                          ID: {scan.id}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-800">
-                  <label className="text-xs text-slate-400 block mb-2">Manual Entry</label>
-                  <form onSubmit={handleManualVerify} className="flex gap-2">
-                    <input
-                      placeholder="Enter ticket code..."
-                      value={manualCode}
-                      onChange={(e) => setManualCode(e.target.value)}
-                      className="flex-1 rounded-md bg-transparent border border-slate-800 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-purple-500 focus:outline-none"
-                    />
-                    <button
-                      className="px-3 py-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-sm flex items-center gap-2 disabled:opacity-50"
-                      type="submit"
-                      disabled={isProcessing || !manualCode || !selectedEventId}
-                    >
-                      <CheckSquare className="h-4 w-4" />
-                    </button>
-                  </form>
-                </div>
-              </aside>
-            </div>
+        {/* Event Selector */}
+        <div className="w-full md:w-72 relative">
+          <select
+            className="w-full appearance-none bg-[#0A0A0A] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition-colors cursor-pointer"
+            value={selectedEventId}
+            onChange={(e) => setSelectedEventId(e.target.value)}
+          >
+            <option value="">-- Select Event to Scan --</option>
+            {events.map(ev => (
+              <option key={ev.event_id || ev.id} value={ev.event_id || ev.id}>
+                {ev.title || ev.name || "Unnamed Event"}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           </div>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        {/* Scanner Section */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-1 shadow-2xl relative overflow-hidden group">
+            <div className="rounded-xl overflow-hidden bg-black relative aspect-square md:aspect-video w-full">
+              {/* Scanner Container */}
+              <div id={regionId} className="w-full h-full"></div>
+
+              {/* Placeholder when not scanning */}
+              {!isScanning && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[#0A0A0A] z-10">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto ring-1 ring-white/10">
+                      <QrIcon className="h-10 w-10 text-gray-500" />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 font-medium">Camera is inactive</p>
+                      <p className="text-gray-600 text-xs mt-1">Select an event and start scanning</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Result Overlay */}
+              {scanResult && (
+                <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md animate-in fade-in zoom-in duration-200 ${scanResult.type === 'success' ? 'bg-emerald-500/20' :
+                  scanResult.type === 'warning' ? 'bg-amber-500/20' : 'bg-rose-500/20'
+                  }`}>
+                  <div className={`h-24 w-24 rounded-full flex items-center justify-center mb-6 shadow-2xl ${scanResult.type === 'success' ? 'bg-emerald-500 text-white shadow-emerald-500/20' :
+                    scanResult.type === 'warning' ? 'bg-amber-500 text-white shadow-amber-500/20' : 'bg-rose-500 text-white shadow-rose-500/20'
+                    }`}>
+                    {scanResult.type === 'success' ? <Check className="h-12 w-12" /> :
+                      scanResult.type === 'warning' ? <AlertCircle className="h-12 w-12" /> : <X className="h-12 w-12" />}
+                  </div>
+                  <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-md">{scanResult.message}</h2>
+                  <p className="text-white/90 font-medium text-lg drop-shadow-md">{scanResult.detail}</p>
+                </div>
+              )}
+
+              {/* Scan Line Animation */}
+              {isScanning && !scanResult && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="w-64 h-64 border-2 border-rose-500/50 rounded-lg relative overflow-hidden shadow-[0_0_100px_rgba(225,29,72,0.1)]">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_20px_#e11d48] animate-[scan_2s_ease-in-out_infinite]"></div>
+                  </div>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,0.6)_100%)]"></div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {!isScanning ? (
+              <button
+                onClick={startScanning}
+                disabled={!selectedEventId}
+                className="col-span-2 md:col-span-1 bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-rose-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Camera className="h-4 w-4" /> Start Camera
+              </button>
+            ) : (
+              <button
+                onClick={stopScanning}
+                className="col-span-2 md:col-span-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 border border-white/5"
+              >
+                <X className="h-4 w-4" /> Stop Camera
+              </button>
+            )}
+
+            <button
+              onClick={handleSwitchCamera}
+              disabled={!isScanning}
+              className="bg-[#0A0A0A] border border-white/10 hover:border-white/20 text-gray-300 hover:text-white py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <RotateCw className="h-4 w-4" /> Switch Cam
+            </button>
+
+            <button
+              onClick={() => setHistory([])}
+              className="bg-[#0A0A0A] border border-white/10 hover:border-rose-500/30 text-gray-400 hover:text-rose-400 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" /> Clear History
+            </button>
+          </div>
+        </div>
+
+        {/* Sidebar History */}
+        <aside className="bg-[#0A0A0A] border border-white/5 rounded-2xl flex flex-col h-[600px] shadow-xl overflow-hidden">
+          <div className="p-4 border-b border-white/5 bg-white/[0.02]">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <CheckSquare className="w-4 h-4 text-rose-500" /> Recent Scans
+              </h3>
+              <span className="text-[10px] font-bold bg-white/10 text-gray-300 px-2 py-0.5 rounded-full">{history.length}</span>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            {history.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-2 opacity-60">
+                <QrIcon className="w-12 h-12" />
+                <p className="text-xs font-medium">No scans recorded yet</p>
+              </div>
+            ) : (
+              history.map((scan, i) => (
+                <div key={i} className={`p-3 rounded-xl border text-left transition-all hover:bg-white/[0.02] ${scan.status === 'success' ? 'border-emerald-500/20 bg-emerald-500/5' :
+                  scan.status === 'warning' ? 'border-amber-500/20 bg-amber-500/5' :
+                    'border-rose-500/20 bg-rose-500/5'
+                  }`}>
+                  <div className="flex justify-between items-start mb-1.5">
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${scan.status === 'success' ? 'text-emerald-500' :
+                      scan.status === 'warning' ? 'text-amber-500' : 'text-rose-500'
+                      }`}>
+                      {scan.status === 'success' ? 'Verified' : scan.status === 'warning' ? 'Warning' : 'Failed'}
+                    </span>
+                    <span className="text-[10px] text-gray-500 font-mono">
+                      {scan.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-200 font-bold truncate leading-tight" title={scan.detail}>
+                    {scan.detail || "Unknown User"}
+                  </div>
+                  <div className="text-[10px] text-gray-500 truncate font-mono mt-1 opacity-70">
+                    ID: {scan.id}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="p-4 border-t border-white/5 bg-white/[0.02]">
+            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">Manual Entry</label>
+            <form onSubmit={handleManualVerify} className="flex gap-2">
+              <input
+                placeholder="Enter ticket code..."
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                className="flex-1 rounded-xl bg-black/50 border border-white/10 px-3 py-2.5 text-xs text-white placeholder-gray-600 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none transition-all"
+              />
+              <button
+                className="px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs disabled:opacity-50 transition-all active:scale-95"
+                type="submit"
+                disabled={isProcessing || !manualCode || !selectedEventId}
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            </form>
+          </div>
+        </aside>
+      </div>
+
       <style jsx global>{`
         @keyframes scan {
           0% { top: 0; opacity: 0; }
@@ -439,7 +430,20 @@ export default function QrScanner() {
           90% { opacity: 1; }
           100% { top: 100%; opacity: 0; }
         }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.02);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
       `}</style>
-    </main>
+    </div>
   );
 }

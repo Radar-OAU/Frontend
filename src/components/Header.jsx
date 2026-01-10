@@ -14,7 +14,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user, role, logout, isAuthenticated } = useAuthStore();
-  
+
   if (pathname.startsWith('/dashboard/org')) return null;
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -52,51 +52,51 @@ const Header = () => {
           <Link href="/" onClick={closeMenu}>
             <Logo />
           </Link>
-          
+
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Home
             </Link>
-          {user ? (
-            <>
-              {!pathname.startsWith('/dashboard') && (
-                <Link href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  Dashboard
-                </Link>
-              )}
-              <div className="flex items-center gap-4">
-                 <span className="text-sm text-muted-foreground">Hi, {user.email?.split('@')[0]}</span>
-                 {!pathname.startsWith('/dashboard') && (
-                   <Button
+            {user ? (
+              <>
+                {!pathname.startsWith('/dashboard') && (
+                  <Link href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    Dashboard
+                  </Link>
+                )}
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">Hi, {user.email?.split('@')[0]}</span>
+                  {!pathname.startsWith('/dashboard') && (
+                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleLogout}
                       className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                   >
+                    >
                       <LogOut className="h-4 w-4 mr-2" />
                       Logout
-                   </Button>
-                 )}
-              </div>
-            </>
-          ) : (
-            <>
-              <Link href="/login">
-                <Button variant="ghost" className="text-gray-300 hover:text-white">
-                  Login
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="bg-rose-600 hover:bg-rose-700 text-white">
-                  Get Started
-                </Button>
-              </Link>
-            </>
-          )}
-        </nav>
+                    </Button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-gray-300 hover:text-white">
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button className="bg-rose-600 hover:bg-rose-700 text-white">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
+          </nav>
 
-        {/* Mobile Hamburger Menu Button */}
-        {/* <button
+          {/* Mobile Hamburger Menu Button */}
+          {/* <button
           className="md:hidden p-2 text-gray-300 hover:text-white focus:outline-none"
           onClick={toggleMenu}
           aria-label="Toggle menu"
@@ -106,17 +106,17 @@ const Header = () => {
 
           {/* Mobile Actions */}
           <div className="md:hidden flex items-center gap-2">
-            
+
             {/* Student Mobile Logout */}
             {isAuthenticated && role === 'student' && (
-               <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-               >
-                  <LogOut className="h-5 w-5" />
-               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
             )}
 
             {/* Mobile Hamburger Menu Button - Hidden for Students */}
@@ -132,7 +132,7 @@ const Header = () => {
           </div>
         </div>
       </header>
-      
+
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMenuOpen && (
@@ -145,7 +145,7 @@ const Header = () => {
               onClick={closeMenu}
               className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             />
-            
+
             {/* Slider Menu */}
             <motion.div
               initial={{ x: "100%" }}
@@ -170,39 +170,37 @@ const Header = () => {
                     <>
                       <div className="flex items-center gap-3 px-2 py-2 border-b border-gray-800 mb-2 shrink-0">
                         <div className="h-10 w-10 rounded-full bg-rose-600 flex items-center justify-center text-white font-bold text-lg">
-                            {user.email?.charAt(0).toUpperCase() || 'U'}
+                          {user.email?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div className="flex flex-col overflow-hidden">
-                            <span className="text-sm font-medium text-white truncate">{user.email}</span>
-                            <span className="text-xs text-gray-500">{displayRole}</span>
+                          <span className="text-sm font-medium text-white truncate">{user.email}</span>
+                          <span className="text-xs text-gray-500">{displayRole}</span>
                         </div>
                       </div>
-                      
+
                       {/* Dashboard Links */}
                       <div className="space-y-1">
                         <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</p>
-                         <Link
-                            href="/"
-                            onClick={closeMenu}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${
-                              pathname === "/"
-                                ? "bg-rose-600/10 text-rose-500" 
-                                : "hover:bg-gray-800 text-gray-300 hover:text-white"
+                        <Link
+                          href="/"
+                          onClick={closeMenu}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${pathname === "/"
+                            ? "bg-rose-600/10 text-rose-500"
+                            : "hover:bg-gray-800 text-gray-300 hover:text-white"
                             }`}
-                          >
-                           <Home className="h-5 w-5" />
-                           Home
-                          </Link>
+                        >
+                          <Home className="h-5 w-5" />
+                          Home
+                        </Link>
                         {sidebarLinks.map((link) => (
                           <Link
                             key={link.name}
                             href={link.href}
                             onClick={closeMenu}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${
-                              pathname === link.href 
-                                ? "bg-rose-600/10 text-rose-500" 
-                                : "hover:bg-gray-800 text-gray-300 hover:text-white"
-                            }`}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${pathname === link.href
+                              ? "bg-rose-600/10 text-rose-500"
+                              : "hover:bg-gray-800 text-gray-300 hover:text-white"
+                              }`}
                           >
                             {link.icon}
                             {link.name}
@@ -225,22 +223,22 @@ const Header = () => {
                     </>
                   ) : (
                     <div className="flex flex-col gap-3 mt-4">
-                       <Link 
-                         href="/" 
-                         onClick={closeMenu}
-                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
-                       >
-                         <Home className="h-5 w-5" />
-                         Home
-                       </Link>
-                       <Link 
-                         href="/events" 
-                         onClick={closeMenu}
-                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
-                       >
-                         <Calendar className="h-5 w-5" />
-                         Discover Events
-                       </Link>
+                      <Link
+                        href="/"
+                        onClick={closeMenu}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
+                      >
+                        <Home className="h-5 w-5" />
+                        Home
+                      </Link>
+                      <Link
+                        href="/events"
+                        onClick={closeMenu}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
+                      >
+                        <Calendar className="h-5 w-5" />
+                        Discover Events
+                      </Link>
                       <Link href="/login" onClick={closeMenu}>
                         <Button variant="outline" className="w-full border-gray-700 text-gray-300 h-12">
                           Login
