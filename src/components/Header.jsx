@@ -14,6 +14,8 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user, role, logout, isAuthenticated } = useAuthStore();
+  
+  if (pathname.startsWith('/dashboard/org')) return null;
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
