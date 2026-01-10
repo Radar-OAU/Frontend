@@ -52,6 +52,9 @@ const Header = () => {
           </Link>
           
           <nav className="hidden md:flex items-center gap-6">
+            <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Home
+            </Link>
           {user ? (
             <>
               {!pathname.startsWith('/dashboard') && (
@@ -158,6 +161,18 @@ const Header = () => {
                       {/* Dashboard Links */}
                       <div className="space-y-1">
                         <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</p>
+                         <Link
+                            href="/"
+                            onClick={closeMenu}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${
+                              pathname === "/"
+                                ? "bg-rose-600/10 text-rose-500" 
+                                : "hover:bg-gray-800 text-gray-300 hover:text-white"
+                            }`}
+                          >
+                           <Home className="h-5 w-5" />
+                           Home
+                          </Link>
                         {sidebarLinks.map((link) => (
                           <Link
                             key={link.name}
@@ -190,6 +205,14 @@ const Header = () => {
                     </>
                   ) : (
                     <div className="flex flex-col gap-3 mt-4">
+                       <Link 
+                         href="/" 
+                         onClick={closeMenu}
+                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
+                       >
+                         <Home className="h-5 w-5" />
+                         Home
+                       </Link>
                        <Link 
                          href="/events" 
                          onClick={closeMenu}
