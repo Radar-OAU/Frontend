@@ -49,9 +49,7 @@ api.interceptors.request.use(
     // Do not attach token for public GET endpoints (like /event/)
     const isPublicEventGet =
       config.method?.toLowerCase() === "get" &&
-      (config.url?.includes("/event/") ||
-        config.url?.includes("/events/") ||
-        config.url?.includes("/create-event/"));
+      (config.url?.includes("/event/") || config.url?.includes("/events/"));
 
     if (token && !isPublicEventGet) {
       config.headers.Authorization = `Bearer ${token}`;

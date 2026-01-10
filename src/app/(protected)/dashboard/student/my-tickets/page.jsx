@@ -42,6 +42,10 @@ const MyTicketsPage = () => {
     }
   };
 
+  const [selectedTicket, setSelectedTicket] = useState(null);
+
+  // ... (existing getStatusColor function) ...
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -51,11 +55,11 @@ const MyTicketsPage = () => {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-0 relative">
       <div className="flex flex-col gap-1 md:gap-2">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">My Tickets</h1>
         <p className="text-sm md:text-base text-muted-foreground">
-          View and manage your booked tickets.
+          View and manage your booked tickets. Click on a ticket to view it full screen.
         </p>
       </div>
 
@@ -82,6 +86,8 @@ const MyTicketsPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
+              onClick={() => setSelectedTicket(ticket)}
+              className="cursor-pointer hover:scale-[1.02] transition-transform duration-200"
             >
               <Card className="h-full flex flex-col overflow-hidden border-l-4 border-l-primary">
                 <CardHeader className="pb-2 p-4 md:p-6">
@@ -126,17 +132,11 @@ const MyTicketsPage = () => {
                     )}
                   </div>
 
-                  {/* QR Code Section */}
+                  {/* Small QR Code Preview */}
                   {ticket.status === "confirmed" && ticket.qr_code && (
-                    <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg mt-2">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${ticket.qr_code}`}
-                        alt="Ticket QR Code"
-                        className="w-32 h-32 object-contain"
-                      />
-                      <p className="text-[10px] text-gray-500 mt-2 text-center font-mono">
-                        {ticket.qr_code}
-                      </p>
+                    <div className="flex flex-col items-center justify-center p-2 bg-white rounded-lg mt-2 opacity-50">
+                      <QrCode className="h-8 w-8 text-black" />
+                      <span className="text-[10px] text-black mt-1">Click to expand</span>
                     </div>
                   )}
                 </CardContent>
@@ -153,6 +153,87 @@ const MyTicketsPage = () => {
               </Card>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Full Screen Ticket Modal */}
+      {selectedTicket && (
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+            onClick={() => setSelectedTicket(null)}
+        >
+            <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()} 
+                className="bg-background w-full max-w-md rounded-3xl overflow-hidden shadow-2xl relative border border-border"
+            >
+                {/* Close Button */}
+                <button 
+                    onClick={() => setSelectedTicket(null)}
+                    className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 rounded-full transition-colors z-10"
+                >
+                    <span className="sr-only">Close</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+
+                <div className="p-6 md:p-8 flex flex-col items-center text-center space-y-6 bg-gradient-to-b from-primary/5 to-transparent">
+                    
+                    {/* Event Details */}
+                    <div className="space-y-2">
+                        <h2 className="text-2xl md:text-3xl font-bold leading-tight">{selectedTicket.event_name}</h2>
+                        <div className="flex flex-wrap justify-center gap-3 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                {new Date(selectedTicket.event_date).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                             <span className="flex items-center gap-1">
+                                <MapPin className="h-4 w-4" />
+                                {selectedTicket.event_location}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* QR Code Area - Bright and Big */}
+                    {selectedTicket.status === "confirmed" && selectedTicket.qr_code ? (
+                        <div className="bg-white p-4 rounded-2xl shadow-inner w-64 h-64 md:w-72 md:h-72 flex items-center justify-center">
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${selectedTicket.qr_code}`}
+                                alt="Ticket QR Code"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                    ) : (
+                        <div className="w-64 h-64 bg-muted/20 rounded-2xl flex items-center justify-center border-2 border-dashed border-muted">
+                            <p className="text-muted-foreground">QR Code Unavailable</p>
+                        </div>
+                    )}
+
+                    {/* Ticket Code & Seat */}
+                    <div className="w-full grid grid-cols-2 gap-4">
+                        <div className="bg-muted/10 p-3 rounded-xl border border-border/50">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Ticket ID</p>
+                            <p className="text-lg font-mono font-bold">{selectedTicket.ticket_id.split(":")[1] || "N/A"}</p>
+                        </div>
+                         <div className="bg-muted/10 p-3 rounded-xl border border-border/50">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Seat</p>
+                            <p className="text-lg font-bold">{selectedTicket.seat_number || "General"}</p>
+                        </div>
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="text-sm text-muted-foreground pt-4 border-t w-full">
+                        <p>Show this code at the entrance</p>
+                        <p className={`mt-2 font-medium capitalize ${
+                            selectedTicket.status === 'confirmed' ? 'text-green-500' : 'text-yellow-500'
+                        }`}>
+                            Status: {selectedTicket.status}
+                        </p>
+                    </div>
+
+                </div>
+            </motion.div>
         </div>
       )}
     </div>
