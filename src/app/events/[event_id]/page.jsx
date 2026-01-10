@@ -11,6 +11,7 @@ import { Loader2, MapPin, Calendar, Clock, Ticket, Info } from "lucide-react";
 import toast from "react-hot-toast";
 import PublicNavbar from "@/components/PublicNavbar";
 import useAuthStore from "@/store/authStore";
+import { getImageUrl } from "@/lib/utils";
 
 const EventDetailsPage = () => {
   const params = useParams();
@@ -132,7 +133,7 @@ const EventDetailsPage = () => {
             <div className="relative w-full h-[200px] md:h-[400px] rounded-xl md:rounded-2xl overflow-hidden bg-muted">
                 {event.image ? (
                 <img 
-                    src={event.image} 
+                    src={getImageUrl(event.image)} 
                     alt={event.name} 
                     className="w-full h-full object-cover"
                 />

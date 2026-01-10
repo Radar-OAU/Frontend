@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import api from "../../../../../lib/axios";
 import { Loader2, Copy, Check, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
+import { getImageUrl } from "../../../../../lib/utils";
 
 const MyEvent = () => {
   const router = useRouter();
@@ -141,7 +142,7 @@ const MyEvent = () => {
                     >
                       <div className="relative h-48 w-full overflow-hidden bg-slate-800">
                         <img
-                          src={ev.image || null}
+                          src={getImageUrl(ev.image)}
                           alt={ev.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                           onError={(e) => {

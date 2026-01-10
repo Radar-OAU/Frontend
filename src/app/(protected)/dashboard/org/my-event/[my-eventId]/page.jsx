@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import api from "../../../../../../lib/axios";
 import { Copy, ArrowLeft, Edit2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getImageUrl } from "../../../../../../lib/utils";
 
 export default function EventDetailsPage() {
   const router = useRouter();
@@ -204,7 +205,7 @@ export default function EventDetailsPage() {
               <section className="lg:col-span-2 space-y-8">
                 <div className="h-96 rounded-2xl overflow-hidden bg-slate-800">
                   <img
-                    src={event.image || ""}
+                    src={getImageUrl(event.image)}
                     alt={event.name}
                     className="w-full h-full object-cover"
                     onError={(e) => (e.currentTarget.src = "")}
