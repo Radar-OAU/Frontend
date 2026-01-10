@@ -16,7 +16,9 @@ const EventsPage = () => {
     const fetchEvents = async () => {
       try {
         const response = await api.get("/create-event/");
-        setEvents(response.data);
+        // Only show verified events to students
+        const verifiedEvents = response.data.filter(event => event.status === 'verified');
+        setEvents(verifiedEvents);
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {

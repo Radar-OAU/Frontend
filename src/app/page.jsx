@@ -27,7 +27,9 @@ const LandingPage = () => {
     const fetchEvents = async () => {
       try {
         const response = await api.get('/create-event/');
-        setEvents(response.data.slice(0, 6)); 
+        // Only show verified events to public
+        const verifiedEvents = response.data.filter(event => event.status === 'verified');
+        setEvents(verifiedEvents.slice(0, 6)); 
       } catch (error) {
         console.error("Failed to fetch events", error);
       } finally {
