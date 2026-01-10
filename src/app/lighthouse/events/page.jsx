@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Loader2, Calendar, MapPin, DollarSign, CheckCircle, XCircle, Star, Trash2 } from "lucide-react";
 import { adminService } from "../../../lib/admin";
 import { toast } from "react-hot-toast";
@@ -130,7 +131,11 @@ export default function EventsPage() {
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                            {event.is_featured && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
-                           <div className="font-medium">{event.event_name}</div>
+                           <div className="font-medium">
+                              <Link href={`/dashboard/student/events/${event.event_id}`} className="hover:underline hover:text-primary transition-colors">
+                                {event.event_name}
+                              </Link>
+                           </div>
                         </div>
                         <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                           <DollarSign className="w-3 h-3" /> 
