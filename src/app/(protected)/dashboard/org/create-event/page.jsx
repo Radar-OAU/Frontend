@@ -44,7 +44,7 @@ export default function CreateEvent() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
-
+  
   // Fetch config (GET /config/) and populate eventTypes/pricingTypes.
   useEffect(() => {
     let mounted = true;
@@ -76,7 +76,7 @@ export default function CreateEvent() {
     }
     loadConfig();
     return () => (mounted = false);
-    // api is stable (module import). Disable exhaustive-deps to avoid noisy warning.
+     // api is stable (module import). Disable exhaustive-deps to avoid noisy warning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -149,6 +149,27 @@ export default function CreateEvent() {
     if (!validate()) return;
     setLoading(true);
 
+    const isoDate = new Date(form.date).toISOString();
+
+    const sanitized = {
+      name: String(form.name),
+      description: String(form.description),
+      pricing_type: String(form.pricing_type),
+      event_type: String(form.event_type),
+      location: String(form.location),
+      date: isoDate,
+      capacity:
+        form.capacity !== "" && form.capacity != null
+          ? String(Number(form.capacity))
+          : "",
+      price:
+        form.pricing_type === "paid"
+          ? String(Number(form.price))
+          : "0.00",
+      allows_seat_selection: String(Boolean(form.allows_seat_selection)),
+      status: "draft",
+    };
+
     try {
       const formData = new FormData();
       formData.append("name", form.name.trim());
@@ -172,7 +193,7 @@ export default function CreateEvent() {
       } else {
         // append price 0 for free events (server may require)
         formData.append("price", 0.0);
-      }
+        }
 
       formData.append(
         "allows_seat_selection",
@@ -183,7 +204,7 @@ export default function CreateEvent() {
         formData.append("image", imageFile);
       }
 
-      const res = await api.post("/create-event/", formData);
+      const res = await api.post("/event/", formData);
 
       if (res && res.status >= 200 && res.status < 300) {
         toast.success("Event created successfully");
@@ -196,7 +217,7 @@ export default function CreateEvent() {
     } catch (err) {
       const msg =
         err?.response?.data?.detail ||
-        err?.response?.data?.message ||
+          err?.response?.data?.message ||
         (err?.response?.data ? JSON.stringify(err.response.data) : null) ||
         err?.message ||
         "Failed to create event";
@@ -222,14 +243,7 @@ export default function CreateEvent() {
   }
 
   return (
-    <main
-      className="min-h-screen text-slate-100"
-      style={{
-        background:
-          "var(--sidebar-bg, linear-gradient(180deg,#05060a 0%, #000 100%))",
-        color: "var(--text-color, #e6eef8)",
-      }}
-    >
+    <div className="w-full text-slate-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div
           className="rounded-2xl overflow-hidden shadow-2xl border"
@@ -259,7 +273,7 @@ export default function CreateEvent() {
                     {serverError}
                   </div>
                 )}
-
+              
                 <div>
                   <label className="block text-sm font-medium text-slate-300">
                     Name <span className="text-rose-500">*</span>
@@ -338,8 +352,8 @@ export default function CreateEvent() {
                       label=""
                       value={form.event_type}
                       onChange={(value) => {
-                          setForm(s => ({ ...s, event_type: value }));
-                          setErrors(p => ({ ...p, event_type: undefined }));
+                        setForm(s => ({ ...s, event_type: value }));
+                        setErrors(p => ({ ...p, event_type: undefined }));
                       }}
                       options={eventTypes}
                       className="mt-2"
@@ -593,6 +607,6 @@ export default function CreateEvent() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
