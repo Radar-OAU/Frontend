@@ -16,7 +16,7 @@ const PublicEventsPage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await api.get("/create-event/");
+        const response = await api.get("/events/");
         // Only show verified events to public
         const verifiedEvents = response.data.filter(event => event.status === 'verified');
         setEvents(verifiedEvents);

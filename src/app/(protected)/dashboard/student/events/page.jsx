@@ -15,9 +15,11 @@ const EventsPage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await api.get("/create-event/");
+        const response = await api.get("/events/");
+        console.log("ALL EVENTS (DEBUG):", response.data);
         // Only show verified events to students
         const verifiedEvents = response.data.filter(event => event.status === 'verified');
+        console.log("VERIFIED EVENTS (DEBUG):", verifiedEvents);
         setEvents(verifiedEvents);
       } catch (error) {
         console.error("Error fetching events:", error);
