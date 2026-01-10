@@ -3,10 +3,11 @@ import { useEffect } from "react";
 import useAuthStore from "../../store/authStore";
 import { useRouter } from "next/navigation";
 import { Loader2 } from 'lucide-react'
+import { GoogleAuthProvider } from "../../components/GoogleAuthProvider";
 
 
 const authLayout = ({children}) => {
-    const user = useAuthStore(state => state.user)
+    const user = useAuthStore(state => state.role === 'student' || state.role ==='organizer' ? state.user : null)
     const router = useRouter()
     useEffect(() => {
          if(user) {
@@ -22,7 +23,11 @@ const authLayout = ({children}) => {
          </div>
         </>
      )
-    return children
+    return (
+        <GoogleAuthProvider>
+            {children}
+        </GoogleAuthProvider>
+    )
 
 }
 

@@ -2,25 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import useAuthStore from "../src/store/authStore";
+import useAuthStore from "@/store/authStore";
 
 export function useAuth() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
-  const token = useAuthStore((state) => state.token);
+  const token = useAuthStore((s) => s.token);
+  const hydrated = useAuthStore((s) => s.hydrated);
 
-  useEffect(() => {
+ useEffect(() => {
+  if (!hydrated) return; // Wait until the store is hydrated
 
-    if (!token) {
-      router.replace("/login");
-    } else {
-      setAuthenticated(true);
-    }
-
-    setLoading(false);
-  }, []);
+      if (!token) {
+        setAuthenticated(false);
+        setLoading(false);
+        if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+          router.replace("/login");
+        }
+      } else {
+        setAuthenticated(true);
+        setLoading(false);
+      }
+    }, [hydrated, token, router]);
 
   return { loading, authenticated };
 }

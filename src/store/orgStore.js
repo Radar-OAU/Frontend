@@ -29,9 +29,14 @@ const useOrganizerStore = create(
         })),
 
       clearStore: () => set({ organization: null, events: [] }),
+      hydrated: false,
+      setHydrated: () => set({ hydrated: true }),
     }),
     {
       name: "organizer-storage", // localStorage key
+      onRehydrateStorage: () => (state) => {
+        state.setHydrated();
+      },
     }
   )
 );

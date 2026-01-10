@@ -1,8 +1,8 @@
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+// import Header from "@/components/Header";
+// import Footer from "@/components/Footer";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -31,17 +31,19 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={`${plusJakartaSans.variable} ${geistMono.variable} antialiased bg-background text-foreground flex flex-col min-h-screen`}
       >
-        
+        <GoogleAuthProvider>
           <Toaster position="top-center" />
-          <Header />
+          {/* <Header /> */}
           <main className="grow">
             {children}
           </main>
-          <Footer />
+          {/* <Footer /> */}
+        </GoogleAuthProvider>
       </body>
     </html>
   );

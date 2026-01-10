@@ -8,6 +8,7 @@ const useAuthStore = create(
       role: null,
       token: null,
       refreshToken: null,
+      hydrated: false,
       isAuthenticated: false,
       login: (userData, token, refresh, role) =>
         set({
@@ -25,9 +26,13 @@ const useAuthStore = create(
           refreshToken: null,
           isAuthenticated: false,
         }),
+      setHydrated: () => set({ hydrated: true }),
     }),
     {
       name: "auth-storage", // name of the item in the storage (e need dey unique)
+      onRehydrateStorage: () => (state) => {
+        state.setHydrated();
+      },
     }
   )
 );

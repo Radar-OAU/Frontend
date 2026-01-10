@@ -3,6 +3,9 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "../../../../../lib/axios";
 import toast from "react-hot-toast";
+import useOrganizerStore from "../../../../../store/orgStore";
+import Select from "../../../../../components/ui/Select";
+import Loading from "@/components/ui/Loading";
 
 const FALLBACK_EVENT_TYPES = [
   { value: "conference", label: "Conference" },
@@ -15,6 +18,7 @@ const FALLBACK_EVENT_TYPES = [
 
 export default function CreateEvent() {
   const router = useRouter();
+  const { triggerRefetch } = useOrganizerStore();
 
   const [configLoading, setConfigLoading] = useState(true);
   const [eventTypes, setEventTypes] = useState(FALLBACK_EVENT_TYPES);
@@ -183,7 +187,9 @@ export default function CreateEvent() {
 
       if (res && res.status >= 200 && res.status < 300) {
         toast.success("Event created successfully");
+        triggerRefetch(); // Trigger overview data refetch
         resetForm();
+        router.push('/dashboard/org/my-event');
       } else {
         setServerError(`Unexpected server response: ${res?.status}`);
       }
@@ -211,218 +217,9 @@ export default function CreateEvent() {
     }
   };
 
-"use client";
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import api from "../../../../../lib/axios";
-import toast from "react-hot-toast";
-
-const FALLBACK_EVENT_TYPES = [
-  { value: "conference", label: "Conference" },
-  { value: "concert", label: "Concert" },
-  { value: "meetup", label: "Meetup" },
-  { value: "workshop", label: "Workshop" },
-  { value: "webinar", label: "Webinar" },
-  { value: "other", label: "Other" },
-];
-
-export default function CreateEvent() {
-  const router = useRouter();
-
-  const [configLoading, setConfigLoading] = useState(true);
-  const [eventTypes, setEventTypes] = useState(FALLBACK_EVENT_TYPES);
-  const [pricingTypes, setPricingTypes] = useState([
-    { value: "free", label: "Free" },
-    { value: "paid", label: "Paid" },
-  ]);
-
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    pricing_type: "free",
-    event_type: FALLBACK_EVENT_TYPES[0].value,
-    location: "",
-    date: "",
-    capacity: "",
-    price: "",
-    allows_seat_selection: false,
-  });
-
-  const [imageFile, setImageFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  // Fetch config (GET /config/) and populate eventTypes/pricingTypes.
-  useEffect(() => {
-    let mounted = true;
-    async function loadConfig() {
-      setConfigLoading(true);
-      try {
-        const res = await api.get("/config/");
-        const data = res?.data || {};
-        if (!mounted) return;
-        if (Array.isArray(data.event_types) && data.event_types.length) {
-          setEventTypes(data.event_types);
-          setForm((f) => ({
-            ...f,
-            event_type: f.event_type || data.event_types[0].value,
-          }));
-        }
-        if (Array.isArray(data.pricing_types) && data.pricing_types.length) {
-          setPricingTypes(data.pricing_types);
-          setForm((f) => ({
-            ...f,
-            pricing_type: f.pricing_type || data.pricing_types[0].value,
-          }));
-        }
-      } catch {
-        // fallback silently to defaults
-      } finally {
-        if (mounted) setConfigLoading(false);
-      }
-    }
-    loadConfig();
-    return () => (mounted = false);
-    // api is stable (module import). Disable exhaustive-deps to avoid noisy warning.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!imageFile) {
-      setPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(imageFile);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
-
-  const handleChange = (key) => (e) => {
-    const value =
-      e.target.type === "checkbox" ? e.target.checked : e.target.value;
-    setForm((s) => ({ ...s, [key]: value }));
-    setErrors((p) => ({ ...p, [key]: undefined }));
-  };
-
-  const handleImage = (e) => {
-    const f = e.target.files?.[0] ?? null;
-    setImageFile(f);
-  };
-
-  const validate = () => {
-    const e = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.description.trim()) e.description = "Description is required";
-    if (!["paid", "free"].includes(form.pricing_type))
-      e.pricing_type = "Invalid pricing type";
-    if (!form.event_type) e.event_type = "Event type is required";
-    if (!form.location.trim()) e.location = "Location is required";
-    if (!form.date) e.date = "Date & time is required";
-    if (form.pricing_type === "paid") {
-      if (!form.price || Number(form.price) <= 0)
-        e.price = "Price must be greater than 0";
-    }
-    // length checks per docs
-    if (form.name && form.name.length > 200)
-      e.name = "Name must be ≤ 200 characters";
-    if (form.location && form.location.length > 200)
-      e.location = "Location must be ≤ 200 characters";
-
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const resetForm = () => {
-    setForm({
-      name: "",
-      description: "",
-      pricing_type: pricingTypes[0]?.value || "free",
-      event_type: eventTypes[0]?.value || FALLBACK_EVENT_TYPES[0].value,
-      location: "",
-      date: "",
-      capacity: "",
-      price: "",
-      allows_seat_selection: false,
-    });
-    setImageFile(null);
-    setPreview(null);
-    setErrors({});
-    setServerError("");
-  };
-
-  const submit = async (ev) => {
-    ev.preventDefault();
-    setServerError("");
-    if (!validate()) return;
-    setLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("name", form.name.trim());
-      formData.append("description", form.description.trim());
-      formData.append("pricing_type", form.pricing_type);
-      formData.append("event_type", form.event_type);
-      formData.append("location", form.location.trim());
-
-      // convert local datetime input to ISO with Z (server expects ISO 8601)
-      // if user already provided an ISO string, this will still produce a valid ISO
-      const isoDate = form.date ? new Date(form.date).toISOString() : "";
-      formData.append("date", isoDate);
-
-      if (form.capacity !== "" && form.capacity !== null) {
-        // ensure integer
-        formData.append("capacity", parseInt(form.capacity, 10));
-      }
-      // price required for paid; for free set 0.00 per docs
-      if (form.pricing_type === "paid") {
-        formData.append("price", parseFloat(form.price));
-      } else {
-        // append price 0 for free events (server may require)
-        formData.append("price", 0.0);
-      }
-
-      formData.append(
-        "allows_seat_selection",
-        form.allows_seat_selection ? "true" : "false"
-      );
-
-      if (imageFile) {
-        formData.append("image", imageFile);
-      }
-
-      const res = await api.post("/create-event/", formData);
-
-      if (res && res.status >= 200 && res.status < 300) {
-        toast.success("Event created successfully");
-        resetForm();
-      } else {
-        setServerError(`Unexpected server response: ${res?.status}`);
-      }
-    } catch (err) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.response?.data?.message ||
-        (err?.response?.data ? JSON.stringify(err.response.data) : null) ||
-        err?.message ||
-        "Failed to create event";
-      setServerError(msg);
-      console.error("Create event error:", err?.response || err);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formattedDate = (iso) => {
-    if (!iso) return "TBD";
-    try {
-      return new Date(iso).toLocaleString();
-    } catch {
-      return iso;
-    }
-  };
+  if (configLoading) {
+    return <Loading />;
+  }
 
   return (
     <main
@@ -537,21 +334,17 @@ export default function CreateEvent() {
                     <label className="block text-sm font-medium text-slate-300">
                       Event type <span className="text-rose-500">*</span>
                     </label>
-                    <select
+                    <Select
+                      label=""
                       value={form.event_type}
-                      onChange={handleChange("event_type")}
-                      className="mt-2 w-full rounded-xl bg-transparent border border-slate-800/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-(--sidebar-accent,#5b21b6)"
-                    >
-                      {eventTypes.map((t) => (
-                        <option
-                          key={t.value}
-                          value={t.value}
-                          className="bg-slate-900 text-slate-200"
-                        >
-                          {t.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => {
+                          setForm(s => ({ ...s, event_type: value }));
+                          setErrors(p => ({ ...p, event_type: undefined }));
+                      }}
+                      options={eventTypes}
+                      className="mt-2"
+                      placeholder="Select event type"
+                    />
                     {configLoading && (
                       <p className="mt-1 text-xs text-slate-500">
                         Loading types…

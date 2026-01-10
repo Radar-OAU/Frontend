@@ -83,8 +83,8 @@ const VerifyOTPContent = () => {
         otp: otpCode,
       });
 
-     const { user_id, email: verifiedEmail, access, role } = res.data;
-login({ user_id, email: verifiedEmail }, access, role);
+      const { user_id, email: verifiedEmail, access, role, refresh } = res.data;
+      login({ user_id, email: verifiedEmail }, access, refresh || null, role);
 
 toast.success("Email verified successfully! Redirecting...", { id: toastId });
 router.push("/dashboard");
@@ -121,7 +121,10 @@ router.push("/dashboard");
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  };  
+
+  // handle verify otp form submission
+    
 
   return (
     <div className="min-h-screen w-full flex bg-[#0A0A14]">

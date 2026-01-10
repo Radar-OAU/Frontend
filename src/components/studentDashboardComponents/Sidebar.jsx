@@ -62,7 +62,7 @@ const Sidebar = () => {
             }`}
           >
             {link.icon}
-            <span className="text-base font-medium">{link.name}</span>
+            <span className="text-sm font-medium">{link.name}</span>
           </Link>
         ))}
       </div>
@@ -77,14 +77,14 @@ const Sidebar = () => {
           }`}
         >
           <Settings className="h-5 w-5 md:h-7 md:w-7" />
-          <span className="text-base font-medium">Settings</span>
+          <span className="text-sm font-medium">Settings</span>
         </Link>
         <button 
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-left text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200"
         >
           <LogOut className="h-5 w-5 md:h-7 md:w-7" />
-          <span className="text-base font-medium">Logout</span>
+          <span className="text-sm font-medium">Logout</span>
         </button>
       </div>
     </div>

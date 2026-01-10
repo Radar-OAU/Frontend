@@ -2,135 +2,276 @@
 
 import { useEffect, useState } from "react";
 import api from "../../../../lib/axios";
-import { Banknote, Ticket, Users, Calendar, TrendingUp, DollarSign, Clock, Plus } from "lucide-react";
+import { Ticket, Users, Calendar, TrendingUp, DollarSign, Clock, Plus, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import useAuthStore from "../../../../store/authStore";
+import { toast } from "react-hot-toast";
+import useOrganizerStore from "../../../../store/orgStore";
+import Loading from "@/components/ui/Loading";
 
 
 export default function Overview() {
   const [analytics, setAnalytics] = useState(null);
+  const [eventsSummary, setEventsSummary] = useState(null);
   const [recentEvents, setRecentEvents] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const router = useRouter();
+  const { events, setOrganization, setEvents, lastUpdate, hydrated } = useOrganizerStore();
 
   useEffect(() => {
+    // Wait for orgStore hydration before fetching data
+    if (!hydrated) return;
+
     async function fetchOverview() {
       try {
-        // Fetch analytics data
-        const analyticsRes = await api.get("/organizer/analytics/");
-        setAnalytics(analyticsRes.data);
+        setLoading(true);
 
-        // Fetch recent events
-        const eventsRes = await api.get("/organizer/events/");
-        const events = eventsRes.data.events || [];
-        setRecentEvents(events.slice(0, 5));
-         toast.success("Overview data loaded successfully");
-         
+        const [
+          analyticsRes,
+          summaryRes,
+          eventsRes,
+          orgRes,
+        ] = await Promise.allSettled([
+          api.get("/analytics/global/"),
+          api.get("/analytics/events-summary/"),
+          api.get("/organizer/events/"),
+          api.get("/organizer/profile/"),
+        ]);
+          // this part sorts events by date in descending order
+        const sortedEvents = [...eventsRes.value.data.events].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (analyticsRes.status === "fulfilled") {
+          setAnalytics(analyticsRes.value.data.analytics);
+        }
+
+        if (summaryRes.status === "fulfilled") {
+          setEventsSummary(summaryRes.value.data);
+        }
+
+        if (eventsRes.status === "fulfilled") {
+          const eventsData = eventsRes.value.data.events || [];
+          setEvents(eventsData);
+          setRecentEvents(sortedEvents.slice(0, 3));
+        }
+
+        if (orgRes.status === "fulfilled") {
+          setOrganization(orgRes.value.data.Org_profile || orgRes.value.data);
+        }
+
         setLoading(false);
       } catch (err) {
-        console.error("Overview fetch error:", err.response?.data || err.message);
-        toast.error("Failed to load overview data");
-        setLoading(false);
-      } finally {
+        console.error(err);
+        toast.error("Failed to load overview");
         setLoading(false);
       }
     }
 
-    fetchOverview();
-  }, []);
 
-  if (loading || !analytics) return <p className="text-white">Loading...</p>;
+    fetchOverview();
+  }, [hydrated, setOrganization, setEvents]);
+
+  // get the organization from the store to display in the welcome message
+  const { organization } = useOrganizerStore();
+  organization && console.log("Organization Name:", organization.Organization_Name);
+  
+  
+
+  // Refetch analytics and events summary when events change to update total events count and summary
+  useEffect(() => {
+    async function refetchData() {
+      try {
+        const [analyticsRes, summaryRes] = await Promise.allSettled([
+          api.get("/analytics/global/"),
+          api.get("/analytics/events-summary/")
+        ]);
+
+        if (analyticsRes.status === 'fulfilled') {
+          setAnalytics(analyticsRes.value.data.analytics);
+        }
+
+        if (summaryRes.status === 'fulfilled') {
+          setEventsSummary(summaryRes.value.data);
+        }
+      } catch (err) {
+        console.error("Failed to refetch data:", err);
+      }
+    }
+      console.log("Refetch effect fired", lastUpdate);
+
+  // refetch data so that the overview stats are always up to date
+    refetchData();
+  }, [lastUpdate]);
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!analytics) {
+     return (
+       <div className="text-white flex flex-col items-center justify-center h-screen">
+         <p className="mb-4">Failed to load dashboard data.</p>
+         <button 
+           onClick={() => window.location.reload()}
+           className="px-4 py-2 bg-rose-600 rounded-lg hover:bg-rose-700"
+         >
+           Retry
+         </button>
+       </div>
+     );
+  }
 
   return (
-    <div className="min-h-screen p-4 md:p-4 space-y-5 md:space-y-6  pt-6 md:pt-10">
-      {/* Welcome Section */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen p-4 md:p-8 space-y-10 max-w-7xl mx-auto text-white">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white mb-2">
-            Welcome back!
+          <h1 className="text-xl md:text-2xl font-bold mb-1">
+            Welcome back, {organization?.Organization_Name || 'Organizer'}!
           </h1>
-          <p className="text-gray-400 text-sm md:text-base">
-            Here's an overview of your event performance
-          </p>
+          <p className="text-gray-400 text-xs">Overview of your event performance and analytics.</p>
         </div>
         <button
-          onClick={() => router.push('/dashboard/org/create-event')}
-          className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-lg transition-colors font-medium flex-nowrap"
+          onClick={() => router.push("/dashboard/org/create-event")}
+          className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-rose-600/20 active:scale-95 font-semibold text-xs"
         >
-          <Plus className="w-5 h-5" />
-          Create Event
+          <Plus className="w-3.5 h-3.5" />
+          Create New Event
         </button>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      {/* Primary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          icon={<DollarSign className="w-4 h-4 md:w-6 md:h-6 text-green-400" />}
-          label="Total Revenue"
+          icon={<DollarSign className="w-5 h-5 text-emerald-500" />}
+          label="Total revenue"
           value={`₦${analytics.total_revenue?.toLocaleString() || 0}`}
+          description="Gross earnings from all events"
+          trend="Live"
         />
         <StatCard
-          icon={<Ticket className="w-4 h-4 md:w-6 md:h-6 text-blue-400" />}
-          label="Tickets Sold"
+          icon={<Ticket className="w-5 h-5 text-blue-500" />}
+          label="Tickets sold"
           value={analytics.total_tickets_sold?.toLocaleString() || 0}
+          description="Total confirmed bookings"
         />
         <StatCard
-          icon={<Users className="w-4 h-4 md:w-6 md:h-6 text-purple-400" />}
-          label="Total Events"
-          value={analytics.total_events?.toLocaleString() || 0}
+          icon={<Calendar className="w-5 h-5 text-cyan-500" />}
+          label="Total events"
+          value={analytics.total_events_created?.toLocaleString() || 0}
+          description="Events created on the platform"
         />
         <StatCard
-          icon={<Clock className="w-4 h-4 md:w-6 md:h-6 text-yellow-400" />}
-          label="Pending Tickets"
+          icon={<Clock className="w-5 h-5 text-amber-500" />}
+          label="Pending orders"
           value={analytics.total_tickets_pending?.toLocaleString() || 0}
+          description="Waitlisted or awaiting payment"
         />
       </div>
 
-      {/* Recent Events - Full Width */}
-      <div className="bg-[#111] rounded-xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-white text-xl font-semibold">Recent Events</h2>
-          <Calendar className="w-5 h-5 text-gray-400" />
+      {/* Organizer Analytics Section */}
+      <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-5 md:p-6 shadow-xl">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-1.5 bg-white/5 rounded-lg">
+             <TrendingUp className="w-4 h-4 text-rose-500" />
+          </div>
+          <h2 className="text-lg font-bold">Event Status Overview</h2>
         </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <SummaryBox label="Total created" value={analytics.total_events_created} color="text-white" />
+          <SummaryBox label="Verified & live" value={analytics.verified_events} color="text-emerald-500" />
+          <SummaryBox label="Pending review" value={analytics.pending_events} color="text-amber-500" />
+          <SummaryBox label="Denied" value={analytics.denied_events} color="text-rose-500" />
+        </div>
+      </div>
+
+      {/* Recent Events Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-white/5 rounded-lg">
+              <Calendar className="w-4 h-4 text-rose-500" />
+            </div>
+            <h2 className="text-lg font-bold">Recent Events</h2>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/org/my-event')}
+            className="text-xs font-semibold text-gray-500 hover:text-white flex items-center gap-1 transition-colors group"
+          >
+            View All <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        </div>
+
         {recentEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">No events yet</p>
-            <p className="text-gray-500 text-sm mt-2">Create your first event to get started</p>
+          <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl py-20 text-center">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+               <Calendar className="w-8 h-8 text-gray-600" />
+            </div>
+            <p className="text-gray-400 font-medium">No events found</p>
+            <p className="text-gray-600 text-sm mt-1">Start by creating your first event</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentEvents.map((event, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentEvents.map(event => (
               <div
                 key={event.event_id}
-                className="bg-[#1a1a1a] p-5 rounded-lg hover:bg-[#222] transition-colors"
+                onClick={() => router.push(`/dashboard/org/my-event/${event.event_id}`)}
+                className="bg-[#0A0A0A] border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 transition-all duration-300 group cursor-pointer shadow-lg"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <p className="text-white font-medium text-base mb-1">{event.name}</p>
-                    <p className="text-gray-400 text-sm">
-                      {new Date(event.date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
+                {/* Event Cover Image */}
+                <div className="h-40 relative overflow-hidden bg-white/5">
+                   <img
+                      src={event.image || "/api/placeholder/400/200"}
+                      alt={event.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                        e.target.parentElement.innerHTML = '<div class="text-gray-600 font-bold text-xs">No cover image</div>';
+                      }}
+                    />
+                    <div className="absolute top-3 right-3">
+                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md border ${
+                          event.pricing_type === 'free' 
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                            : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                       }`}>
+                          {event.pricing_type}
+                       </span>
+                    </div>
                 </div>
-                <div className="flex items-center justify-between">
+
+                {/* Content */}
+                <div className="p-5 space-y-4">
                   <div>
-                    <p className="text-green-400 text-lg font-semibold">
-                      ₦{event.ticket_stats?.total_revenue?.toLocaleString() || 0}
-                    </p>
-                    <p className="text-gray-500 text-xs">
-                      {event.ticket_stats?.confirmed_tickets || 0} tickets sold
-                    </p>
+                    <h3 className="text-lg font-bold line-clamp-1 mb-1 group-hover:text-rose-500 transition-colors tracking-tight">{event.name}</h3>
+                    <div className="flex items-center text-gray-400 text-xs gap-3">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-rose-500">📍</span>
+                          <span className="truncate max-w-[120px]">{event.location}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <button className="text-purple-400 hover:text-purple-300 text-sm font-medium">
-                      View Details
-                    </button>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                     <div className="flex gap-4">
+                        <div>
+                           <p className="text-rose-500 font-bold text-sm">₦{(event.ticket_stats?.total_revenue || 0).toLocaleString()}</p>
+                           <p className="text-[10px] text-gray-500 font-bold">Revenue</p>
+                        </div>
+                        <div>
+                           <p className="text-blue-500 font-bold text-sm">{event.ticket_stats?.confirmed_tickets || 0}</p>
+                           <p className="text-[10px] text-gray-500 font-bold">Sold</p>
+                        </div>
+                     </div>
+                     <ChevronRight className="w-5 h-5 text-gray-700 group-hover:text-rose-500 transition-colors" />
                   </div>
                 </div>
               </div>
@@ -142,94 +283,37 @@ export default function Overview() {
   );
 }
 
-function StatCard({ icon, label, value, trend, trendUp, delay = 0 }) {
+/* ---------- UI Components ---------- */
+
+function StatCard({ label, value, icon, description, trend }) {
   return (
-    <div
-      className="bg-[#111] p-6 rounded-xl hover:bg-[#1a1a1a] transition-colors"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-2 bg-[#1a1a1a] rounded-lg">
+    <div className="bg-[#0A0A0A] border border-white/5 p-5 rounded-2xl shadow-lg hover:border-white/10 transition-all group">
+      <div className="flex items-start justify-between mb-4">
+        <div className="p-2.5 rounded-xl bg-white/5 group-hover:bg-white/10 transition-colors">
           {icon}
         </div>
-        <div className={`flex items-center text-xs font-medium ${
-          trendUp ? 'text-green-400' : 'text-red-400'
-        }`}>
-          <TrendingUp className={`w-3 h-3 mr-1 ${trendUp ? '' : 'rotate-180'}`} />
-          {trend}
-        </div>
+        {trend && (
+           <div className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full pulse">
+             {trend}
+           </div>
+        )}
       </div>
-      <p className="text-2xl text-white font-bold mb-1">
-        {value}
-      </p>
-      <p className="text-gray-400 text-sm">{label}</p>
+      <div>
+        <p className="text-gray-500 text-xs font-semibold mb-1">{label}</p>
+        <h3 className="text-2xl font-bold">{value}</h3>
+        <p className="text-gray-600 text-[10px] mt-1.5 font-medium">{description}</p>
+      </div>
     </div>
   );
 }
 
-function EventCard({ event, onViewDetails }) {
+function SummaryBox({ label, value, color }) {
   return (
-    <div className="bg-[#1a1a1a] p-5 rounded-lg hover:bg-[#222] transition-colors border border-gray-700">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className="text-white font-semibold text-lg mb-1">{event.name}</h3>
-          <p className="text-gray-400 text-sm mb-2">
-            {new Date(event.date).toLocaleDateString('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </p>
-          <p className="text-gray-500 text-sm">{event.location}</p>
-        </div>
-        <div className="text-right">
-          <span className={`px-2 py-1 rounded text-xs font-medium ${
-            event.pricing_type === 'free' ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'
-          }`}>
-            {event.pricing_type === 'free' ? 'Free' : 'Paid'}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div>
-            <p className="text-green-400 text-lg font-semibold">
-              ₦{event.ticket_stats?.total_revenue?.toLocaleString() || 0}
-            </p>
-            <p className="text-gray-500 text-xs">Revenue</p>
-          </div>
-          <div>
-            <p className="text-blue-400 text-lg font-semibold">
-              {event.ticket_stats?.confirmed_tickets || 0}
-            </p>
-            <p className="text-gray-500 text-xs">Tickets Sold</p>
-          </div>
-          <div>
-            <p className="text-yellow-400 text-lg font-semibold">
-              {event.capacity - (event.ticket_stats?.available_spots || event.capacity)}
-            </p>
-            <p className="text-gray-500 text-xs">Capacity</p>
-          </div>
-        </div>
-        <button
-          onClick={() => onViewDetails(event.event_id)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          View Details
-        </button>
-      </div>
+    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl flex flex-col items-center justify-center text-center group hover:bg-white/[0.04] transition-colors">
+      <p className={`text-2xl font-black mb-1 ${color || 'text-white'}`}>{value || 0}</p>
+      <p className="text-[10px] text-gray-500 font-bold">{label}</p>
     </div>
   );
 }
 
-function Stat({ label, value }) {
-  return (
-    <div className="bg-[#111] p-6 rounded-xl">
-      <p className="text-2xl text-white font-bold">{value}</p>
-      <p className="text-gray-400">{label}</p>
-    </div>
-  );
-}
+

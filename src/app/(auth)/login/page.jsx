@@ -11,8 +11,7 @@ import useAuthStore from '../../../store/authStore'
 import { Button } from '../../../components/ui/button'
 import Logo from '@/components/Logo'
 import { getErrorMessage } from '@/lib/utils'
-
-
+import BackgroundCarousel from '@/components/BackgroundCarousel'
 import { useGoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
@@ -53,22 +52,26 @@ const LoginPage = () => {
 
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
+      setLoading(true);
       try {
-        // Assuming student login for now, logic might need adjustment based on user role selection if available on login page
-        const res = await api.post("/student/google-signup/", {
+        // For login, we use the general login endpoint that can handle both student and organizer
+        const res = await api.post("/login/google/", {
           token: tokenResponse.access_token,
         });
         const { user_id, email, access, refresh, role } = res.data;
-        login({ user_id, email }, access, refresh, role || "Student");
+        login({ user_id, email }, access, refresh, role);
         toast.success("Login successful!");
         router.push("/dashboard");
       } catch (err) {
         console.error("Google login error:", err);
-        toast.error("Google login failed");
+        toast.error(err.response?.data?.error || "Google login failed");
+      } finally {
+        setLoading(false);
       }
     },
     onError: () => {
       toast.error("Google login failed");
+      setLoading(false);
     },
   });
 
@@ -86,10 +89,26 @@ const LoginPage = () => {
       if (!userRole && access) {
         const decoded = parseJwt(access);
         // Check for common role claims
-        userRole = decoded?.role || decoded?.user_type || (decoded?.is_organizer ? 'organizer' : 'student');
+        userRole = decoded?.role || decoded?.user_type;
+        
+        // If still not found, check specific boolean flags if they exist
+        if (!userRole && decoded?.is_organizer) {
+            userRole = 'organizer';
+        }
       }
 
-      login({ user_id, email }, access, userRole)
+      // Fallback: Check email domain if role is still not determined
+      if (!userRole) {
+          if (email.endsWith('@student.oauife.edu.ng')) {
+              userRole = 'student';
+          } else {
+              // Default to organizer if not a student email 
+              // (since organizers can have generic emails like Gmail, Yahoo, etc.)
+              userRole = 'organizer';
+          }
+      }
+
+      login({ user_id, email }, access, refresh, userRole)
       toast.success('Login successful! Redirecting...', { id: toastId })
       router.push('/dashboard')
     } catch (err) {
@@ -105,22 +124,19 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen w-full flex bg-[#0A0A14]">
 
-            {/* left Side - Image */}
-      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center z-0 opacity-40"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1568289523939-61125d216fe5?q=80&w=436&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
-            filter: "grayscale(30%)",
-          }}
-        />
-        <div className="relative z-10  w-[40%] flex items-center justify-center">
-          <img
-            alt="Center Image"
-            src='assets/image 2 (1).png'
-          />
-        </div>
-      </div>
+            {/* Left Image */}
+             <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden group">
+               <BackgroundCarousel
+                 images={['/IMG (1).jpg', '/ticket image (1).jpeg']}
+                 interval={5000}
+               />
+               {/* <div className="relative z-10 w-[40%] flex items-center justify-center">
+                 <img
+                   alt="Center Image"
+                   src='/assets/image 2 (1).png'
+                 />
+               </div> */}
+             </div>
       {/* Right Side - Form */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
