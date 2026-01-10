@@ -54,16 +54,6 @@ const OrganizerHeader = () => {
             <>
               <div className="flex items-center gap-4">
                  <span className="text-sm text-muted-foreground">Hi, {user.email?.split('@')[0]}</span>
-                  <Link href="/dashboard/org/payout">
-                    <Button
-                       variant="ghost"
-                       size="sm"
-                       className="text-gray-400 hover:text-white hover:bg-gray-800"
-                    >
-                       <Wallet className="h-4 w-4 mr-2" />
-                       Payout
-                    </Button>
-                  </Link>
                   <Link href="/dashboard/org/settings">
                     <Button
                        variant="ghost"
