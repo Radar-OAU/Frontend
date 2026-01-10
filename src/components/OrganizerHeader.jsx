@@ -34,15 +34,18 @@ const OrganizerHeader = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-black border-r border-gray-900  backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full bg-black border-b border-gray-900 backdrop-blur-md md:pl-64">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" onClick={closeMenu}>
+        {/* Logo - Hidden on desktop as it's in the sidebar */}
+        <Link href="/" onClick={closeMenu} className="md:hidden">
           <Logo />
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
+          <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Home
+          </Link>
           <Link href="/events" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Discover Events
           </Link>
