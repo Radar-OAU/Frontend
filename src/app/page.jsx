@@ -26,9 +26,10 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await api.get('/events/');
+        const response = await api.get('/api/create-event/');
+        const eventsData = Array.isArray(response.data) ? response.data : (response.data.events || []);
         // Only show verified events to public
-        const verifiedEvents = response.data.filter(event => event.status === 'verified');
+        const verifiedEvents = eventsData.filter(event => event.status === 'verified');
         setEvents(verifiedEvents.slice(0, 6)); 
       } catch (error) {
         console.error("Failed to fetch events", error);
