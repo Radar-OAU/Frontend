@@ -46,9 +46,6 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
-      {/* Navigation */}
-      <PublicNavbar />
-
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
         {/* Background Gradients */}

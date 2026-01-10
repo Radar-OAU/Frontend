@@ -460,19 +460,20 @@ const SignUp = () => {
            {!loading && <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />}
         </button>
 
-            {/* --- OR Separator --- */}
-            <div className="relative my-3 md:my-4 text-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-800"></div>
-              </div>
-              <span className="relative px-4 text-xs md:text-sm text-gray-500 bg-[#050B14]">
-                or
-              </span>
-            </div>
 
       {/* --- Social Login Buttons --- */}
             {role === "Organizer" && (
-        <div className="flex gap-4 justify-center mb-4">
+              <>
+                {/* --- OR Separator --- */}
+                <div className="relative my-3 md:my-4 text-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-800"></div>
+                  </div>
+                  <span className="relative px-4 text-xs md:text-sm text-gray-500 bg-[#0A0A14]">
+                    or
+                  </span>
+                </div>
+                <div className="flex gap-4 justify-center mb-4">
                 <Button
               variant="outline"
               type="button"
@@ -490,7 +491,8 @@ const SignUp = () => {
               </div>
             </Button>
         </div>
-            )}
+      </>
+    )}
           </form>
 
           {/* Already have an account? Sign in */}

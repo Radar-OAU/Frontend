@@ -297,31 +297,35 @@ const LoginPage = () => {
               </Link>
             </div>
 
-            {/* Divider */}
-            <div className="relative flex items-center justify-center w-full">
-              <div className="grow border-t border-gray-800"></div>
-              <span className="mx-4 text-[10px] md:text-xs text-gray-500 font-medium">
-                OR
-              </span>
-              <div className="grow border-t border-gray-800"></div>
-            </div>
+            {role === "Organizer" && (
+              <>
+                {/* Divider */}
+                <div className="relative flex items-center justify-center w-full">
+                  <div className="grow border-t border-gray-800"></div>
+                  <span className="mx-4 text-[10px] md:text-xs text-gray-500 font-medium">
+                    OR
+                  </span>
+                  <div className="grow border-t border-gray-800"></div>
+                </div>
 
-            {/* Social Login Option */}
-            <Button
-                      variant="outline"
-                      onClick={() => handleGoogleLogin()}
-                      className="w-full h-10 md:h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200"
-                    >
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="h-4 w-4 md:h-5 md:w-5 flex items-center justify-center">
-                          <img
-                           src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
-                            alt="Google" 
-                          />
-                        </div>
-                        <span className="text-sm md:text-base">Continue with Google</span>
-                      </div>
-                    </Button>
+                {/* Social Login Option */}
+                <Button
+                  variant="outline"
+                  onClick={() => handleGoogleLogin()}
+                  className="w-full h-10 md:h-12 rounded-xl border-gray-800 bg-zinc-900 hover:bg-zinc-800 text-gray-300 transition-all duration-200"
+                >
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="h-4 w-4 md:h-5 md:w-5 flex items-center justify-center">
+                      <img
+                        src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
+                        alt="Google"
+                      />
+                    </div>
+                    <span className="text-sm md:text-base">Continue with Google</span>
+                  </div>
+                </Button>
+              </>
+            )}
 
           </div>
         </div>

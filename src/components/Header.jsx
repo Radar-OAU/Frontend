@@ -88,7 +88,7 @@ const Header = () => {
               </Link>
               <Link href="/signup">
                 <Button className="bg-rose-600 hover:bg-rose-700 text-white">
-                  Sign Up
+                  Get Started
                 </Button>
               </Link>
             </>
@@ -248,7 +248,7 @@ const Header = () => {
                       </Link>
                       <Link href="/signup" onClick={closeMenu}>
                         <Button className="w-full bg-rose-600 hover:bg-rose-700 text-white h-12">
-                          Sign Up
+                          Get Started
                         </Button>
                       </Link>
                     </div>

@@ -6,7 +6,6 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-
 export function getErrorMessage(error) {
   if (!error) return "An unknown error occurred";
 
@@ -41,3 +40,12 @@ export function getErrorMessage(error) {
   return error.message || "Something went wrong";
 }
 
+export function getImageUrl(path) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+
+  const baseUrl = "https://radar-ufvb.onrender.com";
+  // Ensure we don't have double slashes
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${baseUrl}${cleanPath}`;
+}

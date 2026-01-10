@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import PublicNavbar from "@/components/PublicNavbar";
+import { getImageUrl } from "@/lib/utils";
 
 const PublicEventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -108,7 +109,7 @@ const PublicEventsPage = () => {
                         {/* Background Image */}
                         {event.event_image ? (
                           <img
-                            src={event.event_image}
+                            src={getImageUrl(event.event_image)}
                             alt={event.event_name}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />

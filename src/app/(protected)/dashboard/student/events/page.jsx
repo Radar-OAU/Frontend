@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, MapPin, Calendar as CalendarIcon, Search, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { getImageUrl } from "@/lib/utils";
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -90,7 +91,7 @@ const EventsPage = () => {
                       {/* Background Image */}
                       {event.event_image ? (
                         <img
-                          src={event.event_image}
+                          src={getImageUrl(event.event_image)}
                           alt={event.event_name}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
