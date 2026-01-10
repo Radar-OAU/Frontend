@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import useOrganizerStore from "../../../../../store/orgStore";
 import Select from "@/components/ui/custom-select";
 import Loading from "@/components/ui/Loading";
+import { MapPin, Calendar, Camera, ImageIcon, Eye, X, ChevronDown } from "lucide-react";
 
 const FALLBACK_EVENT_TYPES = [
   { value: "conference", label: "Conference" },
@@ -45,7 +46,7 @@ export default function CreateEvent() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   // Fetch config (GET /config/) and populate eventTypes/pricingTypes.
   useEffect(() => {
     let mounted = true;
@@ -77,7 +78,7 @@ export default function CreateEvent() {
     }
     loadConfig();
     return () => (mounted = false);
-     // api is stable (module import). Disable exhaustive-deps to avoid noisy warning.
+    // api is stable (module import). Disable exhaustive-deps to avoid noisy warning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -194,7 +195,7 @@ export default function CreateEvent() {
       } else {
         // append price 0 for free events (server may require)
         formData.append("price", 0.0);
-        }
+      }
 
       formData.append(
         "allows_seat_selection",
@@ -218,7 +219,7 @@ export default function CreateEvent() {
     } catch (err) {
       const msg =
         err?.response?.data?.detail ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
         (err?.response?.data ? JSON.stringify(err.response.data) : null) ||
         err?.message ||
         "Failed to create event";
@@ -244,369 +245,308 @@ export default function CreateEvent() {
   }
 
   return (
-    <div className="w-full text-slate-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div
-          className="rounded-2xl overflow-hidden shadow-2xl border"
-          style={{
-            borderColor: "var(--sidebar-accent, rgba(148,163,184,0.06))",
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))",
-            backdropFilter: "blur(6px)",
-          }}
+    <div className="min-h-screen p-4 md:p-8 space-y-10 max-w-7xl mx-auto text-white">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold mb-1">
+            Create Event
+          </h1>
+          <p className="text-gray-400 text-xs">Fill in event details. <span className="text-rose-500">*</span> required.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="text-xs font-semibold text-gray-500 hover:text-white transition-colors"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Form */}
-            <section className="p-6 sm:p-8 lg:p-10">
-              <header className="mb-6">
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                  Create event
-                </h1>
-                <p className="mt-1 text-sm text-slate-400">
-                  Fill in event details.{" "}
-                  <span className="text-rose-500">*</span> required.
-                </p>
-              </header>
+          Cancel
+        </button>
+      </div>
 
-              <form onSubmit={submit} className="space-y-5" noValidate>
-                {serverError && (
-                  <div className="rounded-md bg-rose-900/30 border border-rose-800 p-3 text-rose-200 text-sm">
-                    {serverError}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Form Section */}
+        <section className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 md:p-8 shadow-xl">
+          <form onSubmit={submit} className="space-y-6" noValidate>
+            {serverError && (
+              <div className="rounded-xl bg-rose-900/20 border border-rose-800/50 p-4 text-rose-200 text-xs font-medium">
+                {serverError}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Event Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                value={form.name}
+                onChange={handleChange("name")}
+                placeholder="e.g. Summer Tech Conference 2024"
+                className={`w-full bg-white/5 border ${errors.name ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all`}
+              />
+              {errors.name && <p className="text-[10px] text-rose-500 font-bold">{errors.name}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Description <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                value={form.description}
+                onChange={handleChange("description")}
+                placeholder="What to expect, schedule, speakers..."
+                className={`w-full bg-white/5 border ${errors.description ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all min-h-[120px] resize-y`}
+              />
+              {errors.description && <p className="text-[10px] text-rose-500 font-bold">{errors.description}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Pricing <span className="text-rose-500">*</span>
+                </label>
+                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                  {pricingTypes.map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setForm((s) => ({ ...s, pricing_type: p.value, price: p.value === "free" ? "" : s.price }))}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${form.pricing_type === p.value ? 'bg-rose-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Event Type <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={form.event_type}
+                    onChange={(e) => {
+                      setForm(s => ({ ...s, event_type: e.target.value }));
+                      setErrors(p => ({ ...p, event_type: undefined }));
+                    }}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer"
+                  >
+                    {eventTypes.map(type => (
+                      <option key={type.value} value={type.value} className="bg-neutral-900">{type.label}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Location <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    value={form.location}
+                    onChange={handleChange("location")}
+                    placeholder="Venue address or online link"
+                    className={`w-full pl-10 bg-white/5 border ${errors.location ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all`}
+                  />
+                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                </div>
+                {errors.location && <p className="text-[10px] text-rose-500 font-bold">{errors.location}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Date & Time <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={form.date}
+                  onChange={handleChange("date")}
+                  className={`w-full bg-white/5 border ${errors.date ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all [color-scheme:dark]`}
+                />
+                {errors.date && <p className="text-[10px] text-rose-500 font-bold">{errors.date}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Capacity
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.capacity}
+                  onChange={handleChange("capacity")}
+                  placeholder="Unlimited"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-rose-500 transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Price {form.pricing_type === "paid" && <span className="text-rose-500">*</span>}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.price}
+                    onChange={handleChange("price")}
+                    placeholder="0.00"
+                    disabled={form.pricing_type === "free"}
+                    className={`w-full pl-8 bg-white/5 border ${errors.price ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                  />
+                </div>
+                {errors.price && <p className="text-[10px] text-rose-500 font-bold">{errors.price}</p>}
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Cover Image
+                </label>
+                <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl hover:border-rose-500/50 hover:bg-rose-500/5 transition-all h-32 flex flex-col items-center justify-center text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImage}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="pointer-events-none flex flex-col items-center">
+                    <Camera className="w-8 h-8 mb-2 text-gray-500 group-hover:text-rose-400 transition-colors" />
+                    <span className="text-xs text-gray-500 group-hover:text-rose-400 font-medium">Click to upload cover image</span>
+                  </div>
+                </div>
+                {preview && (
+                  <div className="relative h-40 w-full rounded-2xl overflow-hidden border border-white/10 mt-3 group">
+                    <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setImageFile(null); setPreview(null); }}
+                      className="absolute top-2 right-2 bg-black/60 hover:bg-rose-600 text-white p-1.5 rounded-lg backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
-              
-                <div>
-                  <label className="block text-sm font-medium text-slate-300">
-                    Name <span className="text-rose-500">*</span>
-                  </label>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                <div className="relative flex items-center">
                   <input
-                    value={form.name}
-                    onChange={handleChange("name")}
-                    placeholder="Event name"
-                    aria-invalid={!!errors.name}
-                    className={`mt-2 w-full rounded-xl bg-transparent border border-slate-800/60 px-3 py-3 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-(--sidebar-accent,#5b21b6) ${errors.name ? "ring-rose-500" : ""}`}
+                    type="checkbox"
+                    checked={form.allows_seat_selection}
+                    onChange={handleChange("allows_seat_selection")}
+                    id="seat-selection"
+                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/20 bg-white/5 checked:border-rose-500 checked:bg-rose-500 transition-all"
                   />
-                  {errors.name && (
-                    <p className="mt-1 text-xs text-rose-400">{errors.name}</p>
-                  )}
+                  <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M20 6L9 17l-5-5" /></svg>
                 </div>
+                <label htmlFor="seat-selection" className="text-sm text-gray-300 font-medium cursor-pointer select-none">
+                  Enable seat selection for this event
+                </label>
+              </div>
+            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300">
-                    Description <span className="text-rose-500">*</span>
-                  </label>
-                  <textarea
-                    value={form.description}
-                    onChange={handleChange("description")}
-                    placeholder="What to expect, schedule, speakers..."
-                    aria-invalid={!!errors.description}
-                    className={`mt-2 w-full rounded-xl bg-transparent border border-slate-800/60 px-3 py-3 text-sm min-h-[120px] resize-y placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--sidebar-accent, #5b21b6)] ${errors.description ? "ring-rose-500" : ""}`}
-                  />
-                  {errors.description && (
-                    <p className="mt-1 text-xs text-rose-400">
-                      {errors.description}
-                    </p>
-                  )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-rose-600/20 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  Creating Event...
+                </>
+              ) : (
+                "Create Event"
+              )}
+            </button>
+          </form>
+        </section>
+
+        {/* Live Preview Section */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-white/5 rounded-lg">
+              <Eye className="w-4 h-4 text-rose-500" />
+            </div>
+            <h2 className="text-lg font-bold">Live Preview</h2>
+          </div>
+
+          {/* Preview Card */}
+          <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="h-48 relative overflow-hidden bg-white/5">
+              {(preview || imageFile) ? (
+                <img src={preview} alt="poster" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-700 gap-2">
+                  <ImageIcon className="w-10 h-10" />
+                  <span className="text-xs font-bold uppercase tracking-wider">No Cover Image</span>
                 </div>
+              )}
+              <div className="absolute top-3 right-3">
+                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md border ${form.pricing_type === 'free'
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                  }`}>
+                  {form.pricing_type === 'paid' ? 'PAID' : 'FREE'}
+                </span>
+              </div>
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Pricing <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="mt-2 flex items-center gap-4">
-                      {pricingTypes.map((p) => (
-                        <label
-                          key={p.value}
-                          className="inline-flex items-center gap-2 cursor-pointer text-sm"
-                        >
-                          <input
-                            type="radio"
-                            name="pricing"
-                            value={p.value}
-                            checked={form.pricing_type === p.value}
-                            onChange={() =>
-                              setForm((s) => ({
-                                ...s,
-                                pricing_type: p.value,
-                                price: p.value === "free" ? "" : s.price,
-                              }))
-                            }
-                            className="h-4 w-4 accent-(--sidebar-accent,#7c3aed)"
-                          />
-                          {p.label}
-                        </label>
-                      ))}
-                    </div>
-                    {errors.pricing_type && (
-                      <p className="mt-1 text-xs text-rose-400">
-                        {errors.pricing_type}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Event type <span className="text-rose-500">*</span>
-                    </label>
-                    <Select
-                      label=""
-                      value={form.event_type}
-                      onChange={(value) => {
-                        setForm(s => ({ ...s, event_type: value }));
-                        setErrors(p => ({ ...p, event_type: undefined }));
-                      }}
-                      options={eventTypes}
-                      className="mt-2"
-                      placeholder="Select event type"
-                    />
-                    {configLoading && (
-                      <p className="mt-1 text-xs text-slate-500">
-                        Loading types…
-                      </p>
-                    )}
-                    {errors.event_type && (
-                      <p className="mt-1 text-xs text-rose-400">
-                        {errors.event_type}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Location <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      value={form.location}
-                      onChange={handleChange("location")}
-                      placeholder="Venue address or online link"
-                      aria-invalid={!!errors.location}
-                      className="mt-2 w-full rounded-xl bg-transparent border border-slate-800/60 px-3 py-3 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-(--sidebar-accent,#5b21b6)"
-                    />
-                    {errors.location && (
-                      <p className="mt-1 text-xs text-rose-400">
-                        {errors.location}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Date &amp; time <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={form.date}
-                      onChange={handleChange("date")}
-                      aria-invalid={!!errors.date}
-                      className="mt-2 w-full rounded-xl bg-transparent border border-slate-800/60 px-3 py-3 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-(--sidebar-accent,#5b21b6)"
-                    />
-                    {errors.date && (
-                      <p className="mt-1 text-xs text-rose-400">
-                        {errors.date}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Capacity (optional)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={form.capacity}
-                      onChange={handleChange("capacity")}
-                      placeholder="e.g. 200"
-                      className="mt-2 w-full rounded-xl bg-transparent border border-slate-800/60 px-3 py-3 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-(--sidebar-accent,#5b21b6)"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Price{" "}
-                      {form.pricing_type === "paid" && (
-                        <span className="text-rose-500">*</span>
-                      )}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.price}
-                      onChange={handleChange("price")}
-                      placeholder={
-                        form.pricing_type === "paid"
-                          ? "Amount"
-                          : "Not required for free"
-                      }
-                      disabled={form.pricing_type === "free"}
-                      className="mt-2 w-full rounded-xl bg-transparent border border-slate-800/60 px-3 py-3 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-(--sidebar-accent,#5b21b6) disabled:opacity-40"
-                    />
-                    {errors.price && (
-                      <p className="mt-1 text-xs text-rose-400">
-                        {errors.price}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-slate-300">
-                      Poster / image (optional)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImage}
-                      className="mt-2 text-sm text-slate-400"
-                    />
-                    {preview && (
-                      <img
-                        src={preview}
-                        alt="preview"
-                        className="mt-3 h-36 w-full sm:w-56 rounded-md object-cover border border-slate-800/60"
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 text-sm text-slate-300">
-                      <input
-                        type="checkbox"
-                        checked={form.allows_seat_selection}
-                        onChange={handleChange("allows_seat_selection")}
-                        className="h-4 w-4 accent-(--sidebar-accent,#7c3aed)"
-                      />
-                      Allow seat selection
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 justify-end pt-2">
-                  <button
-                    type="button"
-                    onClick={() => router.back()}
-                    disabled={loading}
-                    className="px-4 py-2 rounded-lg border border-slate-800 bg-transparent text-slate-300 hover:bg-slate-800/40"
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-5 py-2 rounded-lg bg-var(--sidebar-accent,#7c3aed) text-white hover:brightness-95 disabled:opacity-60"
-                  >
-                    {loading ? "Creating..." : "Create event"}
-                  </button>
-                </div>
-              </form>
-            </section>
-
-            {/* Preview */}
-            <aside className="p-6 sm:p-8 lg:p-10 border-l border-slate-800/60 bg-linear-to-t from-black/30 to-transparent">
-              <div className="sticky top-6">
-                <h2 className="text-lg font-medium text-slate-100">
-                  Live preview
-                </h2>
-
-                <div className="mt-4 rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shadow-sm">
-                  {preview ? (
-                    <div className="h-44 sm:h-56 w-full overflow-hidden bg-slate-800">
-                      <img
-                        src={preview}
-                        alt="poster"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-44 sm:h-56 w-full flex items-center justify-center bg-linear-to-r from-indigo-900 to-slate-900 text-slate-400">
-                      <span className="text-sm">No poster</span>
-                    </div>
-                  )}
-
-                  <div className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-100">
-                          {form.name || "Event title"}
-                        </h3>
-                        <p className="text-xs text-slate-400 mt-1">
-                          {eventTypes.find((t) => t.value === form.event_type)
-                            ?.label || form.event_type}{" "}
-                          • {form.pricing_type === "paid" ? "Paid" : "Free"}
-                        </p>
-                      </div>
-
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-slate-100">
-                          {form.pricing_type === "paid" && form.price
-                            ? `${form.price}`
-                            : form.pricing_type === "paid"
-                              ? "Price"
-                              : "Free"}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {formattedDate(form.date)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <p className="mt-3 text-sm text-slate-300 line-clamp-4">
-                      {form.description ||
-                        "Event description preview will appear here."}
-                    </p>
-
-                    <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-slate-300">
-                      <div>
-                        <strong className="text-slate-200">Location: </strong>
-                        <span>{form.location || "TBD"}</span>
-                      </div>
-                      <div>
-                        <strong className="text-slate-200">Capacity: </strong>
-                        <span>{form.capacity || "Unlimited"}</span>
-                      </div>
-                      <div>
-                        <strong className="text-slate-200">
-                          Seat selection:{" "}
-                        </strong>
-                        <span>
-                          {form.allows_seat_selection ? "Enabled" : "Disabled"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex gap-2">
-                      <button
-                        disabled
-                        className="px-3 py-1 rounded bg-(--sidebar-accent,#7c3aed) text-white text-sm"
-                      >
-                        Preview
-                      </button>
-                      <button
-                        disabled
-                        className="px-3 py-1 rounded border border-slate-800 text-sm"
-                      >
-                        Share
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="mt-4 text-xs text-slate-500">
-                  Preview updates live as you fill the form. Images are local
-                  previews until submission.
+            <div className="p-6 space-y-5">
+              <div>
+                <h3 className="text-xl font-bold line-clamp-2 leading-tight">
+                  {form.name || "Untitled Event"}
+                </h3>
+                <p className="text-rose-500 text-xs font-bold mt-2 uppercase tracking-wider">
+                  {eventTypes.find((t) => t.value === form.event_type)?.label || form.event_type || "Event Type"}
                 </p>
               </div>
-            </aside>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-gray-400 text-xs font-medium">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{formattedDate(form.date)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-400 text-xs font-medium">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{form.location || "Location TBD"}</span>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed">
+                {form.description || "Description will appear here..."}
+              </p>
+
+              <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase">Price</p>
+                  <p className="text-white font-bold text-lg">
+                    {form.pricing_type === 'paid' && form.price ? `₦${form.price}` : 'Free'}
+                  </p>
+                </div>
+                <button disabled className="px-4 py-2 bg-white/5 text-gray-500 rounded-lg text-xs font-bold cursor-default">
+                  Get Tickets
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+
+          <div className="bg-rose-500/5 border border-rose-500/10 rounded-xl p-4 text-xs text-rose-300 font-medium text-center">
+            Values update in real-time as you type.
+          </div>
+        </section>
       </div>
     </div>
   );
