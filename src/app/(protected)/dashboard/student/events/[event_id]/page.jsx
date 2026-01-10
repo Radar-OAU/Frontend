@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select-component";
-import { Loader2, MapPin, Calendar, Clock, Ticket, Info, CheckCircle2 } from "lucide-react";
+import { Loader2, MapPin, Calendar, Clock, Ticket, Info, CheckCircle2, Share2, Copy, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import { getImageUrl } from "@/lib/utils";
@@ -31,6 +31,16 @@ const EventDetailsPage = () => {
   // Booking state
   const [quantity, setQuantity] = useState(1);
   const [selectedSeat, setSelectedSeat] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const link = `${window.location.origin}/events/${eventId}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -265,6 +275,29 @@ const EventDetailsPage = () => {
                 )}
               </Button>
             </CardFooter>
+          </Card>
+
+          {/* Share Section */}
+          <Card className="mt-6 md:mt-8 overflow-hidden">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Share2 className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm md:text-base">Share this event</h3>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1 bg-muted px-3 py-2 rounded-md text-xs md:text-sm text-muted-foreground truncate border border-border">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/events/${eventId}` : ''}
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={handleCopyLink}
+                  className="shrink-0"
+                >
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>
