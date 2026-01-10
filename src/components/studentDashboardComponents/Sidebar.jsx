@@ -29,7 +29,7 @@ const StudentDashboardNavLinks = [
   { name: "Profile", link: "/dashboard/student/profile", icon: <User className="h-5 w-5 md:h-7 md:w-7" /> },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ mobile }) => {
   const location = usePathname();
   const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
@@ -43,11 +43,30 @@ const Sidebar = () => {
     (link) => location === `${link.link}`
   );
 
+  if (mobile) {
+    return (
+      <div className="flex flex-row justify-around bg-black border-t border-gray-800 py-2 w-full">
+        {StudentDashboardNavLinks.map((link) => (
+          <Link
+            href={link.link}
+            key={link.name}
+            className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors duration-200 ${
+              active && active.link === link.link
+                ? "text-rose-500"
+                : "text-gray-500 hover:text-gray-300"
+            }`}
+          >
+            {link.icon}
+            <span className="text-[10px] mt-1">{link.name}</span>
+          </Link>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full px-4">
-      <div className="mb-8 pt-0 mt-0">
-        <Logo />
-      </div>
+
       
       <div className="flex flex-col gap-2 w-full">
         {StudentDashboardNavLinks.map((link) => (

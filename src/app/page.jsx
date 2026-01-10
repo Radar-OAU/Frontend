@@ -10,6 +10,7 @@ import useAuthStore from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
+import PublicNavbar from "@/components/PublicNavbar";
 
 const LandingPage = () => {
   const { token } = useAuthStore();
@@ -46,24 +47,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 border-b border-border bg-background/80 backdrop-blur-md">
-
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Logo />
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground hover:bg-muted">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar />
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
@@ -141,7 +125,7 @@ const LandingPage = () => {
           ) : events.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {events.map((event) => (
-                <Link href={`/dashboard/student/events/${event.event_id}`} key={event.event_id}>
+                <Link href={`/events/${event.event_id}`} key={event.event_id}>
                   <motion.div 
                     whileHover={{ y: -5 }}
                     className="group h-full rounded-2xl bg-card border border-border overflow-hidden hover:border-primary/50 transition-colors"

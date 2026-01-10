@@ -2,8 +2,8 @@ import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
 import { Toaster } from "react-hot-toast";
-// import Header from "@/components/Header";
-// import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -34,15 +34,17 @@ export default function RootLayout({ children }) {
       >
         <GoogleAuthProvider>
           <ThemeProvider
-             attribute="class"
-             defaultTheme="system"
-             enableSystem
-             disableTransitionOnChange
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
           >
             <Toaster position="top-center" />
-            <main className="grow">
+            <Header />
+            <main className="flex-grow">
               {children}
             </main>
+            <Footer />
           </ThemeProvider>
         </GoogleAuthProvider>
       </body>

@@ -46,8 +46,12 @@ function getRefreshToken() {
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
-    // Do not attach token for public endpoints (like /event/)
-    if (token && !config.url?.includes("/event/")) {
+    // Do not attach token for public GET endpoints (like /event/)
+    const isPublicEventGet =
+      config.method?.toLowerCase() === "get" &&
+      (config.url?.includes("/event/") || config.url?.includes("/events/"));
+
+    if (token && !isPublicEventGet) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

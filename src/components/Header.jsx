@@ -51,6 +51,10 @@ const Header = () => {
             <Logo />
           </Link>
           
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Home
+            </Link>
           {user ? (
             <>
               {!pathname.startsWith('/dashboard') && (
@@ -97,16 +101,33 @@ const Header = () => {
         >
           {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button> */}
-      </div>
 
-          {/* Mobile Hamburger Menu Button */}
-          <button
-            className="md:hidden p-2 text-gray-300 hover:text-white focus:outline-none"
-            onClick={toggleMenu}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          {/* Mobile Actions */}
+          <div className="md:hidden flex items-center gap-2">
+            
+            {/* Student Mobile Logout */}
+            {isAuthenticated && role === 'student' && (
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+               >
+                  <LogOut className="h-5 w-5" />
+               </Button>
+            )}
+
+            {/* Mobile Hamburger Menu Button - Hidden for Students */}
+            {(!isAuthenticated || (isAuthenticated && role !== 'student')) && (
+              <button
+                className="p-2 text-gray-300 hover:text-white focus:outline-none"
+                onClick={toggleMenu}
+                aria-label="Toggle menu"
+              >
+                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            )}
+          </div>
         </div>
       </header>
       
@@ -158,6 +179,18 @@ const Header = () => {
                       {/* Dashboard Links */}
                       <div className="space-y-1">
                         <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</p>
+                         <Link
+                            href="/"
+                            onClick={closeMenu}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${
+                              pathname === "/"
+                                ? "bg-rose-600/10 text-rose-500" 
+                                : "hover:bg-gray-800 text-gray-300 hover:text-white"
+                            }`}
+                          >
+                           <Home className="h-5 w-5" />
+                           Home
+                          </Link>
                         {sidebarLinks.map((link) => (
                           <Link
                             key={link.name}
@@ -190,6 +223,14 @@ const Header = () => {
                     </>
                   ) : (
                     <div className="flex flex-col gap-3 mt-4">
+                       <Link 
+                         href="/" 
+                         onClick={closeMenu}
+                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
+                       >
+                         <Home className="h-5 w-5" />
+                         Home
+                       </Link>
                        <Link 
                          href="/events" 
                          onClick={closeMenu}
