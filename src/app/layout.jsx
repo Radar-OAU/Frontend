@@ -1,6 +1,6 @@
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import GoogleAuthProvider from "@/components/GoogleAuthProvider";
+import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
 import { Toaster } from "react-hot-toast";
 // import Header from "@/components/Header";
 // import Footer from "@/components/Footer";
