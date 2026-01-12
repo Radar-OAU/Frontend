@@ -349,7 +349,7 @@ export default function Overview() {
         />
         <StatCard
           icon={<Ticket className="w-5 h-5 text-blue-500" />}
-          label="Total Tickets sold"
+          label="Total tickets sold"
           value={analytics.total_tickets_sold?.toLocaleString() || 0}
           description="Total confirmed bookings"
         />
