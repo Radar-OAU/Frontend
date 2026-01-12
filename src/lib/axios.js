@@ -46,18 +46,13 @@ function getRefreshToken() {
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
-    // Do not attach token for public GET endpoints (like /event/)
-    const isPublicEventGet =
-      config.method?.toLowerCase() === "get" &&
-      (config.url?.includes("/event/") || config.url?.includes("/events/"));
-
     // Do not attach token for auth endpoints
     const isAuthEndpoint =
       config.url?.includes("/login/") ||
       config.url?.includes("/signup/") ||
       config.url?.includes("/token/refresh/");
 
-    if (token && !isPublicEventGet && !isAuthEndpoint) {
+    if (token && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -89,6 +84,39 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      // Check if the error is specifically about the token being invalid
+      const errorMessage =
+        error.response.data?.detail || error.response.data?.code;
+      const isTokenInvalid =
+        errorMessage === "Given token not valid for any token type" ||
+        errorMessage === "token_not_valid";
+
+      // If token is explicitly invalid, logout and redirect
+      if (isTokenInvalid) {
+        useAuthStore.getState().logout();
+        localStorage.removeItem("auth-storage");
+
+        // Define public paths that shouldn't force a redirect to login
+        const publicPaths = [
+          "/",
+          "/events",
+          "/login",
+          "/signup",
+          "/verify-otp",
+        ];
+        const currentPath =
+          typeof window !== "undefined" ? window.location.pathname : "";
+        const isPublicPath =
+          publicPaths.includes(currentPath) ||
+          currentPath.startsWith("/events/");
+
+        if (typeof window !== "undefined" && !isPublicPath) {
+          window.location.href = "/login";
+        }
+        return Promise.reject(error);
+      }
+
+      // Otherwise, try to refresh the token
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -130,7 +158,7 @@ api.interceptors.response.use(
                 parsed.state.token = newAccess;
                 localStorage.setItem("auth-storage", JSON.stringify(parsed));
               }
-            } catch { }
+            } catch {}
 
             // Update default header for future requests
             api.defaults.headers.Authorization = `Bearer ${newAccess}`;
@@ -144,7 +172,28 @@ api.interceptors.response.use(
           })
           .catch((err) => {
             processQueue(err, null);
+
+            // If refresh fails, logout and redirect
+            useAuthStore.getState().logout();
             localStorage.removeItem("auth-storage");
+
+            const publicPaths = [
+              "/",
+              "/events",
+              "/login",
+              "/signup",
+              "/verify-otp",
+            ];
+            const currentPath =
+              typeof window !== "undefined" ? window.location.pathname : "";
+            const isPublicPath =
+              publicPaths.includes(currentPath) ||
+              currentPath.startsWith("/events/");
+
+            if (typeof window !== "undefined" && !isPublicPath) {
+              window.location.href = "/login";
+            }
+
             reject(err);
           })
           .finally(() => {
@@ -153,32 +202,6 @@ api.interceptors.response.use(
       });
     }
 
-    return Promise.reject(error);
-  }
-);
-
-// Add a response interceptor to handle token expiration
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const originalRequest = error.config;
-
-    // If error is 401 (Unauthorized) and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // Check if the error is specifically about the token being invalid
-      const errorMessage =
-        error.response.data?.detail || error.response.data?.code;
-      if (
-        errorMessage === "Given token not valid for any token type" ||
-        errorMessage === "token_not_valid"
-      ) {
-        useAuthStore.getState().logout();
-        // Optionally redirect to login
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
-      }
-    }
     return Promise.reject(error);
   }
 );

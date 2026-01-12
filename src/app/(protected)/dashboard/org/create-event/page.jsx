@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import useOrganizerStore from "../../../../../store/orgStore";
 import Select from "@/components/ui/custom-select";
 import Loading from "@/components/ui/Loading";
-import { MapPin, Calendar, Camera, ImageIcon, Eye, X, ChevronDown } from "lucide-react";
+import { MapPin, Calendar, Camera, ImageIcon, Eye, X, ChevronDown, CheckCircle2, Ticket, ArrowRight, XCircle, Plus } from "lucide-react";
 
 const FALLBACK_EVENT_TYPES = [
   { value: "conference", label: "Conference" },
@@ -44,8 +44,9 @@ export default function CreateEvent() {
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdEventId, setCreatedEventId] = useState(null);
 
   // Fetch config (GET /config/) and populate eventTypes/pricingTypes.
   useEffect(() => {
@@ -177,12 +178,10 @@ export default function CreateEvent() {
     setImageFile(null);
     setPreview(null);
     setErrors({});
-    setServerError("");
   };
 
   const submit = async (ev) => {
     ev.preventDefault();
-    setServerError("");
     if (!validate()) return;
     setLoading(true);
 
@@ -244,12 +243,12 @@ export default function CreateEvent() {
       const res = await api.post("/event/", formData);
 
       if (res && res.status >= 200 && res.status < 300) {
-        toast.success("Event created successfully");
-        // triggerRefetch(); 
+        const newId = res.data.event_id || res.data.id;
+        setCreatedEventId(newId);
+        setShowSuccessModal(true);
         resetForm();
-        router.push('/dashboard/org/my-event');
       } else {
-        setServerError(`Unexpected server response: ${res?.status}`);
+        toast.error(`Unexpected server response: ${res?.status}`);
       }
     } catch (err) {
       const msg =
@@ -258,7 +257,7 @@ export default function CreateEvent() {
         (err?.response?.data ? JSON.stringify(err.response.data) : null) ||
         err?.message ||
         "Failed to create event";
-      setServerError(msg);
+      toast.error(msg);
       console.error("Create event error:", err?.response || err);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
@@ -302,11 +301,7 @@ export default function CreateEvent() {
         {/* Form Section */}
         <section className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 md:p-8 shadow-xl">
           <form onSubmit={submit} className="space-y-6" noValidate>
-            {serverError && (
-              <div className="rounded-xl bg-rose-900/20 border border-rose-800/50 p-4 text-rose-200 text-xs font-medium">
-                {serverError}
-              </div>
-            )}
+            {/* No more serverError div */}
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -618,6 +613,39 @@ export default function CreateEvent() {
           </div>
         </section>
       </div>
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[#0A0A0A] border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 transform animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-2">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">Event Created!</h2>
+              <p className="text-gray-400">
+                Your event has been successfully created. Would you like to add ticket categories (like VIP or Regular) now?
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 pt-4">
+              <button
+                onClick={() => router.push(`/dashboard/org/my-event/${createdEventId}/tickets`)}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group shadow-lg shadow-rose-600/20"
+              >
+                <Plus className="w-4 h-4" />
+                Add Ticket Categories
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/org/my-event')}
+                className="w-full bg-white/5 hover:bg-white/10 text-gray-300 py-3.5 rounded-2xl font-bold transition-all border border-white/5"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
