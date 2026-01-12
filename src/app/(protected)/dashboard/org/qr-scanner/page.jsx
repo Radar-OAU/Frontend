@@ -150,25 +150,21 @@ export default function QrScanner() {
       // 1. If we should be scanning but haven't started yet
       if (isScanning && activeTab === "scanner" && !scannerRef.current) {
         // Wait for DOM
-        await new Promise(r => setTimeout(r, 150));
-        if (!mounted) return;
+        await new Promise(r => setTimeout(r, 100)); 
+         const reader = document.getElementById(regionId);
+         if (!reader) return;
 
         try {
           const scanner = new Html5Qrcode(regionId);
-          scannerRef.current = scanner;
-          await scanner.start(
-            { facingMode: cameraFacingMode },
-            { 
-              fps: 15, 
-              qrbox: (w, h) => {
-                const s = Math.min(w, h) * 0.7;
-                return { width: s, height: s };
-              },
-              aspectRatio: 1.0
-            },
-            (text) => handleScan(text),
-            () => {}
-          );
+  scannerRef.current = scanner;
+
+  await scanner.start(
+    { facingMode: cameraFacingMode },
+    { fps: 15, qrbox: 250 },
+    (text) => handleScan(text),
+    () => {}
+  );
+          
         } catch (err) {
           console.error("Camera start failed", err);
           toast.error("Could not access camera.");
