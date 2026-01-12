@@ -330,7 +330,7 @@ const LoginPage = () => {
                   <div className="flex items-center justify-center gap-3">
                     <div className="h-4 w-4 md:h-5 md:w-5 flex items-center justify-center">
                       <img
-                        src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
+                        src="/Logo-google-icon-PNG.png"
                         alt="Google"
                       />
                     </div>
