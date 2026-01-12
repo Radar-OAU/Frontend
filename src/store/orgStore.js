@@ -10,11 +10,16 @@ const useOrganizerStore = create(
 
       setOrganization: (organization) => set({ organization }),
 
-      setEvents: (events) => set({ events }),
+      setEvents: (events) => set({ events, lastUpdate: Date.now() }),
+
+      setLastUpdate: () => set({ lastUpdate: Date.now() }),
+
+      setLastUpdate: (timestamp) => set({ lastUpdate: timestamp }),
 
       addEvent: (event) =>
         set((state) => ({
           events: [...state.events, event],
+          lastUpdate: Date.now(),
         })),
 
       updateEvent: (updatedEvent) =>
@@ -22,11 +27,13 @@ const useOrganizerStore = create(
           events: state.events.map((event) =>
             event.id === updatedEvent.id ? updatedEvent : event
           ),
+          lastUpdate: Date.now(),
         })),
 
       removeEvent: (eventId) =>
         set((state) => ({
           events: state.events.filter((event) => event.id !== eventId),
+          lastUpdate: Date.now(),
         })),
 
       clearStore: () => set({ organization: null, events: [], lastUpdate: null }),
