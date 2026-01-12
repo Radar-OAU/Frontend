@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import api from "../../../../../../lib/axios";
-import { Copy, ArrowLeft, ChevronLeft, FileText, BarChart3, ArrowRight } from "lucide-react";
+import { Copy, ArrowLeft, ChevronLeft, FileText, BarChart3, ArrowRight, Ticket } from "lucide-react";
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../../../../../lib/utils";
 
@@ -14,7 +14,6 @@ export default function EventDetailsPage() {
 
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const isMountedRef = useRef(true);
 
@@ -39,13 +38,12 @@ export default function EventDetailsPage() {
 
   const fetchEvent = useCallback(async () => {
     if (!id) {
-      setError("Invalid event id");
+      toast.error("Invalid event id");
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    setError("");
 
     try {
       const res = await api.get(`/events/${id}/details`);
@@ -61,11 +59,11 @@ export default function EventDetailsPage() {
         );
         if (isMountedRef.current) {
           if (found) setEvent(found);
-          else setError("Event not found");
+          else toast.error("Event not found");
         }
       } catch (inner) {
         if (isMountedRef.current) {
-          setError(
+          toast.error(
             inner?.response?.data?.detail ||
             inner?.message ||
             "Failed to load event"
@@ -138,21 +136,7 @@ export default function EventDetailsPage() {
     );
   }
 
-  if (error) {
-    return (
-      <main className="min-h-screen bg-linear-to-b from-[#05060a] to-black p-10 text-slate-100">
-        <div className="max-w-3xl mx-auto rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
-          <p className="text-rose-400 mb-4">{error}</p>
-          <button
-            onClick={() => router.back()}
-            className="px-4 py-2 rounded border border-slate-700"
-          >
-            ← Back
-          </button>
-        </div>
-      </main>
-    );
-  }
+  {/* Error handling moved to toasts */ }
 
   if (!event) return null;
 
@@ -181,7 +165,7 @@ export default function EventDetailsPage() {
                 `/dashboard/org/edit-event/${event.event_id ?? event.id}`
               )
             }
-            className="px-5 py-2 rounded-xl bg-(--sidebar-accent,#7c3aed) text-white"
+            className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700  text-white"
           >
             Edit
           </button>
@@ -191,6 +175,13 @@ export default function EventDetailsPage() {
           >
             <Copy className="h-4 w-4" />
             Copy Link
+          </button>
+          <button
+            onClick={() => router.push(`/dashboard/org/my-event/${event.event_id ?? event.id}/tickets`)}
+            className="px-4 py-2 rounded-xl bg-white/5 border border-slate-700 text-slate-100 hover:bg-slate-800 flex items-center gap-2"
+          >
+            <Ticket className="h-4 w-4" />
+            Manage Tickets
           </button>
           <button
             onClick={() => router.back()}

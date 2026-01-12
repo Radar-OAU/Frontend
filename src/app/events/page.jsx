@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button";
 import PublicNavbar from "@/components/PublicNavbar";
 import { getImageUrl } from "@/lib/utils";
 
+// Note: metadata must be exported from page.js in the same folder for client components
+// Create a separate page.js if you need static metadata
+
 const PublicEventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);

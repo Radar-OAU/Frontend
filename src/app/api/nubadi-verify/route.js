@@ -12,13 +12,22 @@ export async function GET(req) {
   }
 
   try {
+    const nubadiToken = process.env.NUBADI_TOKEN;
+    if (!nubadiToken) {
+      console.error('NUBADI_TOKEN environment variable is not set');
+      return NextResponse.json(
+        { error: 'Nubadi configuration error: missing NUBADI_TOKEN server environment variable.' },
+        { status: 500 },
+      );
+    }
+
     // Nubadi API URL from their documentation: https://nubapi.com/api
     const baseUrl = process.env.NUBADI_API_URL || 'https://nubapi.com/api';
     const url = `${baseUrl}/verify?account_number=${account_number}&bank_code=${bank_code}`;
     
     const res = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${process.env.NUBADI_TOKEN}`,
+        'Authorization': `Bearer ${nubadiToken}`,
         'Content-Type': 'application/json',
       },
     });

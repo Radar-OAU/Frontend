@@ -10,14 +10,12 @@ import { getImageUrl } from "../../../../../lib/utils";
 const MyEvent = () => {
   const router = useRouter();
   const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [serverError, setServerError] = useState("");
+  const [loading, setLoading] = useState(false);
   const isMountedRef = useRef(true);
 
   const fetchEvents = useCallback(async () => {
     if (!isMountedRef.current) return;
     setLoading(true);
-    setServerError("");
     try {
       const res = await api.get("/organizer/events/");
       const payload = res?.data;
@@ -34,7 +32,9 @@ const MyEvent = () => {
         (err?.response?.data ? JSON.stringify(err.response.data) : null) ||
         err?.message ||
         "Failed to load events";
-      if (isMountedRef.current) setServerError(msg);
+      if (isMountedRef.current) {
+        toast.error(msg);
+      }
       console.error("Error fetching events:", msg);
     } finally {
       if (isMountedRef.current) setLoading(false);
@@ -96,11 +96,7 @@ const MyEvent = () => {
         </div>
       </div>
 
-      {serverError && (
-        <div className="rounded-xl bg-rose-900/20 border border-rose-800/50 p-4 text-rose-200 text-xs font-medium">
-          {serverError}
-        </div>
-      )}
+      {/* No more serverError div */}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">

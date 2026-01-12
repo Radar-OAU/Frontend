@@ -84,7 +84,7 @@ const VerifyOTPContent = () => {
       });
 
       const { user_id, email: verifiedEmail, access, role, refresh } = res.data;
-      login({ user_id, email: verifiedEmail }, access, refresh || null, role);
+      login({ ...res.data }, access, refresh || null, role);
 
       // If this was an organizer verification right after signup, show a one-time
       // "Welcome {name}" message on their first dashboard visit.

@@ -127,7 +127,7 @@ const LoginPage = () => {
           }
       }
 
-      login({ user_id, email }, access, refresh, userRole)
+      login({ ...response.data }, access, refresh, userRole)
       toast.success('Login successful! Redirecting...', { id: toastId })
       router.push('/dashboard')
     } catch (err) {

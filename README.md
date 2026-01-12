@@ -1,18 +1,21 @@
-# PIN Module Documentation
+# Radar - Modern Event Ticketing Platform
 
-## Overview
+Radar is a comprehensive event ticketing platform designed to streamline event management and ticket purchasing. Built with modern web technologies, it provides a seamless experience for event organizers, students, and administrators.
 
 The PIN module provides functionality for managing Personal Identification Numbers (PINs) for organizers in the Radar system. It handles PIN creation, storage, and recovery operations with secure password hashing.
 
-## Model
-
-### Pin Model
-
-The `Pin` model stores PIN information associated with organizer emails.
-
-**Fields:**
-- `pin` (CharField, max_length=255): The hashed PIN value
-- `Email` (EmailField, max_length=150): The organizer's email address
+- **Framework:** [Next.js 16](https://nextjs.org/) with App Router
+- **Language:** React 19.2
+- **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
+- **UI Components:** Custom components + [Radix UI](https://www.radix-ui.com/) primitives
+- **Icons:** [Lucide React](https://lucide.dev/)
+- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
+- **Animations:** [Framer Motion](https://www.framer.com/motion/)
+- **HTTP Client:** [Axios](https://axios-http.com/) with interceptors for auth
+- **Authentication:** Google OAuth + JWT
+- **Forms:** [React Hook Form](https://react-hook-form.com/)
+- **Notifications:** [React Hot Toast](https://react-hot-toast.com/)
+- **Theme:** Dark/Light mode with [next-themes](https://github.com/pacocoursey/next-themes)
 
 **Features:**
 - Automatic password hashing on save using Django's `make_password`
@@ -134,111 +137,103 @@ curl -X POST http://localhost:8000/forgot-pin/ \
     "ConfirmPin": "5678"
 }
 ```
-
-**Success Response (201 Created):**
-```json
-{
-    "Message": "New PIN saved successfully!"
-}
+src/
+├── app/                          # Next.js App Router
+│   ├── (auth)/                   # Authentication routes (login, signup, verify-otp)
+│   ├── (protected)/              # Protected routes (dashboards)
+│   │   └── dashboard/
+│   │       ├── org/              # Organizer dashboard
+│   │       │   ├── create-event/
+│   │       │   ├── my-event/
+│   │       │   ├── qr-scanner/
+│   │       │   └── settings/
+│   │       └── student/          # Student dashboard
+│   │           ├── events/
+│   │           └── my-tickets/
+│   ├── events/                   # Public events pages
+│   ├── contact/                  # Contact page
+│   ├── terms/                    # Terms of service
+│   ├── privacy/                  # Privacy policy
+│   ├── lighthouse/               # Admin panel
+│   ├── layout.jsx                # Root layout with providers
+│   ├── page.jsx                  # Landing page
+│   └── globals.css               # Global styles
+├── components/                   # Reusable components
+│   ├── ui/                       # Base UI components (buttons, inputs, etc.)
+│   ├── admin/                    # Admin-specific components
+│   ├── organizersDashboardComponents/
+│   ├── studentDashboardComponents/
+│   ├── ErrorBoundary.jsx         # Error boundary for error handling
+│   ├── Header.jsx                # Main navigation
+│   └── Footer.jsx                # Footer
+├── lib/                          # Utilities and configurations
+│   ├── axios.js                  # Axios instance with auth interceptors
+│   ├── utils.js                  # Utility functions (cn, getImageUrl, etc.)
+│   └── admin.js                  # Admin utilities
+└── store/                        # Zustand state stores
+    ├── authStore.js              # Authentication state
+    └── orgStore.js               # Organizer state
 ```
 
-**Error Responses:**
-- `400 Bad Request`: If organizer does not exist
-  ```json
-  {
-      "Message": "Organizer does not exist"
-  }
-  ```
-- `400 Bad Request`: If PINs do not match
-  ```json
-  {
-      "Message": "New PIN and Confirm PIN do not match"
-  }
-  ```
+## 🔑 Key Features
 
-**Example:**
-```bash
-curl -X POST http://localhost:8000/change-pin/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "Email": "organizer@example.com",
-    "Pin": "5678",
-    "ConfirmPin": "5678"
-  }'
-```
+### For Event Organizers
+- Create and manage events
+- Track ticket sales and revenue
+- QR code scanner for ticket validation
+- Payout management
+- Event analytics dashboard
 
-**Notes:**
-- Uses `update_or_create` to handle both new and existing PINs
-- Automatically hashes the new PIN before saving
-- Validates that new PIN and confirmation PIN match
+### For Students
+- Browse and discover events
+- Purchase tickets
+- Manage purchased tickets
+- View ticket QR codes
 
----
+### For Admins
+- User management
+- Event verification and moderation
+- Platform analytics
+- System administration
 
-## Security Features
+## 🔐 Security Features
 
-1. **Password Hashing**: All PINs are automatically hashed using Django's `pbkdf2_sha256` algorithm before storage
-2. **Double-Hash Prevention**: The model checks if a PIN is already hashed before re-hashing
-3. **Email Verification**: All operations require the organizer to exist in the system
-4. **PIN Confirmation**: Change PIN endpoint requires confirmation to prevent typos
+- JWT-based authentication with automatic token refresh
+- Protected routes with authentication middleware
+- Security headers (CSP, X-Frame-Options, etc.)
+- Input validation and sanitization
+- Error boundaries for graceful error handling
 
-## Serializers
+## 🎨 Design System
 
-### PinSerializer
+The app uses a custom design system with:
+- CSS custom properties for theming
+- Dark/light mode support
+- Consistent color palette (primary: Rose-600 #e11d48)
+- Custom fonts: Plus Jakarta Sans (body), Geist Mono (code)
+- Responsive design for mobile, tablet, and desktop
 
-Serializes PIN data for API requests and responses.
+## 📊 State Management
 
-**Fields:**
-- `pin`: The PIN value
-- `Email`: The organizer's email
+- **Zustand** for global state (auth, org data)
+- **React Hook Form** for form state
+- **URL state** for filters and pagination
+- **Server state** cached via Next.js
 
-**Usage:**
-```python
-from radar.PIN.serializers import PinSerializer
+## 🚦 Route Protection
 
-serializer = PinSerializer(data={'Email': 'user@example.com', 'pin': '1234'})
-if serializer.is_valid():
-    serializer.save()
-```
+Routes are protected based on user roles:
+- Public routes: `/`, `/events`, `/login`, `/signup`
+- Student routes: `/dashboard/student/*`
+- Organizer routes: `/dashboard/org/*`
+- Admin routes: `/lighthouse/*`
 
-## Admin Interface
+## 🧪 Performance Optimizations
 
-The `Pin` model is registered in Django admin, allowing administrators to:
-- View all PINs
-- Edit PIN records
-- Delete PIN records
-
-Access at: `/admin/PIN/pin/`
-
-## Dependencies
-
-- `django.contrib.auth.hashers`: For password hashing
-- `rest_framework`: For API views and serializers
-- `radar.auth.models`: For OrganizerRegistration and StudentRegistration models
-- `radar.auth.gmail_utils`: For sending PIN change emails
-
-## Error Handling
-
-All endpoints include comprehensive error handling:
-- Validates organizer existence before operations
-- Returns descriptive error messages
-- Uses appropriate HTTP status codes
-- Logs important events (email sending, errors)
-
-## Logging
-
-The module uses Python's logging framework with logger name `radar.PIN`:
-- Logs email sending failures
-- Logs successful email deliveries
-- Helps with debugging and monitoring
-
-## Testing
-
-The `tests.py` file is currently empty. Consider adding tests for:
-- PIN creation and validation
-- PIN hashing functionality
-- Email sending in forgot PIN flow
-- PIN change with matching/not matching PINs
-- Error cases (non-existent organizer, etc.)
+- Next.js Image component for optimized images
+- Code splitting with dynamic imports
+- Route prefetching
+- Optimized bundle with tree shaking
 
 ## URL Configuration
 
@@ -249,3 +244,8 @@ The PIN URLs are configured in `urls.py`:
 
 Make sure these URLs are included in your main `urls.py` configuration.
 
+This project is proprietary and confidential. All rights reserved.
+
+---
+
+**Built with ❤️ by the Radar Team**
