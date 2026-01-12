@@ -16,9 +16,6 @@ const useAuthStore = create(
           // Clear the organizer Zustand store
           localStorage.removeItem('organizer-storage');
           
-          // Clear auth storage to prevent old user data from persisting
-          localStorage.removeItem('auth-storage');
-          
           // Clear welcome flags for different users
           const storedPinKeys = Object.keys(localStorage).filter(key => 
             key.startsWith('radar_org_first_welcome:')
