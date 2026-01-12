@@ -28,6 +28,7 @@ export default function Overview() {
   const [hideBalances, setHideBalances] = useState(true);
 
   const router = useRouter();
+  const { user } = useAuthStore();
   const { events, setOrganization, setEvents, lastUpdate, hydrated } = useOrganizerStore();
 
   useEffect(() => {
@@ -139,15 +140,40 @@ export default function Overview() {
 
     setPinLoading(true);
     try {
-      await api.post('/pin/', { Pin: pinValue });
-      storePinLocally(pinValue);
+      const email = user?.email;
+      if (!email) {
+        setPinError('Unable to detect your email. Please re-login.');
+        return;
+      }
+
+      // Backend expects: { Email, pin }
+      try {
+        await api.post('/pin/', { Email: email, pin: pinValue });
+      } catch (apiErr) {
+        const emailErr = apiErr?.response?.data?.Email?.[0];
+        const alreadyExists =
+          typeof emailErr === 'string' && emailErr.toLowerCase().includes('already exists');
+
+        if (!alreadyExists) throw apiErr;
+        // PIN already exists server-side; allow user to proceed with local PIN gate.
+        toast.success('PIN already exists for this account');
+      }
+
+      // Keep local PIN gate working (client-side hashed storage)
+      await storePinLocally(pinValue);
       toast.success('PIN set successfully!');
       setShowSetPinModal(false);
       setShowPinReminder(false);
       setPinValue('');
       setConfirmPinValue('');
     } catch (err) {
-      setPinError(err?.response?.data?.detail || 'Failed to set PIN');
+      const msg =
+        err?.response?.data?.Message ||
+        err?.response?.data?.error ||
+        err?.response?.data?.detail ||
+        err?.message ||
+        'Failed to set PIN';
+      setPinError(msg);
     } finally {
       setPinLoading(false);
     }
@@ -349,7 +375,7 @@ export default function Overview() {
         />
         <StatCard
           icon={<Ticket className="w-5 h-5 text-blue-500" />}
-          label="Tickets sold"
+          label="Total tickets sold"
           value={analytics.total_tickets_sold?.toLocaleString() || 0}
           description="Total confirmed bookings"
         />

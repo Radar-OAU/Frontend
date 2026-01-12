@@ -32,7 +32,7 @@ const Header = () => {
     }
   }, [isAuthenticated, user, role, setUser]);
 
-  if (pathname.startsWith('/dashboard/org')) return null;
+  if (pathname.startsWith('/dashboard/org') || pathname === '/dashboard') return null;
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);

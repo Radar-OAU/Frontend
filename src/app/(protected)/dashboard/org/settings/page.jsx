@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../../../../lib/axios';
 import useAuthStore from '@/store/authStore';
 import { hasPinSet, storePinLocally, updateLocalPin } from '@/lib/pinPrompt';
@@ -176,7 +176,17 @@ export default function Settings() {
 
     setPinLoading(true);
     try {
-      await api.post('/pin/', { Email: email, pin: setPinValue });
+      try {
+        await api.post('/pin/', { Email: email, pin: setPinValue });
+      } catch (apiErr) {
+        const emailErr = apiErr?.response?.data?.Email?.[0];
+        const alreadyExists =
+          typeof emailErr === 'string' && emailErr.toLowerCase().includes('already exists');
+
+        if (!alreadyExists) throw apiErr;
+        toast.success('PIN already exists for this account');
+      }
+
       await storePinLocally(setPinValue);
       setHasPin(true);
       setSetPinValue('');
@@ -410,52 +420,47 @@ export default function Settings() {
 
                 <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 shadow-xl space-y-8">
                   {/* Set PIN */}
-                  <form onSubmit={handleSetPin} className="space-y-4">
+                  {!hasPin ? (
+                    <form onSubmit={handleSetPin} className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold text-white">Set a PIN</p>
+                        <span className="text-[10px] font-black text-gray-500">OPTIONAL</span>
+                      </div>
+                      <OtpPinInput
+                        label="PIN"
+                        value={setPinValue}
+                        onChange={setSetPinValue}
+                        disabled={pinLoading}
+                      />
+                      <div className="flex justify-end">
+                        <Button loading={pinLoading} icon={<ShieldCheck className="w-4 h-4" />}>Set PIN</Button>
+                      </div>
+                    </form>
+                  ) : (
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-white">Set a PIN</p>
-                      {hasPin ? <span className="text-[10px] font-black text-emerald-500">PIN SET</span> : <span className="text-[10px] font-black text-gray-500">OPTIONAL</span>}
+                      <div>
+                        <p className="text-sm font-bold text-white">PIN</p>
+                        <p className="text-xs text-gray-500 font-bold mt-1">Your PIN is already set.</p>
+                      </div>
+                      <span className="text-[10px] font-black text-emerald-500">PIN SET</span>
                     </div>
-                    <InputGroup
-                      label="PIN"
-                      icon={<Lock className="w-3.5 h-3.5" />}
-                      type="password"
-                      value={setPinValue}
-                      onChange={(e) => {
-                        const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 4);
-                        setSetPinValue(numericOnly);
-                      }}
-                      placeholder="4 digits only"
-                    />
-                    <div className="flex justify-end">
-                      <Button loading={pinLoading} icon={<ShieldCheck className="w-4 h-4" />}>Set PIN</Button>
-                    </div>
-                  </form>
+                  )}
 
                   {/* Change PIN */}
                   <form onSubmit={handleChangePin} className="space-y-4">
                     <p className="text-sm font-bold text-white">Change PIN</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <InputGroup
+                      <OtpPinInput
                         label="New PIN"
-                        icon={<Lock className="w-3.5 h-3.5" />}
-                        type="password"
                         value={changePin.Pin}
-                        onChange={(e) => {
-                          const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 4);
-                          setChangePin((prev) => ({ ...prev, Pin: numericOnly }));
-                        }}
-                        placeholder="4 digits"
+                        onChange={(val) => setChangePin((prev) => ({ ...prev, Pin: val }))}
+                        disabled={pinLoading}
                       />
-                      <InputGroup
+                      <OtpPinInput
                         label="Confirm PIN"
-                        icon={<Lock className="w-3.5 h-3.5" />}
-                        type="password"
                         value={changePin.ConfirmPin}
-                        onChange={(e) => {
-                          const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 4);
-                          setChangePin((prev) => ({ ...prev, ConfirmPin: numericOnly }));
-                        }}
-                        placeholder="4 digits"
+                        onChange={(val) => setChangePin((prev) => ({ ...prev, ConfirmPin: val }))}
+                        disabled={pinLoading}
                       />
                     </div>
                     <div className="flex justify-end">
@@ -650,4 +655,101 @@ function Button({ children, loading, icon, onClick }) {
             {children}
         </button>
     );
+}
+
+function OtpPinInput({ label, value, onChange, disabled = false }) {
+  const inputsRef = useRef([]);
+  const digits = Array.from({ length: 4 }, (_, i) => value?.[i] || "");
+
+  const setAtIndex = (index, nextDigit) => {
+    const next = digits.slice();
+    next[index] = nextDigit;
+    onChange(next.join(""));
+  };
+
+  const handleChange = (index, raw) => {
+    if (disabled) return;
+    const onlyDigits = (raw || "").replace(/\D/g, "");
+    if (!onlyDigits) {
+      setAtIndex(index, "");
+      return;
+    }
+
+    // If user pasted/typed multiple digits into one box, distribute them.
+    const chars = onlyDigits.slice(0, 4 - index).split("");
+    const next = digits.slice();
+    chars.forEach((ch, offset) => {
+      next[index + offset] = ch;
+    });
+    onChange(next.join(""));
+
+    const nextIndex = Math.min(index + chars.length, 3);
+    inputsRef.current[nextIndex]?.focus?.();
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (disabled) return;
+    if (e.key === "Backspace") {
+      if (digits[index]) {
+        setAtIndex(index, "");
+        return;
+      }
+      if (index > 0) {
+        inputsRef.current[index - 1]?.focus?.();
+        setAtIndex(index - 1, "");
+      }
+    }
+
+    if (e.key === "ArrowLeft" && index > 0) {
+      inputsRef.current[index - 1]?.focus?.();
+    }
+    if (e.key === "ArrowRight" && index < 3) {
+      inputsRef.current[index + 1]?.focus?.();
+    }
+  };
+
+  const handlePaste = (index, e) => {
+    if (disabled) return;
+    const text = e.clipboardData?.getData("text") || "";
+    const onlyDigits = text.replace(/\D/g, "").slice(0, 4);
+    if (!onlyDigits) return;
+    e.preventDefault();
+    const chars = onlyDigits.split("");
+    const next = digits.slice();
+    for (let i = 0; i < 4; i++) next[i] = chars[i] || "";
+    onChange(next.join(""));
+    inputsRef.current[Math.min(chars.length - 1, 3)]?.focus?.();
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-bold text-gray-500 flex items-center gap-2">
+        {label}
+      </label>
+
+      <div className="flex items-center gap-2">
+        {digits.map((d, index) => (
+          <input
+            key={index}
+            ref={(el) => {
+              inputsRef.current[index] = el;
+            }}
+            type="password"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            maxLength={1}
+            value={d}
+            disabled={disabled}
+            onChange={(e) => handleChange(index, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(index, e)}
+            onPaste={index === 0 ? (e) => handlePaste(index, e) : undefined}
+            className="w-12 h-12 bg-white/2 border border-white/5 rounded-xl text-white text-center text-lg tracking-widest focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all duration-200"
+          />
+        ))}
+      </div>
+
+      <p className="text-[10px] text-gray-600 font-medium px-1">4 digits only</p>
+    </div>
+  );
 }
