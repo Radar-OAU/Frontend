@@ -314,7 +314,7 @@ export default function QrScanner() {
               {isScanning && !scanResult && (
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <div className="w-64 h-64 border-2 border-rose-500/50 rounded-lg relative overflow-hidden shadow-[0_0_100px_rgba(225,29,72,0.1)]">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_20px_#e11d48] animate-[scan_2s_ease-in-out_infinite]"></div>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_20px_#e11d48] animate-[scan_2s_ease-in-out_infinite]"></div>
                   </div>
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,0.6)_100%)]"></div>
                 </div>
@@ -360,7 +360,7 @@ export default function QrScanner() {
 
         {/* Sidebar History */}
         <aside className="bg-[#0A0A0A] border border-white/5 rounded-2xl flex flex-col h-[600px] shadow-xl overflow-hidden">
-          <div className="p-4 border-b border-white/5 bg-white/[0.02]">
+          <div className="p-4 border-b border-white/5 bg-white/2">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <CheckSquare className="w-4 h-4 text-rose-500" /> Recent Scans
@@ -377,7 +377,7 @@ export default function QrScanner() {
               </div>
             ) : (
               history.map((scan, i) => (
-                <div key={i} className={`p-3 rounded-xl border text-left transition-all hover:bg-white/[0.02] ${scan.status === 'success' ? 'border-emerald-500/20 bg-emerald-500/5' :
+                <div key={i} className={`p-3 rounded-xl border text-left transition-all hover:bg-white/2 ${scan.status === 'success' ? 'border-emerald-500/20 bg-emerald-500/5' :
                   scan.status === 'warning' ? 'border-amber-500/20 bg-amber-500/5' :
                     'border-rose-500/20 bg-rose-500/5'
                   }`}>
@@ -402,7 +402,7 @@ export default function QrScanner() {
             )}
           </div>
 
-          <div className="p-4 border-t border-white/5 bg-white/[0.02]">
+          <div className="p-4 border-t border-white/5 bg-white/2">
             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">Manual Entry</label>
             <form onSubmit={handleManualVerify} className="flex gap-2">
               <input

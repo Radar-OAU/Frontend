@@ -15,15 +15,22 @@ import {
   ChevronRight,
   Clock,
   ExternalLink,
-  Banknote
+  Banknote,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/ui/Loading';
+import PinPromptModal from '@/components/PinPromptModal';
+import { hasPinSet } from '@/lib/pinPrompt';
 
 export default function PayoutPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [hideBalances, setHideBalances] = useState(true);
+  const [showPinPrompt, setShowPinPrompt] = useState(false);
+  const [pendingWithdrawal, setPendingWithdrawal] = useState(null);
   const [stats, setStats] = useState({
     available_balance: '0.00',
     pending_balance: '0.00',
@@ -82,11 +89,25 @@ export default function PayoutPage() {
       return;
     }
 
+    // Check if PIN is set
+    if (!hasPinSet()) {
+      setPendingWithdrawal(amount);
+      setShowPinPrompt(true);
+      return;
+    }
+
+    // Require PIN verification before withdrawal
+    setPendingWithdrawal(amount);
+    setShowPinPrompt(true);
+  };
+
+  const executeWithdrawal = async () => {
     try {
       setWithdrawing(true);
-      const res = await api.post('/wallet/withdraw/', { amount });
+      const res = await api.post('/wallet/withdraw/', { amount: pendingWithdrawal });
       toast.success(res.data.message || "Withdrawal initiated successfully");
       setWithdrawAmount('');
+      setPendingWithdrawal(null);
       fetchData(); // Refresh balances
     } catch (error) {
       toast.error(error.response?.data?.error || "Withdrawal failed");
@@ -114,24 +135,32 @@ export default function PayoutPage() {
           amount={stats.available_balance} 
           icon={<Wallet className="w-5 h-5 text-emerald-500" />}
           description="Ready for withdrawal"
+          hideBalances={hideBalances}
+          onToggleVisibility={() => setHideBalances(!hideBalances)}
         />
         <StatCard 
           label="Pending balance" 
           amount={stats.pending_balance} 
           icon={<Clock className="w-5 h-5 text-amber-500" />}
           description="Held for 7 days after sale"
+          hideBalances={hideBalances}
+          onToggleVisibility={() => setHideBalances(!hideBalances)}
         />
         <StatCard 
           label="Total earnings" 
           amount={stats.total_earnings} 
           icon={<TrendingUp className="w-5 h-5 text-blue-500" />}
           description="Lifetime revenue"
+          hideBalances={hideBalances}
+          onToggleVisibility={() => setHideBalances(!hideBalances)}
         />
          <StatCard 
           label="Total withdrawn" 
           amount={stats.total_withdrawn} 
           icon={<CheckCircle2 className="w-5 h-5 text-gray-500" />}
           description="Successfully transferred"
+          hideBalances={hideBalances}
+          onToggleVisibility={() => setHideBalances(!hideBalances)}
         />
       </div>
 
@@ -262,24 +291,52 @@ export default function PayoutPage() {
           </div>
         </div>
       </div>
+
+      {/* PIN Prompt Modal */}
+      <PinPromptModal
+        isOpen={showPinPrompt}
+        onClose={() => {
+          setShowPinPrompt(false);
+          setPendingWithdrawal(null);
+        }}
+        onSuccess={() => {
+          setShowPinPrompt(false);
+          executeWithdrawal();
+        }}
+        action="process withdrawal"
+        requireSetup={true}
+      />
     </div>
   );
 }
 
-function StatCard({ label, amount, icon, description }) {
+function StatCard({ label, amount, icon, description, hideBalances, onToggleVisibility }) {
+  const displayAmount = hideBalances ? '₦••••••' : `₦${parseFloat(amount).toLocaleString()}`;
+  
   return (
     <div className="bg-[#0A0A0A] border border-white/5 p-5 rounded-2xl shadow-lg hover:border-white/10 transition-all group">
       <div className="flex items-start justify-between mb-4">
         <div className="p-2.5 rounded-xl bg-white/5 group-hover:bg-white/10 transition-colors">
           {icon}
         </div>
-        <div className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full pulse">
-           Live
+        <div className="flex items-center gap-2">
+          <div className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full pulse">
+             Live
+          </div>
+          {onToggleVisibility && (
+            <button
+              onClick={onToggleVisibility}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-gray-500 hover:text-white"
+              title={hideBalances ? "Show balance" : "Hide balance"}
+            >
+              {hideBalances ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          )}
         </div>
       </div>
       <div>
         <p className="text-gray-500 text-xs font-semibold mb-1">{label}</p>
-        <h3 className="text-2xl font-bold">₦{parseFloat(amount).toLocaleString()}</h3>
+        <h3 className="text-2xl font-bold">{displayAmount}</h3>
         <p className="text-gray-600 text-[10px] mt-1.5 font-medium">{description}</p>
       </div>
     </div>

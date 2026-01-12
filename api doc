@@ -957,7 +957,7 @@ async function updateStudentProfile(data) {
 **Authentication:** Not required
 
 **Success Response (200 OK):**
-```json
+```json 
 {
   "event_types": [
     {"value": "academic", "label": "Academic"},

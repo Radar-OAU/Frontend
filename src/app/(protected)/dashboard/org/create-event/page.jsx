@@ -87,9 +87,18 @@ export default function CreateEvent() {
       setPreview(null);
       return;
     }
-    const url = URL.createObjectURL(imageFile);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
+    try {
+      const url = URL.createObjectURL(imageFile);
+      console.log("Image preview URL created:", url);
+      setPreview(url);
+      return () => {
+        URL.revokeObjectURL(url);
+        console.log("Image preview URL revoked");
+      };
+    } catch (err) {
+      console.error("Error creating image preview:", err);
+      toast.error("Failed to preview image");
+    }
   }, [imageFile]);
 
   const handleChange = (key) => (e) => {
@@ -100,8 +109,34 @@ export default function CreateEvent() {
   };
 
   const handleImage = (e) => {
-    const f = e.target.files?.[0] ?? null;
-    setImageFile(f);
+    const file = e.target.files?.[0];
+    console.log("File selected:", file);
+    
+    if (!file) {
+      console.log("No file selected");
+      setImageFile(null);
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      console.error("Invalid file type:", file.type);
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error("Image size must be less than 5MB");
+      console.error("File too large:", file.size);
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    console.log("Valid image file:", file.name, file.type, file.size);
+    setImageFile(file);
   };
 
   const validate = () => {
@@ -412,30 +447,65 @@ export default function CreateEvent() {
             <div className="space-y-4 pt-2">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Cover Image
+                  Cover Image {imageFile && <span className="text-rose-500">• Selected: {imageFile.name}</span>}
                 </label>
-                <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl hover:border-rose-500/50 hover:bg-rose-500/5 transition-all h-32 flex flex-col items-center justify-center text-center">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImage}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className="pointer-events-none flex flex-col items-center">
-                    <Camera className="w-8 h-8 mb-2 text-gray-500 group-hover:text-rose-400 transition-colors" />
-                    <span className="text-xs text-gray-500 group-hover:text-rose-400 font-medium">Click to upload cover image</span>
+                
+                {!preview ? (
+                  <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl hover:border-rose-500/50 hover:bg-rose-500/5 transition-all h-32 flex flex-col items-center justify-center text-center">
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImage}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="pointer-events-none flex flex-col items-center">
+                      <Camera className="w-8 h-8 mb-2 text-gray-500 group-hover:text-rose-400 transition-colors" />
+                      <span className="text-xs text-gray-500 group-hover:text-rose-400 font-medium">Click to upload cover image</span>
+                      <span className="text-[10px] text-gray-600 mt-1">PNG, JPG up to 5MB</span>
+                    </div>
                   </div>
-                </div>
-                {preview && (
-                  <div className="relative h-40 w-full rounded-2xl overflow-hidden border border-white/10 mt-3 group">
-                    <img src={preview} alt="preview" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => { setImageFile(null); setPreview(null); }}
-                      className="absolute top-2 right-2 bg-black/60 hover:bg-rose-600 text-white p-1.5 rounded-lg backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                ) : (
+                  <div className="relative h-48 w-full rounded-2xl overflow-hidden border border-white/10 group">
+                    <img 
+                      src={preview} 
+                      alt="preview" 
+                      className="w-full h-full object-cover"
+                      onLoad={() => console.log("Preview image loaded successfully")}
+                      onError={(e) => {
+                        console.error("Preview image failed to load");
+                        toast.error("Failed to display image preview");
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <label
+                        htmlFor="image-upload-change"
+                        className="bg-white/90 hover:bg-white text-black px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        Change
+                      </label>
+                      <input
+                        id="image-upload-change"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImage}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => { 
+                          e.preventDefault();
+                          setImageFile(null); 
+                          setPreview(null);
+                          // Reset both file inputs
+                          const inputs = document.querySelectorAll('input[type="file"]');
+                          inputs.forEach(input => input.value = '');
+                        }}
+                        className="bg-rose-600/90 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

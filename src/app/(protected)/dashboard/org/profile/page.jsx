@@ -16,11 +16,15 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/ui/Loading';
+import PinPromptModal from '@/components/PinPromptModal';
+import { hasPinSet } from '@/lib/pinPrompt';
 
 export default function ProfilePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [showPinPrompt, setShowPinPrompt] = useState(false);
+  const [pendingProfileData, setPendingProfileData] = useState(null);
 
   // Profile State
   const [profile, setProfile] = useState({
@@ -51,15 +55,31 @@ export default function ProfilePage() {
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    
+    const payload = {
+      email: profile.Email,
+      Organization_Name: profile.Organization_Name,
+      Phone: profile.Phone
+    };
+
+    // Check if PIN is set
+    if (!hasPinSet()) {
+      setPendingProfileData(payload);
+      setShowPinPrompt(true);
+      return;
+    }
+
+    // Require PIN verification before updating
+    setPendingProfileData(payload);
+    setShowPinPrompt(true);
+  };
+
+  const executeProfileUpdate = async () => {
     setIsLoading(true);
     try {
-      const payload = {
-        email: profile.Email,
-        Organization_Name: profile.Organization_Name,
-        Phone: profile.Phone
-      };
-      await api.post('/organizer/profile/', payload);
+      await api.post('/organizer/profile/', pendingProfileData);
       toast.success('Profile updated successfully');
+      setPendingProfileData(null);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to update profile');
     } finally {
@@ -171,6 +191,21 @@ export default function ProfilePage() {
           </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* PIN Prompt Modal */}
+      <PinPromptModal
+        isOpen={showPinPrompt}
+        onClose={() => {
+          setShowPinPrompt(false);
+          setPendingProfileData(null);
+        }}
+        onSuccess={() => {
+          setShowPinPrompt(false);
+          executeProfileUpdate();
+        }}
+        action="update profile information"
+        requireSetup={true}
+      />
     </div>
   );
 }

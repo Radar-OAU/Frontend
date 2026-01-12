@@ -101,15 +101,15 @@ export default function EventDetailsPage() {
     ? [
       {
         label: "Total tickets",
-        value: event.ticket_stats?.total_tickets ?? 0,
+        value: (event.ticket_stats?.total_tickets ?? 0).toLocaleString(),
       },
       {
         label: "Confirmed",
-        value: event.ticket_stats?.confirmed_tickets ?? 0,
+        value: (event.ticket_stats?.confirmed_tickets ?? 0).toLocaleString(),
       },
       {
         label: "Pending",
-        value: event.ticket_stats?.pending_tickets ?? 0,
+        value: (event.ticket_stats?.pending_tickets ?? 0).toLocaleString(),
       },
       {
         label: "Available",
@@ -117,7 +117,7 @@ export default function EventDetailsPage() {
       },
       {
         label: "Revenue",
-        value: `₦${event.ticket_stats?.total_revenue ?? 0}`,
+        value: `₦${(event.ticket_stats?.total_revenue ?? 0).toLocaleString()}`,
       },
     ]
     : [];

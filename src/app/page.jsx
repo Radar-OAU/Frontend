@@ -71,7 +71,7 @@ const LandingPage = () => {
             
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight">
               The Future of <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-purple-500">
                 Campus Events
               </span>
             </h1>

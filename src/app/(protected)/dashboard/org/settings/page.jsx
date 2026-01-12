@@ -2,6 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import api from '../../../../../lib/axios';
+import useAuthStore from '@/store/authStore';
+import { hasPinSet, storePinLocally, updateLocalPin } from '@/lib/pinPrompt';
+import PinPromptModal from '@/components/PinPromptModal';
+
+// Secure backend proxy endpoints
+const NUBADI_BANKS_URL = '/api/nubadi-banks';
+const NUBADI_VERIFY_URL = '/api/nubadi-verify';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -25,8 +32,18 @@ import Loading from '@/components/ui/Loading';
 
 export default function Settings() {
   const router = useRouter();
+  const email = useAuthStore((s) => s.user?.email);
   const [activeTab, setActiveTab] = useState('security');
   const [isLoading, setIsLoading] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [hasPin, setHasPin] = useState(false);
+  
+  // PIN prompt modal state
+  const [showPinPrompt, setShowPinPrompt] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'password' or 'bank'
+
+  const [setPinValue, setSetPinValue] = useState('');
+  const [changePin, setChangePin] = useState({ Pin: '', ConfirmPin: '' });
 
   // Password State
   const [passwords, setPasswords] = useState({
@@ -47,6 +64,7 @@ export default function Settings() {
   });
   const [banks, setBanks] = useState([]);
   const [loadingBanks, setLoadingBanks] = useState(false);
+  const [verifyingAccount, setVerifyingAccount] = useState(false);
 
   const [hasBankAccount, setHasBankAccount] = useState(false);
 
@@ -59,38 +77,30 @@ export default function Settings() {
     fetchBanks();
   }, []);
 
+  useEffect(() => {
+    setHasPin(hasPinSet());
+  }, []);
 
 
 
 
+
+  // Fetch banks from secure backend
   const fetchBanks = async () => {
+    setLoadingBanks(true);
     try {
-        setLoadingBanks(true);
-        // Attempt to fetch from backend proxy first, or fallback to hardcoded list if 404
-        // Assuming backend might proxy Paystack's bank list
-        const res = await api.get('/wallet/banks/').catch(() => null); 
-        
-        if (res && res.data && Array.isArray(res.data.data)) {
-            setBanks(res.data.data);
-        } else {
-             // Fallback list of major Nigerian banks
-             setBanks([
-                { name: 'Access Bank', code: '044' },
-                { name: 'Guaranty Trust Bank', code: '058' },
-                { name: 'Zenith Bank', code: '057' },
-                { name: 'United Bank for Africa', code: '033' },
-                { name: 'First Bank of Nigeria', code: '011' },
-                { name: 'FCMB', code: '214' },
-                { name: 'Keystone Bank', code: '082' },
-                { name: 'Sterling Bank', code: '232' },
-                { name: 'Union Bank of Nigeria', code: '032' },
-                { name: 'Wema Bank', code: '035' },
-             ].sort((a,b) => a.name.localeCompare(b.name)));
-        }
+      const res = await fetch(NUBADI_BANKS_URL);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setBanks(data.map(b => ({ name: b.name, code: b.code })));
+      } else {
+        setBanks([]);
+      }
     } catch (error) {
-        console.error("Failed to fetch banks", error);
+      console.error('Failed to fetch banks from backend', error);
+      setBanks([]);
     } finally {
-        setLoadingBanks(false);
+      setLoadingBanks(false);
     }
   };
 
@@ -123,6 +133,20 @@ export default function Settings() {
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
+    
+    // Check if PIN is set, if not require setup
+    if (!hasPinSet()) {
+      setPendingAction('password');
+      setShowPinPrompt(true);
+      return;
+    }
+    
+    // If PIN is set, prompt for PIN
+    setPendingAction('password');
+    setShowPinPrompt(true);
+  };
+  
+  const executePasswordChange = async () => {
     if (passwords.new_password !== passwords.confirm_password) {
       toast.error("New passwords do not match");
       return;
@@ -139,12 +163,96 @@ export default function Settings() {
     }
   };
 
+  const handleSetPin = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error('Unable to detect your email. Please re-login.');
+      return;
+    }
+    if (!setPinValue || setPinValue.trim().length !== 4) {
+      toast.error('PIN must be exactly 4 digits');
+      return;
+    }
+
+    setPinLoading(true);
+    try {
+      await api.post('/pin/', { Email: email, pin: setPinValue });
+      await storePinLocally(setPinValue);
+      setHasPin(true);
+      setSetPinValue('');
+      toast.success('PIN set successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.Message || error.response?.data?.error || 'Failed to set PIN');
+    } finally {
+      setPinLoading(false);
+    }
+  };
+
+  const handleChangePin = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error('Unable to detect your email. Please re-login.');
+      return;
+    }
+    if (!changePin.Pin || changePin.Pin.trim().length !== 4) {
+      toast.error('New PIN must be exactly 4 digits');
+      return;
+    }
+    if (changePin.Pin !== changePin.ConfirmPin) {
+      toast.error('New PIN and Confirm PIN do not match');
+      return;
+    }
+
+    setPinLoading(true);
+    try {
+      await api.post('/change-pin/', { Email: email, Pin: changePin.Pin, ConfirmPin: changePin.ConfirmPin });
+      await updateLocalPin(changePin.Pin);
+      setHasPin(true);
+      setChangePin({ Pin: '', ConfirmPin: '' });
+      toast.success('PIN changed successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.Message || error.response?.data?.error || 'Failed to change PIN');
+    } finally {
+      setPinLoading(false);
+    }
+  };
+
+  const handleForgotPin = async () => {
+    if (!email) {
+      toast.error('Unable to detect your email. Please re-login.');
+      return;
+    }
+    setPinLoading(true);
+    try {
+      await api.post('/forgot-pin/', { Email: email });
+      toast.success('PIN reset link sent to your email');
+    } catch (error) {
+      toast.error(error.response?.data?.Message || error.response?.data?.error || 'Failed to send PIN reset link');
+    } finally {
+      setPinLoading(false);
+    }
+  };
+
   const handleBankUpdate = async (e) => {
     e.preventDefault();
     if (!bankParams.account_name) {
         toast.error("Please verify account details first");
         return;
     }
+    
+    // Check if PIN is set, if not require setup
+    if (!hasPinSet()) {
+      setPendingAction('bank');
+      setShowPinPrompt(true);
+      return;
+    }
+    
+    // If PIN is set, prompt for PIN
+    setPendingAction('bank');
+    setShowPinPrompt(true);
+  };
+  
+  const executeBankUpdate = async () => {
     setIsLoading(true);
     try {
       await api.post('/wallet/bank-account/', bankParams);
@@ -162,13 +270,47 @@ export default function Settings() {
       setIsLoading(false);
     }
   };
-
+   
+  // Secure verify API
+  const verifyBankAccount = async (account_number, bank_code) => {
+    setVerifyingAccount(true);
+    try {
+      const url = `${NUBADI_VERIFY_URL}?account_number=${account_number}&bank_code=${bank_code}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Verification failed');
+      const data = await res.json();
+      if (data.account_name) {
+        setBankParams(prev => ({ ...prev, account_name: data.account_name }));
+        toast.success('Account name detected');
+      } else {
+        setBankParams(prev => ({ ...prev, account_name: '' }));
+        toast.error('Could not detect account name');
+      }
+    } catch (error) {
+      setBankParams(prev => ({ ...prev, account_name: '' }));
+      toast.error('Bank verification failed');
+    } finally {
+      setVerifyingAccount(false);
+    }
+  };
+  
   const tabs = [
     { id: 'security', label: 'Security', icon: ShieldCheck },
     { id: 'banking', label: 'Bank Details', icon: Landmark },
   ];
+  
+  // PIN success handler
+  const handlePinSuccess = () => {
+    if (pendingAction === 'password') {
+      executePasswordChange();
+    } else if (pendingAction === 'bank') {
+      executeBankUpdate();
+    }
+    setPendingAction(null);
+  };
 
   return (
+    <>
     <div className="min-h-screen p-4 md:p-8 space-y-8 max-w-5xl mx-auto">
       {/* Header */}
       <div>
@@ -254,6 +396,90 @@ export default function Settings() {
                   </Button>
                 </div>
               </form>
+
+              <div className="mt-10 max-w-2xl">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="p-1.5 bg-white/5 rounded-lg">
+                    <ShieldCheck className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">PIN Protection</h2>
+                    <p className="text-xs text-gray-500 font-bold">Protect Overview, Profile, Settings, and Wallet/Payout</p>
+                  </div>
+                </div>
+
+                <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 shadow-xl space-y-8">
+                  {/* Set PIN */}
+                  <form onSubmit={handleSetPin} className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-white">Set a PIN</p>
+                      {hasPin ? <span className="text-[10px] font-black text-emerald-500">PIN SET</span> : <span className="text-[10px] font-black text-gray-500">OPTIONAL</span>}
+                    </div>
+                    <InputGroup
+                      label="PIN"
+                      icon={<Lock className="w-3.5 h-3.5" />}
+                      type="password"
+                      value={setPinValue}
+                      onChange={(e) => {
+                        const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setSetPinValue(numericOnly);
+                      }}
+                      placeholder="4 digits only"
+                    />
+                    <div className="flex justify-end">
+                      <Button loading={pinLoading} icon={<ShieldCheck className="w-4 h-4" />}>Set PIN</Button>
+                    </div>
+                  </form>
+
+                  {/* Change PIN */}
+                  <form onSubmit={handleChangePin} className="space-y-4">
+                    <p className="text-sm font-bold text-white">Change PIN</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <InputGroup
+                        label="New PIN"
+                        icon={<Lock className="w-3.5 h-3.5" />}
+                        type="password"
+                        value={changePin.Pin}
+                        onChange={(e) => {
+                          const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          setChangePin((prev) => ({ ...prev, Pin: numericOnly }));
+                        }}
+                        placeholder="4 digits"
+                      />
+                      <InputGroup
+                        label="Confirm PIN"
+                        icon={<Lock className="w-3.5 h-3.5" />}
+                        type="password"
+                        value={changePin.ConfirmPin}
+                        onChange={(e) => {
+                          const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          setChangePin((prev) => ({ ...prev, ConfirmPin: numericOnly }));
+                        }}
+                        placeholder="4 digits"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button loading={pinLoading} icon={<Save className="w-3.5 h-3.5" />}>Change PIN</Button>
+                    </div>
+                  </form>
+
+                  {/* Forgot PIN */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-white">Forgot PIN</p>
+                      <p className="text-xs text-gray-500 font-bold mt-1">Send a PIN reset link to your email.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleForgotPin}
+                      disabled={pinLoading}
+                      className="text-xs font-bold text-rose-500 hover:text-rose-400 transition-colors disabled:opacity-50"
+                    >
+                      {pinLoading ? 'Sending...' : 'Forgot PIN?'}
+                    </button>
+                  </div>
+                </div>
+              </div>
              </div>
           )}
 
@@ -273,7 +499,7 @@ export default function Settings() {
                   <button 
                     type="button"
                     onClick={() => router.push('/dashboard/org/payout')}
-                    className="text-[10px] font-black text-rose-500 hover:text-rose-400 flex items-center gap-1 transition-colors font-bold"
+                    className="text-[10px] font-black text-rose-500 hover:text-rose-400 flex items-center gap-1 transition-colors"
                   >
                     Wallet <ChevronRight className="w-3 h-3" />
                   </button>
@@ -289,33 +515,45 @@ export default function Settings() {
                         value={bankParams.bank_code}
                         onChange={(value) => {
                           const selectedBank = banks.find(b => b.code === value);
-                          setBankParams({ 
-                            ...bankParams, 
+                          setBankParams(prev => ({
+                            ...prev,
                             bank_code: value,
                             bank_name: selectedBank ? selectedBank.name : ''
-                          });
+                          }));
+                          // Trigger verification if account number is present
+                          if (bankParams.bank_account_number.length === 10) {
+                            verifyBankAccount(bankParams.bank_account_number, value);
+                          }
                         }}
                         options={banks.map(b => ({ value: b.code, label: b.name }))}
                         placeholder="Select your bank"
+                        searchable={true}
                       />
 
-                      <InputGroup 
-                          label="Account number" 
-                          icon={<CreditCard className="w-3.5 h-3.5" />}
-                          value={bankParams.bank_account_number}
-                          onChange={(e) => {
-                               const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                               setBankParams({ ...bankParams, bank_account_number: val });
-                          }}
-                          placeholder="0123456789"
+                      <InputGroup
+                        label="Account number"
+                        icon={<CreditCard className="w-3.5 h-3.5" />}
+                        value={bankParams.bank_account_number}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setBankParams(prev => ({ ...prev, bank_account_number: val }));
+                          // Trigger verification if bank is selected
+                          if (val.length === 10 && bankParams.bank_code) {
+                            verifyBankAccount(val, bankParams.bank_code);
+                          }
+                        }}
+                        placeholder="0123456789"
                       />
 
-                      <InputGroup 
-                          label="Account name" 
-                          icon={<User className="w-3.5 h-3.5" />}
-                          value={bankParams.account_name}
-                          onChange={(e) => setBankParams({ ...bankParams, account_name: e.target.value })}
-                          placeholder="Beneficiary name"
+                      <InputGroup
+                        label="Account name"
+                        icon={<User className="w-3.5 h-3.5" />}
+                        value={bankParams.account_name}
+                        onChange={() => {}}
+                        placeholder="Beneficiary name"
+                        type="text"
+                        description={verifyingAccount ? 'Verifying...' : ''}
+                        readOnly={true}
                       />
                     </div>
 
@@ -331,12 +569,25 @@ export default function Settings() {
         </motion.div>
       </AnimatePresence>
     </div>
+    
+    {/* PIN Prompt Modal */}
+    <PinPromptModal
+      isOpen={showPinPrompt}
+      onClose={() => {
+        setShowPinPrompt(false);
+        setPendingAction(null);
+      }}
+      onSuccess={handlePinSuccess}
+      action={pendingAction === 'password' ? 'change your password' : 'update bank details'}
+      requireSetup={true}
+    />
+    </>
   );
 }
 
 /* --- Reusable Components --- */
 
-function InputGroup({ label, icon, type = "text", value, onChange, placeholder, description }) {
+function InputGroup({ label, icon, type = "text", value, onChange, placeholder, description, readOnly = false }) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-gray-500 flex items-center gap-2">
@@ -352,8 +603,9 @@ function InputGroup({ label, icon, type = "text", value, onChange, placeholder, 
           type={type}
           value={value}
           onChange={onChange}
+          readOnly={readOnly}
           placeholder={placeholder}
-          className={`w-full bg-white/[0.02] border border-white/5 rounded-xl py-3 ${icon ? 'pl-11' : 'pl-4'} pr-4 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all duration-200`}
+          className={`w-full bg-white/2 border border-white/5 rounded-xl py-3 ${icon ? 'pl-11' : 'pl-4'} pr-4 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all duration-200`}
         />
       </div>
       {description && <p className="text-[10px] text-gray-600 font-medium px-1">{description}</p>}
@@ -373,7 +625,7 @@ function PasswordInput({ label, value, onChange, show, toggleShow }) {
           type={show ? "text" : "password"}
           value={value}
           onChange={onChange}
-          className="w-full bg-white/[0.02] border border-white/5 rounded-xl py-3 pl-11 pr-11 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all duration-200"
+          className="w-full bg-white/2 border border-white/5 rounded-xl py-3 pl-11 pr-11 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all duration-200"
         />
         <button 
           type="button" 
@@ -392,7 +644,7 @@ function Button({ children, loading, icon, onClick }) {
         <button
             onClick={onClick}
             disabled={loading}
-            className="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-rose-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto min-w-[160px]"
+            className="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-rose-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto min-w-40"
         >
             {loading ? <Loader2 className="animate-spin w-4 h-4 text-white" /> : icon}
             {children}

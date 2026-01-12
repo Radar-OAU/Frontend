@@ -17,6 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { motion } from "framer-motion";
 import useAuthStore from "@/store/authStore";
+import useOrganizerStore from "@/store/orgStore";
 
 const OrganizationDashboardNavLinks = [
   { name: "Overview", link: "/dashboard/org", icon: <LayoutDashboard size={24} /> },
@@ -43,9 +44,25 @@ const Sidebar = () => {
   const location = usePathname();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const clearOrgStore = useOrganizerStore((state) => state.clearStore);
 
   const handleLogout = () => {
+    // Clear stores
     logout();
+    clearOrgStore();
+    
+    // Selectively clear localStorage, preserving PIN data and welcome flags
+    if (typeof window !== 'undefined') {
+      const keysToPreserve = ['radar_pin_salt', 'radar_pin_hash', 'radar_has_pin'];
+      // Also preserve welcome flags for all users
+      const allKeys = Object.keys(localStorage);
+      const welcomeKeys = allKeys.filter(key => key.startsWith('radar_org_first_welcome:'));
+      const preserveKeys = [...keysToPreserve, ...welcomeKeys];
+      
+      const keysToRemove = allKeys.filter(key => !preserveKeys.includes(key));
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+    }
+    
     router.push("/login");
   };
 

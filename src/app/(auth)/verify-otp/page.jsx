@@ -86,6 +86,24 @@ const VerifyOTPContent = () => {
       const { user_id, email: verifiedEmail, access, role, refresh } = res.data;
       login({ user_id, email: verifiedEmail }, access, refresh || null, role);
 
+      // If this was an organizer verification right after signup, show a one-time
+      // "Welcome {name}" message on their first dashboard visit.
+      try {
+        const normalizedRole = `${role || ""}`.toLowerCase().trim();
+        const normalizedFromParams = `${searchParams.get("role") || ""}`
+          .toLowerCase()
+          .trim();
+        const isOrganizer = normalizedRole === "organizer" || normalizedFromParams === "organizer";
+        if (isOrganizer && verifiedEmail) {
+          window.localStorage.setItem(
+            `radar_org_first_welcome:${verifiedEmail.toLowerCase()}`,
+            "true"
+          );
+        }
+      } catch {
+        // ignore
+      }
+
       toast.success("Email verified successfully! Redirecting...", { id: toastId });
       router.push("/dashboard");
 

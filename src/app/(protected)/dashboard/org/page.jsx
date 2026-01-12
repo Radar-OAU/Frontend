@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import api from "../../../../lib/axios";
-import { Ticket, Users, Calendar, TrendingUp, DollarSign, Clock, Plus, ChevronRight } from "lucide-react";
+import { Ticket, Users, Calendar, TrendingUp, DollarSign, Clock, Plus, ChevronRight, ShieldAlert, X, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import useAuthStore from "../../../../store/authStore";
 import { toast } from "react-hot-toast";
 import useOrganizerStore from "../../../../store/orgStore";
 import Loading from "@/components/ui/Loading";
+import { getImageUrl } from "@/lib/utils";
+import { hasPinSet, storePinLocally } from "@/lib/pinPrompt";
+import { motion, AnimatePresence } from "framer-motion";
 
 
 export default function Overview() {
@@ -15,6 +18,14 @@ export default function Overview() {
   const [eventsSummary, setEventsSummary] = useState(null);
   const [recentEvents, setRecentEvents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isFirstWelcome, setIsFirstWelcome] = useState(false);
+  const [showPinReminder, setShowPinReminder] = useState(false);
+  const [showSetPinModal, setShowSetPinModal] = useState(false);
+  const [pinValue, setPinValue] = useState('');
+  const [confirmPinValue, setConfirmPinValue] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [pinLoading, setPinLoading] = useState(false);
+  const [hideBalances, setHideBalances] = useState(true);
 
   const router = useRouter();
   const { events, setOrganization, setEvents, lastUpdate, hydrated } = useOrganizerStore();
@@ -75,8 +86,72 @@ export default function Overview() {
   // get the organization from the store to display in the welcome message
   const { organization } = useOrganizerStore();
   organization && console.log("Organization Name:", organization.Organization_Name);
+
+  useEffect(() => {
+    // One-time welcome message for newly verified organizers
+    try {
+      const orgEmail = organization?.Email?.toLowerCase?.();
+      if (!orgEmail) return;
+      const key = `radar_org_first_welcome:${orgEmail}`;
+      const shouldShow = window.localStorage.getItem(key) === "true";
+      if (shouldShow) {
+        setIsFirstWelcome(true);
+        window.localStorage.removeItem(key);
+      }
+    } catch {
+      // ignore
+    }
+  }, [organization?.Email]);
   
-  
+  // Check if PIN reminder should be shown
+  useEffect(() => {
+    const hasPin = hasPinSet();
+    if (!hasPin) {
+      const dismissed = localStorage.getItem('radar_pin_reminder_dismissed');
+      const dismissedDate = dismissed ? new Date(dismissed) : null;
+      const now = new Date();
+      
+      // Show reminder if never dismissed or dismissed more than 1 day ago
+      if (!dismissedDate || (now - dismissedDate) > 24 * 60 * 60 * 1000) {
+        setShowPinReminder(true);
+      }
+    }
+  }, []);
+
+  const handleDismissReminder = () => {
+    localStorage.setItem('radar_pin_reminder_dismissed', new Date().toISOString());
+    setShowPinReminder(false);
+  };
+
+  const handleSetPin = async (e) => {
+    e.preventDefault();
+    setPinError('');
+
+    if (!pinValue || pinValue.length !== 4) {
+      setPinError('PIN must be exactly 4 digits');
+      return;
+    }
+
+    if (pinValue !== confirmPinValue) {
+      setPinError('PINs do not match');
+      return;
+    }
+
+    setPinLoading(true);
+    try {
+      await api.post('/pin/', { Pin: pinValue });
+      storePinLocally(pinValue);
+      toast.success('PIN set successfully!');
+      setShowSetPinModal(false);
+      setShowPinReminder(false);
+      setPinValue('');
+      setConfirmPinValue('');
+    } catch (err) {
+      setPinError(err?.response?.data?.detail || 'Failed to set PIN');
+    } finally {
+      setPinLoading(false);
+    }
+  };
 
   // Refetch analytics and events summary when events change to update total events count and summary
   useEffect(() => {
@@ -128,7 +203,7 @@ export default function Overview() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-bold mb-1">
-            Welcome back, {organization?.Organization_Name || 'Organizer'}!
+            {isFirstWelcome ? "Welcome" : "Welcome back"}, {organization?.Organization_Name || 'Organizer'}!
           </h1>
           <p className="text-gray-400 text-xs">Overview of your event performance and analytics.</p>
         </div>
@@ -141,6 +216,126 @@ export default function Overview() {
         </button>
       </div>
 
+      {/* PIN Setup Reminder Banner */}
+      <AnimatePresence>
+        {showPinReminder && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-gradient-to-r from-amber-500/10 to-rose-500/10 border border-amber-500/30 rounded-2xl p-5 md:p-6 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl" />
+            <button
+              onClick={handleDismissReminder}
+              className="absolute top-4 right-4 p-1 hover:bg-white/10 rounded-lg transition-colors z-10"
+            >
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+            
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 relative z-10">
+              <div className="p-3 bg-amber-500/10 rounded-xl">
+                <ShieldAlert className="w-6 h-6 text-amber-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-white mb-1">Set up your PIN</h3>
+                <p className="text-sm text-gray-300">
+                  This PIN will be used to authorize withdrawals and sensitive account changes. Keep your account secure.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full md:w-auto">
+                <button
+                  onClick={handleDismissReminder}
+                  className="flex-1 md:flex-initial px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-sm font-semibold transition-colors"
+                >
+                  Later
+                </button>
+                <button
+                  onClick={() => setShowSetPinModal(true)}
+                  className="flex-1 md:flex-initial px-4 py-2 bg-rose-600 hover:bg-rose-700 rounded-xl text-white text-sm font-semibold transition-colors"
+                >
+                  Set PIN
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Set PIN Modal */}
+      {showSetPinModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSetPinModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative w-full max-w-sm bg-[#0A0A0A] border border-white/10 rounded-xl p-5 shadow-2xl"
+          >
+            <button
+              onClick={() => setShowSetPinModal(false)}
+              className="absolute top-3 right-3 p-1 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-1.5 bg-rose-500/10 rounded-lg">
+                <ShieldAlert className="w-5 h-5 text-rose-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Set Your PIN</h2>
+                <p className="text-[10px] text-gray-500">Protect sensitive actions</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSetPin} className="space-y-3">
+              {pinError && (
+                <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                  <p className="text-xs text-rose-200">{pinError}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5">Enter PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength="4"
+                  value={pinValue}
+                  onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ''))}
+                  placeholder="4 digits"
+                  autoFocus
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-center text-xl tracking-widest focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5">Confirm PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength="4"
+                  value={confirmPinValue}
+                  onChange={(e) => setConfirmPinValue(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Re-enter"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-center text-xl tracking-widest focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={pinLoading || pinValue.length !== 4 || confirmPinValue.length !== 4}
+                className="w-full px-3 py-2.5 bg-rose-600 hover:bg-rose-700 rounded-lg text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              >
+                {pinLoading ? 'Setting PIN...' : 'Set PIN'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
       {/* Primary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -149,6 +344,8 @@ export default function Overview() {
           value={`₦${analytics.total_revenue?.toLocaleString() || 0}`}
           description="Gross earnings from all events"
           trend="Live"
+          hideBalances={hideBalances}
+          onToggleVisibility={() => setHideBalances(!hideBalances)}
         />
         <StatCard
           icon={<Ticket className="w-5 h-5 text-blue-500" />}
@@ -223,7 +420,7 @@ export default function Overview() {
                 {/* Event Cover Image */}
                 <div className="h-40 relative overflow-hidden bg-white/5">
                    <img
-                      src={event.image || "/api/placeholder/400/200"}
+                      src={getImageUrl(event.image) || "/api/placeholder/400/200"}
                       alt={event.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       onError={(e) => {
@@ -286,22 +483,35 @@ export default function Overview() {
 
 /* ---------- UI Components ---------- */
 
-function StatCard({ label, value, icon, description, trend }) {
+function StatCard({ label, value, icon, description, trend, hideBalances, onToggleVisibility }) {
+  const displayValue = hideBalances ? '₦••••••' : value;
+  
   return (
     <div className="bg-[#0A0A0A] border border-white/5 p-5 rounded-2xl shadow-lg hover:border-white/10 transition-all group">
       <div className="flex items-start justify-between mb-4">
         <div className="p-2.5 rounded-xl bg-white/5 group-hover:bg-white/10 transition-colors">
           {icon}
         </div>
-        {trend && (
-           <div className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full pulse">
-             {trend}
-           </div>
-        )}
+        <div className="flex items-center gap-2">
+          {trend && (
+             <div className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full pulse">
+               {trend}
+             </div>
+          )}
+          {onToggleVisibility && (
+            <button
+              onClick={onToggleVisibility}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-gray-500 hover:text-white"
+              title={hideBalances ? "Show balance" : "Hide balance"}
+            >
+              {hideBalances ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          )}
+        </div>
       </div>
       <div>
         <p className="text-gray-500 text-xs font-semibold mb-1">{label}</p>
-        <h3 className="text-2xl font-bold">{value}</h3>
+        <h3 className="text-2xl font-bold">{displayValue}</h3>
         <p className="text-gray-600 text-[10px] mt-1.5 font-medium">{description}</p>
       </div>
     </div>
@@ -309,9 +519,10 @@ function StatCard({ label, value, icon, description, trend }) {
 }
 
 function SummaryBox({ label, value, color }) {
+  const formattedValue = typeof value === 'number' ? value.toLocaleString() : (value || 0);
   return (
-    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl flex flex-col items-center justify-center text-center group hover:bg-white/[0.04] transition-colors">
-      <p className={`text-2xl font-black mb-1 ${color || 'text-white'}`}>{value || 0}</p>
+    <div className="p-4 bg-white/2 border border-white/5 rounded-xl flex flex-col items-center justify-center text-center group hover:bg-white/4 transition-colors">
+      <p className={`text-2xl font-black mb-1 ${color || 'text-white'}`}>{formattedValue}</p>
       <p className="text-[10px] text-gray-500 font-bold">{label}</p>
     </div>
   );

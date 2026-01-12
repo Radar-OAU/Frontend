@@ -146,7 +146,7 @@ const MyEvent = () => {
                   </div>
                   <div className="absolute right-4 top-3 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white border border-white/10">
                     {ev.pricing_type === "paid" && ev.price
-                      ? `₦${ev.price}`
+                      ? `₦${parseFloat(ev.price).toLocaleString()}`
                       : "Free"}
                   </div>
                 </div>
@@ -189,15 +189,15 @@ const MyEvent = () => {
                   <div className="mt-auto pt-4 border-t border-white/5 grid grid-cols-3 gap-2 text-center">
                     <div>
                       <p className="text-[10px] text-gray-500 font-bold uppercase">Sold</p>
-                      <p className="text-white font-bold">{ev.ticket_stats?.confirmed_tickets ?? 0}</p>
+                      <p className="text-white font-bold">{(ev.ticket_stats?.confirmed_tickets ?? 0).toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-gray-500 font-bold uppercase">Pending</p>
-                      <p className="text-white font-bold">{ev.ticket_stats?.pending_tickets ?? 0}</p>
+                      <p className="text-white font-bold">{(ev.ticket_stats?.pending_tickets ?? 0).toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-gray-500 font-bold uppercase">Revenue</p>
-                      <p className="text-emerald-400 font-bold">₦{ev.ticket_stats?.total_revenue ?? 0}</p>
+                      <p className="text-emerald-400 font-bold">₦{(ev.ticket_stats?.total_revenue ?? 0).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>

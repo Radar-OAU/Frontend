@@ -7,13 +7,30 @@ import { LogOut, Settings, Wallet } from "lucide-react";
 import Logo from "./Logo";
 import { Button } from "./ui/button";
 import useAuthStore from "@/store/authStore";
+import useOrganizerStore from "@/store/orgStore";
 
 const OrganizerHeader = () => {
   const router = useRouter();
   const { logout } = useAuthStore();
+  const { clearStore } = useOrganizerStore();
 
   const handleLogout = () => {
+    // Clear stores
     logout();
+    clearStore();
+    
+    // Selectively clear localStorage, preserving PIN data and welcome flags
+    if (typeof window !== 'undefined') {
+      const keysToPreserve = ['radar_pin_salt', 'radar_pin_hash', 'radar_has_pin'];
+      // Also preserve welcome flags for all users
+      const allKeys = Object.keys(localStorage);
+      const welcomeKeys = allKeys.filter(key => key.startsWith('radar_org_first_welcome:'));
+      const preserveKeys = [...keysToPreserve, ...welcomeKeys];
+      
+      const keysToRemove = allKeys.filter(key => !preserveKeys.includes(key));
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+    }
+    
     router.push('/login');
   };
 
