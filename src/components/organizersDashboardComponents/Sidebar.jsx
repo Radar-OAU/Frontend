@@ -1,46 +1,46 @@
-'use client';
+"use client";
 
+import React, { cloneElement } from "react";
 import {
-  Group,
-  GroupIcon,
   LayoutDashboard,
   LogOut,
   PlusIcon,
   QrCodeIcon,
   Settings,
   User,
-  User2,
   Wallet,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import useAuthStore from "@/store/authStore";
 import useOrganizerStore from "@/store/orgStore";
+import { cn } from "@/lib/utils";
 
 const OrganizationDashboardNavLinks = [
-  { name: "Overview", link: "/dashboard/org", icon: <LayoutDashboard size={24} /> },
+  { name: "Overview", link: "/dashboard/org", icon: <LayoutDashboard /> },
   {
     name: "Create Event",
     link: "/dashboard/org/create-event",
-    icon: <PlusIcon size={24} />,
+    icon: <PlusIcon />,
   },
   {
     name: "My Event",
     link: "/dashboard/org/my-event",
-    icon: <GroupIcon size={24} />,
+    icon: <Users />,
   },
   {
     name: "QR Scanner",
     link: "/dashboard/org/qr-scanner",
-    icon: <QrCodeIcon size={24} />,
+    icon: <QrCodeIcon />,
   },
-  { name: "Profile", link: "/dashboard/org/profile", icon: <User size={24} /> },
-  { name: "Payout", link: "/dashboard/org/payout", icon: <Wallet size={24} /> },
+  { name: "Profile", link: "/dashboard/org/profile", icon: <User /> },
+  { name: "Payout", link: "/dashboard/org/payout", icon: <Wallet /> },
 ];
 
-const Sidebar = () => {
+export default function Sidebar() {
   const location = usePathname();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
@@ -69,29 +69,56 @@ const Sidebar = () => {
     router.push("/login");
   };
 
-  const active = OrganizationDashboardNavLinks.find(
-    (link) => location === `${link.link}`
-  );
   return (
     <>
-      {/* Mobile Bottom Nav */}
-      <div className="flex flex-row justify-around fixed bottom-0 left-0 right-0 bg-black border border-gray-900 py-1 rounded-t-xl items-center md:hidden">
-        {OrganizationDashboardNavLinks.filter(link => link.name !== "Payout").map((link) => (
-          <Link
-            href={link.link}
-            key={link.name}
-            className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors duration-200 ${
-              active && active.link === link.link
-                ? "text-white"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            <span className="mb-1">{link.icon}</span>
-            <p className="text-xs text-center">
-              {link.name}
-            </p>
-          </Link>
-        ))}
+      {/* Mobile Bottom Nav - Premium Floating Dock */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-sm z-50">
+        <nav className="flex flex-row justify-between items-center bg-black/80 backdrop-blur-2xl border border-white/10 px-2 py-1.5 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20">
+          {OrganizationDashboardNavLinks.filter(link => link.name !== "Payout").map((link) => {
+            const isActive = location === link.link;
+            const mobileLabel = link.name === "Overview" ? "Home" :
+                               link.name === "Create Event" ? "Create" : 
+                               link.name === "My Event" ? "Events" : 
+                               link.name === "QR Scanner" ? "Scan" : 
+                               link.name;
+            
+            return (
+              <Link
+                href={link.link}
+                key={link.name}
+                className="flex flex-col items-center justify-center flex-1 min-w-0 py-1 group outline-hidden"
+              >
+                <motion.div 
+                  whileTap={{ scale: 0.9 }}
+                  className={cn(
+                    "p-2 rounded-2xl transition-all duration-300 relative",
+                    isActive ? "bg-rose-600 text-white shadow-[0_5px_15px_rgba(225,29,72,0.4)]" : "text-gray-500 group-hover:text-gray-300"
+                  )}
+                >
+                  {cloneElement(link.icon, { size: 18, strokeWidth: isActive ? 2.5 : 2 })}
+                </motion.div>
+                <span className={cn(
+                  "text-[8px] font-bold uppercase tracking-wider mt-1 transition-colors whitespace-nowrap overflow-hidden text-ellipsis w-full text-center px-1",
+                  isActive ? "text-rose-500" : "text-gray-600"
+                )}>
+                  {mobileLabel}
+                </span>
+                
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.div 
+                      layoutId="activeDot"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -bottom-0.5 w-1 h-1 bg-rose-500 rounded-full shadow-[0_0_5px_rgba(225,29,72,0.8)]"
+                    />
+                  )}
+                </AnimatePresence>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Desktop Sidebar */}
@@ -125,22 +152,18 @@ const Sidebar = () => {
                 : 'text-gray-200 hover:bg-gray-800'
             }`}
           >
-                <Settings />
-                <span className="text-xs">Settings</span>
-        </Link>
-        <button 
-          onClick={handleLogout}
-          className="hover:bg-gray-200 p-2 md:p-2 hover:rounded-xl font-bold md:flex md:flex-row hidden md:gap-3 items-center text-red-500 cursor-pointer w-full text-left"
-        >
-          <span className="flex items-center gap-3">
+            <Settings />
+            <span className="text-xs">Settings</span>
+          </Link>
+          <button 
+            onClick={handleLogout}
+            className="hover:bg-gray-200 p-2 md:p-2 hover:rounded-xl font-bold md:flex md:flex-row hidden md:gap-3 items-center text-red-500 cursor-pointer w-full text-left"
+          >
             <LogOut />
             <span className="text-sm">Logout</span>
-          </span>
-        </button>
+          </button>
         </div>
       </aside>
     </>
   );
-};
-
-export default Sidebar;
+}

@@ -42,10 +42,23 @@ export function getErrorMessage(error) {
 
 export function getImageUrl(path) {
   if (!path) return null;
-  if (path.startsWith("http")) return path;
 
-  const baseUrl = "https://radar-ufvb.onrender.com";
+  // Handle case where path might be an object or have different property names
+  let imagePath = path;
+  if (typeof path === 'object') {
+    imagePath = path.url || path.secure_url || path.image || path.event_image || path.profile_image;
+  }
+  
+  if (!imagePath || typeof imagePath !== 'string') return null;
+
+  // If it's already a full URL, return it
+  if (imagePath.startsWith("http")) return imagePath;
+
+  // Use dynamic base URL from environment or fallback
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://radar-ufvb.onrender.com";
+  const baseUrl = apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase;
+  
   // Ensure we don't have double slashes
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
   return `${baseUrl}${cleanPath}`;
 }

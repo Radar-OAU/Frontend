@@ -8,9 +8,9 @@ import useAuthStore from "../../../../store/authStore";
 import { toast } from "react-hot-toast";
 import useOrganizerStore from "../../../../store/orgStore";
 import Loading from "@/components/ui/Loading";
-import { getImageUrl } from "@/lib/utils";
-import { hasPinSet, storePinLocally } from "@/lib/pinPrompt";
-import { motion, AnimatePresence } from "framer-motion";
+import { getImageUrl } from "../../../../lib/utils";
+import { hasPinSet } from "@/lib/pinPrompt";
+import { AnimatePresence,motion } from "framer-motion";
 
 
 export default function Overview() {
@@ -425,8 +425,10 @@ export default function Overview() {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       onError={(e) => {
                         e.target.style.display = 'none';
-                        e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
-                        e.target.parentElement.innerHTML = '<div class="text-gray-600 font-bold text-xs">No cover image</div>';
+                        if (e.target.parentElement) {
+                          e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                          e.target.parentElement.innerHTML = '<div class="text-gray-600 font-bold text-xs">No cover image</div>';
+                        }
                       }}
                     />
                     <div className="absolute top-3 right-3">
