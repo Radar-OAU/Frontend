@@ -87,13 +87,13 @@ export async function hashPin(pin, salt) {
 	return toHex(digest);
 }
 
-export function getStoredPinSalt() {
-	const STORAGE_KEYS = getStorageKeys();
+export function getStoredPinSalt(storageKeys = null) {
+	const STORAGE_KEYS = storageKeys || getStorageKeys();
 	return readLocalStorage(STORAGE_KEYS.pinSalt);
 }
 
-export function getStoredPinHash() {
-	const STORAGE_KEYS = getStorageKeys();
+export function getStoredPinHash(storageKeys = null) {
+	const STORAGE_KEYS = storageKeys || getStorageKeys();
 	return readLocalStorage(STORAGE_KEYS.pinHash);
 }
 
@@ -111,7 +111,7 @@ export async function updateLocalPin(pin) {
 	// Reuse existing salt if present to avoid changing salt unless needed
 	if (!canUseStorage()) return;
 	const STORAGE_KEYS = getStorageKeys();
-	const existingSalt = getStoredPinSalt();
+	const existingSalt = getStoredPinSalt(STORAGE_KEYS);
 	const salt = existingSalt || generateSaltHex();
 	const pinHash = await hashPin(pin, salt);
 	writeLocalStorage(STORAGE_KEYS.pinSalt, salt);
@@ -120,8 +120,9 @@ export async function updateLocalPin(pin) {
 }
 
 export async function verifyPinLocally(pin) {
-	const salt = getStoredPinSalt();
-	const storedHash = getStoredPinHash();
+	const STORAGE_KEYS = getStorageKeys();
+	const salt = getStoredPinSalt(STORAGE_KEYS);
+	const storedHash = getStoredPinHash(STORAGE_KEYS);
 	if (!salt || !storedHash) return false;
 	const candidate = await hashPin(pin, salt);
 	return candidate === storedHash;
