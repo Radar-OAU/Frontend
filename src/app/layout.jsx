@@ -4,6 +4,8 @@ import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import NavigationProgressBar from "@/components/NavigationProgressBar";
+import { Suspense } from "react";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -39,6 +41,9 @@ export default function RootLayout({ children }) {
             enableSystem
             disableTransitionOnChange
           >
+            <Suspense fallback={null}>
+              <NavigationProgressBar />
+            </Suspense>
             <Toaster position="top-center" />
             <Header />
             <main className="flex-grow">

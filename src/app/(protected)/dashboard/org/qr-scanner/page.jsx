@@ -1,46 +1,110 @@
-"use client"; // Validated import
+"use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import { Camera, RotateCw, Trash2, CheckSquare, X, Check, AlertCircle, QrCode as QrIcon } from "lucide-react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { 
+  Camera, 
+  RotateCw, 
+  Trash2, 
+  CheckSquare, 
+  X, 
+  Check, 
+  AlertCircle, 
+  QrCode as QrIcon,
+  History,
+  User,
+  Ticket,
+  Maximize2,
+  Minimize2,
+  ChevronRight,
+  ShieldCheck,
+  Search
+} from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import CustomDropdown from "@/components/ui/CustomDropdown";
 
-// Helper to play a success beep using Web Audio API
-const playScanSound = (type = "success") => {
+// --- Audio Feedback Helpers ---
+
+const playBeep = (type = "success") => {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
-
     const ctx = new AudioContext();
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
 
     if (type === "success") {
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(800, ctx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
-      gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.15);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } else if (type === "error") {
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
     } else {
-      // Error sound (low buzz)
-      oscillator.type = "sawtooth";
-      oscillator.frequency.setValueAtTime(150, ctx.currentTime);
-      oscillator.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.2);
-      gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.25);
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
     }
   } catch (e) {
-    console.error("Audio playback failed", e);
+    console.error("Audio beep failed", e);
   }
 };
+
+const vocalize = (text, type = "success") => {
+  playBeep(type);
+  try {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.05;
+    utterance.pitch = 1.1;
+    utterance.volume = 0.9;
+    
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoices = ["Microsoft Aria", "Google UK English Female", "Samantha", "Victoria"];
+    let selectedVoice = voices.find(v => preferredVoices.some(pv => v.name.includes(pv)));
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang.startsWith("en") && v.name.toLowerCase().includes("female"));
+    }
+    if (selectedVoice) utterance.voice = selectedVoice;
+    window.speechSynthesis.speak(utterance);
+  } catch (e) {
+    console.error("Vocalize failed", e);
+  }
+};
+
+// --- Utils ---
+
+const cleanTicketId = (rawId, isManual = false) => {
+  if (!rawId || typeof rawId !== 'string') return rawId;
+  let trimmed = rawId.trim();
+  if (trimmed.startsWith("QR-")) trimmed = trimmed.substring(3);
+  
+  if (isManual && !trimmed.startsWith("ticket:")) {
+    if (trimmed.startsWith("TC-") || /^[A-Z0-9]+-[A-Z0-9]+$/.test(trimmed)) {
+      return `ticket:${trimmed}`;
+    }
+  }
+  return trimmed;
+};
+
+// --- Components ---
 
 export default function QrScanner() {
   const [events, setEvents] = useState([]);
@@ -48,79 +112,86 @@ export default function QrScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [cameraFacingMode, setCameraFacingMode] = useState("environment");
   const [history, setHistory] = useState([]);
-  const [scanResult, setScanResult] = useState(null); // { type: 'success' | 'error' | 'warning', message: string, detail: any }
+  const [scanResult, setScanResult] = useState(null); 
   const [manualCode, setManualCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState("scanner"); // "scanner" or "manual"
 
   const scannerRef = useRef(null);
   const regionId = "reader";
 
-  // Fetch events on mount
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         const res = await api.get("/organizer/events/");
         const payload = res?.data;
-        let list = [];
-        if (Array.isArray(payload)) list = payload;
-        else if (Array.isArray(payload?.events)) list = payload.events;
-        else if (Array.isArray(payload?.data)) list = payload.data;
-        else if (payload?.results && Array.isArray(payload.results)) list = payload.results;
-
+        let list = Array.isArray(payload) ? payload : (payload?.events || payload?.data || payload?.results || []);
         setEvents(list);
       } catch (err) {
         toast.error("Failed to load events.");
-        console.error(err);
       }
     };
     fetchEvents();
   }, []);
 
-  // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error);
+        scannerRef.current.clear().catch(() => {});
       }
     };
   }, []);
 
-  const startScanning = async () => {
+  // Camera management effect
+  useEffect(() => {
+    let mounted = true;
+
+    const initCamera = async () => {
+      // 1. If we should be scanning but haven't started yet
+      if (isScanning && activeTab === "scanner" && !scannerRef.current) {
+        // Wait for DOM
+        await new Promise(r => setTimeout(r, 150));
+        if (!mounted) return;
+
+        try {
+          const scanner = new Html5Qrcode(regionId);
+          scannerRef.current = scanner;
+          await scanner.start(
+            { facingMode: cameraFacingMode },
+            { 
+              fps: 15, 
+              qrbox: (w, h) => {
+                const s = Math.min(w, h) * 0.7;
+                return { width: s, height: s };
+              },
+              aspectRatio: 1.0
+            },
+            (text) => handleScan(text),
+            () => {}
+          );
+        } catch (err) {
+          console.error("Camera start failed", err);
+          toast.error("Could not access camera.");
+          setIsScanning(false);
+        }
+      } 
+      // 2. If we are scanning but switched tabs or turned it off
+      else if (scannerRef.current && (!isScanning || activeTab !== "scanner")) {
+        await stopScanning();
+      }
+    };
+
+    initCamera();
+    return () => { mounted = false; };
+  }, [isScanning, activeTab, cameraFacingMode]);
+
+  const startScanning = () => {
     if (!selectedEventId) {
       toast.error("Please select an event first.");
       return;
     }
-
-    if (scannerRef.current) {
-      // Already running logic if needed, but usually we just resume or ignore
-      return;
-    }
-
-    try {
-      const html5QrCode = new Html5Qrcode(regionId);
-      scannerRef.current = html5QrCode;
-
-      await html5QrCode.start(
-        { facingMode: cameraFacingMode },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          // aspectRatio: 1.0, // Removed to allow full container fill
-        },
-        (decodedText) => {
-          // Success callback
-          handleScan(decodedText);
-        },
-        (errorMessage) => {
-          // parse error, ignore mostly
-        }
-      );
-      setIsScanning(true);
-      setScanResult(null);
-    } catch (err) {
-      console.error("Failed to start scanner", err);
-      toast.error("Could not start camera.");
-    }
+    setIsScanning(true);
+    setScanResult(null);
   };
 
   const stopScanning = async () => {
@@ -131,39 +202,31 @@ export default function QrScanner() {
         scannerRef.current = null;
         setIsScanning(false);
       } catch (err) {
-        console.error("Failed to stop scanner", err);
+        console.error("Stop error", err);
       }
     }
   };
 
   const handleSwitchCamera = async () => {
-    await stopScanning();
-    setCameraFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
-    // Restart logic is a bit complex immediately after stop, usually best to let user restart manually or use timeout
-    // For specific requirement "Switch", we can try auto-restart
-    setTimeout(() => {
-      startScanning();
-    }, 500);
+    if (scannerRef.current) {
+      await stopScanning();
+    }
+    setCameraFacingMode(prev => prev === "environment" ? "user" : "environment");
+    // The useEffect will automatically restart the camera because cameraFacingMode changed
+    setIsScanning(true);
   };
 
   const handleScan = async (decodedText) => {
     if (isProcessing) return;
-
-    // Pause scanning to process result
-    if (scannerRef.current) {
-      scannerRef.current.pause();
-    }
-
+    if (scannerRef.current) scannerRef.current.pause();
     setIsProcessing(true);
     await processCheckIn(decodedText);
   };
 
-  const processCheckIn = async (ticketId) => {
-    // Basic validation
+  const processCheckIn = async (rawCode, isManual = false) => {
+    const ticketId = cleanTicketId(rawCode, isManual);
     if (!ticketId) {
-      setScanResult({ type: "error", message: "Invalid QR Code" });
-      playScanSound("error");
-      resumeScanningDelay();
+      finishProcess({ type: "error", message: "Invalid Code", voice: "Invalid Code" });
       return;
     }
 
@@ -173,262 +236,348 @@ export default function QrScanner() {
         event_id: selectedEventId
       });
 
-      // Success Logic
       const data = response.data;
-      playScanSound("success");
-      setScanResult({
-        type: "success",
-        message: "Check-in Successful",
-        detail: data.ticket?.student_full_name || "Attendee Verified"
+      const attendeeName = data.ticket?.student_full_name || "Attendee";
+      const category = data.ticket?.category_name || "Regular";
+      
+      finishProcess({ 
+        type: "success", 
+        message: "Verified", 
+        detail: attendeeName,
+        extra: category,
+        voice: `Verified. Welcome ${attendeeName}`
       });
+
       addToHistory({
         id: ticketId,
         status: "success",
         timestamp: new Date(),
-        detail: data.ticket?.student_full_name
+        name: attendeeName,
+        category: category
       });
-      toast.success("Ticket Checked In!");
-
     } catch (err) {
-      playScanSound("error");
       const errorMsg = err.response?.data?.error || "Check-in failed";
-
       let type = "error";
+      let voiceMsg = "Check in failed";
+
       if (errorMsg.toLowerCase().includes("already checked in")) {
         type = "warning";
+        voiceMsg = "Already used";
+      } else if (errorMsg.toLowerCase().includes("not found")) {
+        voiceMsg = "Ticket not found";
       }
 
-      setScanResult({
-        type: type,
-        message: type === "warning" ? "Already Checked In" : "Check-in Failed",
-        detail: errorMsg
+      finishProcess({ 
+        type, 
+        message: type === "warning" ? "Used" : "Failed", 
+        detail: errorMsg,
+        voice: voiceMsg 
       });
 
       addToHistory({
         id: ticketId,
         status: type,
         timestamp: new Date(),
+        name: "Unknown",
         detail: errorMsg
       });
-    } finally {
-      resumeScanningDelay();
     }
   };
 
-  const resumeScanningDelay = () => {
+  const finishProcess = ({ type, message, detail, extra, voice }) => {
+    setScanResult({ type, message, detail, extra });
+    vocalize(voice, type === "success" ? "success" : (type === "warning" ? "warning" : "error"));
+    
     setTimeout(() => {
       setIsProcessing(false);
-      setScanResult(null); // Clear overlay
-      if (scannerRef.current) {
+      setScanResult(null);
+      if (scannerRef.current && isScanning) {
         scannerRef.current.resume();
       }
-    }, 3000); // 3 seconds to read result
+    }, 2500);
   };
 
   const addToHistory = (entry) => {
-    setHistory((prev) => [entry, ...prev]);
+    setHistory(prev => [entry, ...prev].slice(0, 50));
   };
 
   const handleManualVerify = (e) => {
     e.preventDefault();
-    if (!manualCode.trim()) return;
-    if (!selectedEventId) {
-      toast.error("Select an event first");
-      return;
-    }
-    processCheckIn(manualCode.trim());
+    if (!manualCode.trim() || !selectedEventId || isProcessing) return;
+    processCheckIn(manualCode.trim(), true);
     setManualCode("");
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 space-y-8 max-w-7xl mx-auto text-white">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold mb-1">
-            QR Scanner
-          </h1>
-          <p className="text-gray-400 text-xs">Scan ticket QR codes for check-in.</p>
-        </div>
-
-        {/* Event Selector */}
-        <div className="w-full md:w-72 relative">
-          <select
-            className="w-full appearance-none bg-[#0A0A0A] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition-colors cursor-pointer"
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-          >
-            <option value="">-- Select Event to Scan --</option>
-            {events.map(ev => (
-              <option key={ev.event_id || ev.id} value={ev.event_id || ev.id}>
-                {ev.title || ev.name || "Unnamed Event"}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        {/* Scanner Section */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-1 shadow-2xl relative overflow-hidden group">
-            <div className="rounded-xl overflow-hidden bg-black relative aspect-square md:aspect-video w-full">
-              {/* Scanner Container */}
-              <div id={regionId} className="w-full h-full"></div>
-
-              {/* Placeholder when not scanning */}
-              {!isScanning && (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#0A0A0A] z-10">
-                  <div className="text-center space-y-4">
-                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto ring-1 ring-white/10">
-                      <QrIcon className="h-10 w-10 text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 font-medium">Camera is inactive</p>
-                      <p className="text-gray-600 text-xs mt-1">Select an event and start scanning</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Result Overlay */}
-              {scanResult && (
-                <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md animate-in fade-in zoom-in duration-200 ${scanResult.type === 'success' ? 'bg-emerald-500/20' :
-                  scanResult.type === 'warning' ? 'bg-amber-500/20' : 'bg-rose-500/20'
-                  }`}>
-                  <div className={`h-24 w-24 rounded-full flex items-center justify-center mb-6 shadow-2xl ${scanResult.type === 'success' ? 'bg-emerald-500 text-white shadow-emerald-500/20' :
-                    scanResult.type === 'warning' ? 'bg-amber-500 text-white shadow-amber-500/20' : 'bg-rose-500 text-white shadow-rose-500/20'
-                    }`}>
-                    {scanResult.type === 'success' ? <Check className="h-12 w-12" /> :
-                      scanResult.type === 'warning' ? <AlertCircle className="h-12 w-12" /> : <X className="h-12 w-12" />}
-                  </div>
-                  <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-md">{scanResult.message}</h2>
-                  <p className="text-white/90 font-medium text-lg drop-shadow-md">{scanResult.detail}</p>
-                </div>
-              )}
-
-              {/* Scan Line Animation */}
-              {isScanning && !scanResult && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-64 h-64 border-2 border-rose-500/50 rounded-lg relative overflow-hidden shadow-[0_0_100px_rgba(225,29,72,0.1)]">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_20px_#e11d48] animate-[scan_2s_ease-in-out_infinite]"></div>
-                  </div>
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,0.6)_100%)]"></div>
-                </div>
-              )}
-            </div>
+    <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8 font-sans selection:bg-rose-500/30">
+      <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* Header Section */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1">
+            <p className="text-gray-500 font-medium ml-1">Event Entry Management System</p>
           </div>
 
-          {/* Controls */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {!isScanning ? (
-              <button
-                onClick={startScanning}
-                disabled={!selectedEventId}
-                className="col-span-2 md:col-span-1 bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-rose-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          <div className="w-full md:w-80">
+            <CustomDropdown
+              value={selectedEventId}
+              onChange={(val) => setSelectedEventId(val)}
+              options={events.map(ev => ({
+                value: ev.event_id || ev.id,
+                label: ev.name || ev.title,
+                icon: Ticket
+              }))}
+              placeholder="Select Event to Check-in"
+              searchable={true}
+            />
+          </div>
+        </header>
+
+        <main className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Main Scanner Section */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            
+            {/* Tabs */}
+            <div className="flex bg-[#0F0F0F] p-1.5 rounded-2xl w-fit border border-white/5">
+              <button 
+                onClick={() => setActiveTab("scanner")}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
+                  activeTab === "scanner" ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" : "text-gray-500 hover:text-white"
+                )}
               >
-                <Camera className="h-4 w-4" /> Start Camera
+                <Camera className="w-4 h-4" /> Camera
               </button>
-            ) : (
-              <button
-                onClick={stopScanning}
-                className="col-span-2 md:col-span-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 border border-white/5"
+              <button 
+                onClick={() => setActiveTab("manual")}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
+                  activeTab === "manual" ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" : "text-gray-500 hover:text-white"
+                )}
               >
-                <X className="h-4 w-4" /> Stop Camera
+                <Ticket className="w-4 h-4" /> Manual
               </button>
-            )}
-
-            <button
-              onClick={handleSwitchCamera}
-              disabled={!isScanning}
-              className="bg-[#0A0A0A] border border-white/10 hover:border-white/20 text-gray-300 hover:text-white py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <RotateCw className="h-4 w-4" /> Switch Cam
-            </button>
-
-            <button
-              onClick={() => setHistory([])}
-              className="bg-[#0A0A0A] border border-white/10 hover:border-rose-500/30 text-gray-400 hover:text-rose-400 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" /> Clear History
-            </button>
-          </div>
-        </div>
-
-        {/* Sidebar History */}
-        <aside className="bg-[#0A0A0A] border border-white/5 rounded-2xl flex flex-col h-[600px] shadow-xl overflow-hidden">
-          <div className="p-4 border-b border-white/5 bg-white/[0.02]">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-white flex items-center gap-2">
-                <CheckSquare className="w-4 h-4 text-rose-500" /> Recent Scans
-              </h3>
-              <span className="text-[10px] font-bold bg-white/10 text-gray-300 px-2 py-0.5 rounded-full">{history.length}</span>
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            {history.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-2 opacity-60">
-                <QrIcon className="w-12 h-12" />
-                <p className="text-xs font-medium">No scans recorded yet</p>
+            <div className="relative flex-1 bg-[#0A0A0A] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[400px] md:min-h-[500px]">
+              
+              <AnimatePresence mode="wait">
+                {activeTab === "scanner" ? (
+                  <motion.div 
+                    key="scanner-v"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="absolute inset-0 flex flex-col items-center justify-center"
+                  >
+                    {!isScanning ? (
+                      <div className="text-center space-y-6 px-10">
+                        <div className="w-24 h-24 bg-rose-600/10 rounded-full flex items-center justify-center mx-auto border border-rose-500/20">
+                          <Camera className="w-10 h-10 text-rose-500" />
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-xl font-bold italic tracking-wide">Ready to Verify?</h3>
+                          <p className="text-gray-500 max-w-xs text-sm">Start the camera to begin scanning attendee QR codes instantly.</p>
+                        </div>
+                        <button 
+                          onClick={startScanning}
+                          className="bg-rose-600 hover:bg-rose-700 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-rose-600/30 transition-all hover:scale-105 active:scale-95"
+                        >
+                          Initialize Camera
+                        </button>
+                      </div>
+                    ) : (
+                      <div id={regionId} className="w-full h-full flex items-center justify-center overflow-hidden" />
+                    )}
+
+                    {/* Scanning Overlay (only when scanning & no result) */}
+                    {isScanning && !scanResult && (
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div className="relative w-64 h-64 border-2 border-rose-500/50 rounded-3xl overflow-hidden">
+                          <div className="absolute inset-0 bg-rose-500/5 transition-opacity" />
+                          <div className="absolute -inset-2 border-2 border-rose-500/20 rounded-[2.5rem] animate-pulse" />
+                          {/* Animated Scan Line */}
+                          <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_15px_rgba(244,63,94,0.8)] animate-[scan_2s_ease-in-out_infinite]" />
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key="manual-v"
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+                    className="absolute inset-0 flex flex-col items-center justify-center p-8"
+                  >
+                    <div className="max-w-md w-full bg-[#0F0F0F] border border-white/5 p-10 rounded-[2rem] shadow-xl space-y-8">
+                       <div className="flex items-center gap-4">
+                         <div className="bg-rose-500/20 p-3 rounded-2xl"><Ticket className="text-rose-500" /></div>
+                         <h3 className="text-xl font-bold">Manual Verification</h3>
+                       </div>
+                       <form onSubmit={handleManualVerify} className="space-y-4">
+                          <div className="relative">
+                            <input 
+                              type="text"
+                              placeholder="Type Ticket ID (e.g. TC-12345)"
+                              value={manualCode}
+                              onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                              className="w-full bg-black/50 border border-white/10 rounded-2xl px-6 py-5 text-xl font-mono tracking-widest text-center focus:outline-none focus:border-rose-500 transition-colors"
+                            />
+                            <Search className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-600" />
+                          </div>
+                          <button 
+                            type="submit"
+                            disabled={!manualCode || isProcessing}
+                            className="w-full bg-rose-600 disabled:opacity-50 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-rose-600/20 active:scale-95"
+                          >
+                            Verify Ticket
+                          </button>
+                       </form>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Status Overlay */}
+              <AnimatePresence>
+                {scanResult && (
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className={cn(
+                      "absolute inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-md",
+                      scanResult.type === "success" ? "bg-emerald-500/10" : "bg-rose-500/10"
+                    )}
+                  >
+                    <div className="bg-[#0A0A0A] border border-white/10 p-10 rounded-[3rem] shadow-2xl flex flex-col items-center text-center space-y-6 max-w-sm w-full mx-auto ring-1 ring-white/10">
+                      <div className={cn(
+                        "w-24 h-24 rounded-full flex items-center justify-center mb-2 animate-bounce",
+                        scanResult.type === "success" ? "bg-emerald-500/20 text-emerald-500" : (scanResult.type === "warning" ? "bg-amber-500/20 text-amber-500" : "bg-rose-500/20 text-rose-500")
+                      )}>
+                        {scanResult.type === "success" ? <ShieldCheck className="w-12 h-12" /> : <X className="w-12 h-12" />}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h2 className={cn(
+                          "text-4xl font-black tracking-tighter uppercase",
+                          scanResult.type === "success" ? "text-emerald-500" : (scanResult.type === "warning" ? "text-amber-500" : "text-rose-500")
+                        )}>
+                          {scanResult.message}
+                        </h2>
+                        <p className="text-2xl font-bold">{scanResult.detail}</p>
+                        {scanResult.extra && <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">{scanResult.extra}</p>}
+                      </div>
+                      
+                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: "100%" }} 
+                          animate={{ width: "0%" }} 
+                          transition={{ duration: 2.5, ease: "linear" }}
+                          className={cn(
+                            "h-full",
+                            scanResult.type === "success" ? "bg-emerald-500" : (scanResult.type === "warning" ? "bg-amber-500" : "bg-rose-500")
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Controls */}
+            {isScanning && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button 
+                  onClick={handleSwitchCamera}
+                  className="bg-[#0F0F0F] hover:bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all active:scale-95"
+                >
+                  <RotateCw className="w-5 h-5 text-rose-500" /> Switch
+                </button>
+                <button 
+                  onClick={stopScanning}
+                  className="bg-[#0F0F0F] hover:bg-rose-500/10 border border-white/5 p-4 rounded-2xl flex items-center justify-center gap-3 font-bold text-rose-500 transition-all active:scale-95"
+                >
+                  <X className="w-5 h-5" /> Stop
+                </button>
+                <div className="bg-[#0F0F0F] border border-white/5 p-4 rounded-2xl flex items-center justify-center gap-3 font-mono text-gray-500 hidden md:flex">
+                  <Maximize2 className="w-4 h-4" /> AUTO-FOCUS
+                </div>
+                <div className="bg-[#0F0F0F] border border-white/5 p-4 rounded-2xl flex items-center justify-center gap-3 font-mono text-gray-500 hidden md:flex">
+                  <CheckSquare className="w-4 h-4" /> VERIFIED-ONLY
+                </div>
               </div>
-            ) : (
-              history.map((scan, i) => (
-                <div key={i} className={`p-3 rounded-xl border text-left transition-all hover:bg-white/[0.02] ${scan.status === 'success' ? 'border-emerald-500/20 bg-emerald-500/5' :
-                  scan.status === 'warning' ? 'border-amber-500/20 bg-amber-500/5' :
-                    'border-rose-500/20 bg-rose-500/5'
-                  }`}>
-                  <div className="flex justify-between items-start mb-1.5">
-                    <span className={`text-[10px] font-black uppercase tracking-wider ${scan.status === 'success' ? 'text-emerald-500' :
-                      scan.status === 'warning' ? 'text-amber-500' : 'text-rose-500'
-                      }`}>
-                      {scan.status === 'success' ? 'Verified' : scan.status === 'warning' ? 'Warning' : 'Failed'}
-                    </span>
-                    <span className="text-[10px] text-gray-500 font-mono">
-                      {scan.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-200 font-bold truncate leading-tight" title={scan.detail}>
-                    {scan.detail || "Unknown User"}
-                  </div>
-                  <div className="text-[10px] text-gray-500 truncate font-mono mt-1 opacity-70">
-                    ID: {scan.id}
-                  </div>
-                </div>
-              ))
             )}
           </div>
 
-          <div className="p-4 border-t border-white/5 bg-white/[0.02]">
-            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">Manual Entry</label>
-            <form onSubmit={handleManualVerify} className="flex gap-2">
-              <input
-                placeholder="Enter ticket code..."
-                value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
-                className="flex-1 rounded-xl bg-black/50 border border-white/10 px-3 py-2.5 text-xs text-white placeholder-gray-600 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none transition-all"
-              />
-              <button
-                className="px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs disabled:opacity-50 transition-all active:scale-95"
-                type="submit"
-                disabled={isProcessing || !manualCode || !selectedEventId}
+          {/* History Sidebar */}
+          <aside className="lg:col-span-4 flex flex-col h-full bg-[#0A0A0A] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-xl min-h-[500px]">
+            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-br from-rose-500/5 to-transparent">
+              <div className="flex items-center gap-3">
+                <History className="w-5 h-5 text-rose-500" />
+                <h2 className="font-black uppercase tracking-widest text-sm">Recent Activity</h2>
+              </div>
+              <span className="bg-rose-500/10 text-rose-500 text-[10px] font-black px-3 py-1 rounded-full">{history.length}</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+              <AnimatePresence initial={false}>
+                {history.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center opacity-30 space-y-4 py-20">
+                    <History className="w-12 h-12" />
+                    <p className="text-xs font-bold uppercase tracking-widest">No history yet</p>
+                  </div>
+                ) : (
+                  history.map((entry, i) => (
+                    <motion.div 
+                      key={entry.id + i}
+                      initial={{ x: 20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      className="group bg-[#0F0F0F] border border-white/5 p-5 rounded-2xl flex items-center gap-5 hover:border-white/10 transition-all relative overflow-hidden"
+                    >
+                      <div className={cn(
+                        "flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center bg-black border",
+                        entry.status === "success" ? "border-emerald-500/20 text-emerald-500" : "border-rose-500/20 text-rose-500"
+                      )}>
+                        {entry.status === "success" ? <User className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-bold text-sm truncate uppercase tracking-tight">{entry.name}</h4>
+                          <span className="text-[10px] font-mono text-gray-600">{new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <p className="text-[10px] font-bold text-gray-500 truncate uppercase tracking-widest flex items-center gap-2">
+                          {entry.status === "success" ? <span className="text-emerald-500/70">{entry.category || "Verified"}</span> : <span className="text-rose-500/70">{entry.detail}</span>}
+                          <span className="text-gray-700">•</span>
+                          {entry.id.split(':').pop().slice(0, 8)}...
+                        </p>
+                      </div>
+
+                      {entry.status === "success" && (
+                        <div className="absolute top-0 right-0 w-1 h-full bg-emerald-500" />
+                      )}
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="p-6 bg-black/40 border-t border-white/5">
+              <button 
+                onClick={() => setHistory([])}
+                className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
               >
-                <Check className="h-4 w-4" />
+                <Trash2 className="w-4 h-4" /> Clear History
               </button>
-            </form>
-          </div>
-        </aside>
+            </div>
+          </aside>
+        </main>
       </div>
 
       <style jsx global>{`
         @keyframes scan {
-          0% { top: 0; opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
+          0%, 100% { top: 0; opacity: 0.1; }
+          50% { top: 100%; opacity: 1; }
         }
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;

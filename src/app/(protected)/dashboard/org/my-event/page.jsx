@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "../../../../../lib/axios";
-import { Loader2, Copy, Check, ExternalLink, Plus } from "lucide-react";
+import { Loader2, Copy, Check, ExternalLink, Plus, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../../../../lib/utils";
 
@@ -68,8 +68,6 @@ const MyEvent = () => {
     });
   };
 
-
-
   return (
     <div className="min-h-screen p-4 md:p-8 space-y-8 max-w-7xl mx-auto text-white">
       {/* Header */}
@@ -96,107 +94,122 @@ const MyEvent = () => {
         </div>
       </div>
 
-      {/* No more serverError div */}
-
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin h-8 w-8 text-slate-500" />
+        <div className="flex flex-col items-center justify-center py-32 space-y-4">
+          <Loader2 className="animate-spin h-10 w-10 text-rose-500" />
+          <p className="text-gray-500 text-sm font-medium animate-pulse">Loading your events...</p>
         </div>
       ) : events.length === 0 ? (
-        <div className="rounded-xl border border-slate-800/60 p-10 text-center text-slate-400">
-          <p className="text-lg font-semibold">No events yet</p>
-          <p className="mt-2 text-sm">
-            Create your first event to start selling tickets.
-          </p>
+        <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-16 text-center space-y-6 max-w-2xl mx-auto shadow-2xl">
+          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+            <Plus className="w-10 h-10 text-gray-600" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">No events created yet</h2>
+            <p className="text-gray-400 text-sm">
+              Ready to host your next big thing? Create your first event and start selling tickets across the platform.
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/dashboard/org/create-event")}
+            className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-8 py-3.5 rounded-2xl transition-all shadow-xl shadow-rose-600/20 font-bold active:scale-[0.98]"
+          >
+            Create Your First Event
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {events.map((ev) => {
             const id = ev.event_id ?? ev.id;
             return (
               <article
                 key={id}
-                role="link"
-                tabIndex={0}
-                className="rounded-xl overflow-hidden border border-slate-800 bg-slate-900/50 hover:bg-slate-900 shadow-sm hover:shadow-md transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--sidebar-accent,#7c3aed)] group"
-                aria-label={`Open event ${ev.name}`}
                 onClick={() => router.push(`/dashboard/org/my-event/${id}`)}
+                className="group relative bg-[#0A0A0A] border border-white/5 rounded-[2rem] overflow-hidden hover:border-rose-500/30 transition-all duration-500 shadow-xl hover:shadow-rose-600/5 cursor-pointer flex flex-col"
               >
-                <div className="relative h-48 w-full overflow-hidden bg-slate-800">
+                {/* Image Section */}
+                <div className="relative h-48 overflow-hidden">
                   <img
                     src={getImageUrl(ev.image)}
                     alt={ev.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                     onError={(e) => {
-                      e.currentTarget.src = "";
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=1000";
                     }}
                   />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-                  <div className="absolute left-4 bottom-3 text-white">
-                    <h3 className="text-base font-semibold drop-shadow line-clamp-1">
+                  
+                  {/* Glass Overlays */}
+                  <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+                    <div className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest backdrop-blur-xl border flex items-center gap-1.5 ${
+                      ev.status === 'verified' 
+                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" 
+                      : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                    }`}>
+                      {ev.status === 'verified' ? <Check className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
+                      {ev.status === 'verified' ? 'Verified' : (ev.status || 'Pending')}
+                    </div>
+                    
+                    <div className="px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest backdrop-blur-xl bg-black/40 border border-white/10 text-white">
+                      {ev.pricing_type === "paid" ? `₦${ev.price}` : "FREE"}
+                    </div>
+                  </div>
+
+                  <div className="absolute inset-0 bg-linear-to-t from-[#0A0A0A] via-transparent to-transparent opacity-80" />
+                  
+                  <div className="absolute bottom-4 left-5 right-5">
+                    <p className="text-rose-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">{ev.event_type?.replace('_', ' ') || "GENERAL EVENT"}</p>
+                    <h3 className="text-lg font-bold text-white line-clamp-1 group-hover:text-rose-400 transition-colors">
                       {ev.name}
                     </h3>
-                    <p className="text-xs text-slate-200 mt-0.5 drop-shadow-sm flex items-center gap-1">
-                      {ev.location || "TBD"}
-                    </p>
-                  </div>
-                  <div className="absolute right-4 top-3 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white border border-white/10">
-                    {ev.pricing_type === "paid" && ev.price
-                      ? `₦${ev.price}`
-                      : "Free"}
                   </div>
                 </div>
 
-                <div className="p-4 flex flex-col gap-3 min-h-[160px]">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-[var(--sidebar-accent,#a78bfa)] uppercase tracking-wider mb-1">
-                        {(ev.event_type && ev.event_type.replace('_', ' ')) || "Event"}
-                      </p>
-                      <p className="text-sm text-slate-400 flex items-center gap-1">
-                        {formattedDate(ev.date)}
-                      </p>
+                {/* Content Section */}
+                <div className="p-5 space-y-4 flex-1 flex flex-col">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5 text-gray-400">
+                      <Clock className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="text-[11px] font-semibold">{formattedDate(ev.date)}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => handleCopyLink(e, id)}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5"
-                        title="Copy Public Ticket Link"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </button>
-                      {/* <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(`/events/${id}`, '_blank');
-                              }}
-                              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/5"
-                              title="Preview Public Page"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </button> */}
+                    <div className="flex items-center gap-2.5 text-gray-400">
+                      <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="text-[11px] font-semibold line-clamp-1">{ev.location || "Venue TBD"}</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                    {ev.description || "No description provided."}
+                  <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 italic opacity-80">
+                    {ev.description || "No event description provided yet..."}
                   </p>
 
-                  <div className="mt-auto pt-4 border-t border-white/5 grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase">Sold</p>
-                      <p className="text-white font-bold">{ev.ticket_stats?.confirmed_tickets ?? 0}</p>
+                  <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between gap-4">
+                    <div className="flex-1 grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-0.5">Bookings</p>
+                        <p className="text-base font-bold text-white leading-none">
+                          {ev.ticket_stats?.confirmed_tickets ?? 0}
+                          <span className="text-[9px] text-gray-500 font-medium ml-1">/ {ev.capacity || '∞'}</span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-0.5">Revenue</p>
+                        <p className="text-base font-bold text-emerald-400 leading-none">
+                          ₦{(ev.ticket_stats?.total_revenue ?? 0).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase">Pending</p>
-                      <p className="text-white font-bold">{ev.ticket_stats?.pending_tickets ?? 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase">Revenue</p>
-                      <p className="text-emerald-400 font-bold">₦{ev.ticket_stats?.total_revenue ?? 0}</p>
-                    </div>
+                    
+                    <button
+                      onClick={(e) => handleCopyLink(e, id)}
+                      className="p-2.5 bg-white/5 hover:bg-rose-500/10 border border-white/5 rounded-xl group/copy transition-all"
+                      title="Copy Link"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-gray-500 group-hover/copy:text-rose-500 transition-colors" />
+                    </button>
                   </div>
                 </div>
+
+                {/* Hover progress bar effect */}
+                <div className="absolute bottom-0 left-0 h-0.5 bg-rose-600 w-0 group-hover:w-full transition-all duration-500" />
               </article>
             );
           })}

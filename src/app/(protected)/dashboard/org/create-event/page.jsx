@@ -4,9 +4,24 @@ import { useRouter } from "next/navigation";
 import api from "../../../../../lib/axios";
 import toast from "react-hot-toast";
 import useOrganizerStore from "../../../../../store/orgStore";
-import Select from "@/components/ui/custom-select";
+import CustomDropdown from "@/components/ui/CustomDropdown";
 import Loading from "@/components/ui/Loading";
-import { MapPin, Calendar, Camera, ImageIcon, Eye, X, ChevronDown, CheckCircle2, Ticket, ArrowRight, XCircle, Plus } from "lucide-react";
+import {
+  MapPin,
+  Calendar,
+  Camera,
+  ImageIcon,
+  Eye,
+  X,
+  ChevronDown,
+  CheckCircle2,
+  Ticket,
+  ArrowRight,
+  XCircle,
+  Plus,
+  Edit2,
+  Zap,
+} from "lucide-react";
 
 const FALLBACK_EVENT_TYPES = [
   { value: "conference", label: "Conference" },
@@ -40,6 +55,8 @@ export default function CreateEvent() {
     price: "",
     allows_seat_selection: false,
   });
+
+  const [categories, setCategories] = useState([]);
 
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -105,6 +122,29 @@ export default function CreateEvent() {
     setImageFile(f);
   };
 
+  const addCategory = () => {
+    setCategories([
+      ...categories,
+      {
+        name: "",
+        price: "",
+        description: "",
+        max_tickets: "",
+        max_quantity_per_booking: "",
+      },
+    ]);
+  };
+
+  const removeCategory = (index) => {
+    setCategories(categories.filter((_, i) => i !== index));
+  };
+
+  const updateCategory = (index, key, value) => {
+    const newCats = [...categories];
+    newCats[index][key] = value;
+    setCategories(newCats);
+  };
+
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Name is required";
@@ -117,6 +157,12 @@ export default function CreateEvent() {
     if (form.pricing_type === "paid") {
       if (!form.price || Number(form.price) <= 0)
         e.price = "Price must be greater than 0";
+    }
+    if (
+      form.capacity !== "" &&
+      (isNaN(Number(form.capacity)) || Number(form.capacity) < 1)
+    ) {
+      e.capacity = "Capacity must be at least 1";
     }
     // length checks per docs
     if (form.name && form.name.length > 200)
@@ -143,33 +189,16 @@ export default function CreateEvent() {
     setImageFile(null);
     setPreview(null);
     setErrors({});
+    setCategories([]);
   };
 
   const submit = async (ev) => {
     ev.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Please fill in all required fields correctly.");
+      return;
+    }
     setLoading(true);
-
-    const isoDate = new Date(form.date).toISOString();
-
-    const sanitized = {
-      name: String(form.name),
-      description: String(form.description),
-      pricing_type: String(form.pricing_type),
-      event_type: String(form.event_type),
-      location: String(form.location),
-      date: isoDate,
-      capacity:
-        form.capacity !== "" && form.capacity != null
-          ? String(Number(form.capacity))
-          : "",
-      price:
-        form.pricing_type === "paid"
-          ? String(Number(form.price))
-          : "0.00",
-      allows_seat_selection: String(Boolean(form.allows_seat_selection)),
-      status: "draft",
-    };
 
     try {
       const formData = new FormData();
@@ -179,21 +208,27 @@ export default function CreateEvent() {
       formData.append("event_type", form.event_type);
       formData.append("location", form.location.trim());
 
-      // convert local datetime input to ISO with Z (server expects ISO 8601)
-      // if user already provided an ISO string, this will still produce a valid ISO
+      // convert local datetime input to ISO with Z
       const isoDate = form.date ? new Date(form.date).toISOString() : "";
       formData.append("date", isoDate);
 
+      // Explicitly parse capacity as integer
       if (form.capacity !== "" && form.capacity !== null) {
-        // ensure integer
-        formData.append("capacity", parseInt(form.capacity, 10));
+        const capVal = parseInt(String(form.capacity).replace(/,/g, ""), 10);
+        if (!isNaN(capVal)) {
+          formData.append("capacity", capVal);
+        }
       }
-      // price required for paid; for free set 0.00 per docs
+
+      // Explicitly parse price as float with 2 decimals
       if (form.pricing_type === "paid") {
-        formData.append("price", parseFloat(form.price));
+        const priceVal = parseFloat(String(form.price).replace(/,/g, ""));
+        formData.append(
+          "price",
+          !isNaN(priceVal) ? priceVal.toFixed(2) : "0.00"
+        );
       } else {
-        // append price 0 for free events (server may require)
-        formData.append("price", 0.0);
+        formData.append("price", "0.00");
       }
 
       formData.append(
@@ -209,6 +244,47 @@ export default function CreateEvent() {
 
       if (res && res.status >= 200 && res.status < 300) {
         const newId = res.data.event_id || res.data.id;
+
+        // Create categories if any
+        if (categories.length > 0) {
+          try {
+            await Promise.all(
+              categories.map((cat) => {
+                if (!cat.name || cat.price === "") return Promise.resolve();
+
+                const catPrice = parseFloat(
+                  String(cat.price).replace(/,/g, "")
+                );
+                const catMaxTickets = cat.max_tickets
+                  ? parseInt(String(cat.max_tickets).replace(/,/g, ""), 10)
+                  : null;
+                const catMaxPerBooking = cat.max_quantity_per_booking
+                  ? parseInt(
+                      String(cat.max_quantity_per_booking).replace(/,/g, ""),
+                      10
+                    )
+                  : null;
+
+                return api.post("/tickets/categories/create/", {
+                  event_id: newId,
+                  name: cat.name,
+                  price: !isNaN(catPrice) ? catPrice : 0,
+                  description: cat.description,
+                  max_tickets: !isNaN(catMaxTickets) ? catMaxTickets : null,
+                  max_quantity_per_booking: !isNaN(catMaxPerBooking)
+                    ? catMaxPerBooking
+                    : null,
+                });
+              })
+            );
+          } catch (catErr) {
+            console.error("Error creating categories:", catErr);
+            toast.error(
+              "Event created, but some ticket categories failed to create. You can add them later."
+            );
+          }
+        }
+
         setCreatedEventId(newId);
         setShowSuccessModal(true);
         resetForm();
@@ -248,10 +324,11 @@ export default function CreateEvent() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold mb-1">
-            Create Event
-          </h1>
-          <p className="text-gray-400 text-xs">Fill in event details. <span className="text-rose-500">*</span> required.</p>
+          <h1 className="text-xl md:text-2xl font-bold mb-1">Create Event</h1>
+          <p className="text-gray-400 text-xs">
+            Fill in event details. <span className="text-rose-500">*</span>{" "}
+            required.
+          </p>
         </div>
         <button
           type="button"
@@ -276,9 +353,13 @@ export default function CreateEvent() {
                 value={form.name}
                 onChange={handleChange("name")}
                 placeholder="e.g. Summer Tech Conference 2024"
-                className={`w-full bg-white/5 border ${errors.name ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all`}
+                className={`w-full bg-white/5 border ${errors.name ? "border-rose-500/50 focus:border-rose-500" : "border-white/10 focus:border-rose-500"} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all`}
               />
-              {errors.name && <p className="text-[10px] text-rose-500 font-bold">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-[10px] text-rose-500 font-bold">
+                  {errors.name}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -289,9 +370,13 @@ export default function CreateEvent() {
                 value={form.description}
                 onChange={handleChange("description")}
                 placeholder="What to expect, schedule, speakers..."
-                className={`w-full bg-white/5 border ${errors.description ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all min-h-[120px] resize-y`}
+                className={`w-full bg-white/5 border ${errors.description ? "border-rose-500/50 focus:border-rose-500" : "border-white/10 focus:border-rose-500"} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all min-h-[120px] resize-y`}
               />
-              {errors.description && <p className="text-[10px] text-rose-500 font-bold">{errors.description}</p>}
+              {errors.description && (
+                <p className="text-[10px] text-rose-500 font-bold">
+                  {errors.description}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -304,8 +389,14 @@ export default function CreateEvent() {
                     <button
                       key={p.value}
                       type="button"
-                      onClick={() => setForm((s) => ({ ...s, pricing_type: p.value, price: p.value === "free" ? "" : s.price }))}
-                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${form.pricing_type === p.value ? 'bg-rose-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                      onClick={() =>
+                        setForm((s) => ({
+                          ...s,
+                          pricing_type: p.value,
+                          price: p.value === "free" ? "" : s.price,
+                        }))
+                      }
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${form.pricing_type === p.value ? "bg-rose-600 text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
                     >
                       {p.label}
                     </button>
@@ -313,28 +404,20 @@ export default function CreateEvent() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Event Type <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={form.event_type}
-                    onChange={(e) => {
-                      setForm(s => ({ ...s, event_type: e.target.value }));
-                      setErrors(p => ({ ...p, event_type: undefined }));
-                    }}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer"
-                  >
-                    {eventTypes.map(type => (
-                      <option key={type.value} value={type.value} className="bg-neutral-900">{type.label}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  </div>
-                </div>
-              </div>
+              <CustomDropdown
+                value={form.event_type}
+                onChange={(val) => {
+                  setForm((s) => ({ ...s, event_type: val }));
+                  setErrors((p) => ({ ...p, event_type: undefined }));
+                }}
+                options={eventTypes.map((t) => ({
+                  value: t.value || t,
+                  label: t.label || t,
+                  icon: Zap,
+                }))}
+                placeholder="Select Type"
+                error={errors.event_type}
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -347,11 +430,15 @@ export default function CreateEvent() {
                     value={form.location}
                     onChange={handleChange("location")}
                     placeholder="Venue address or online link"
-                    className={`w-full pl-10 bg-white/5 border ${errors.location ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all`}
+                    className={`w-full pl-10 bg-white/5 border ${errors.location ? "border-rose-500/50 focus:border-rose-500" : "border-white/10 focus:border-rose-500"} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all`}
                   />
                   <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 </div>
-                {errors.location && <p className="text-[10px] text-rose-500 font-bold">{errors.location}</p>}
+                {errors.location && (
+                  <p className="text-[10px] text-rose-500 font-bold">
+                    {errors.location}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -362,9 +449,13 @@ export default function CreateEvent() {
                   type="datetime-local"
                   value={form.date}
                   onChange={handleChange("date")}
-                  className={`w-full bg-white/5 border ${errors.date ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all [color-scheme:dark]`}
+                  className={`w-full bg-white/5 border ${errors.date ? "border-rose-500/50 focus:border-rose-500" : "border-white/10 focus:border-rose-500"} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all [color-scheme:dark]`}
                 />
-                {errors.date && <p className="text-[10px] text-rose-500 font-bold">{errors.date}</p>}
+                {errors.date && (
+                  <p className="text-[10px] text-rose-500 font-bold">
+                    {errors.date}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -385,10 +476,15 @@ export default function CreateEvent() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Price {form.pricing_type === "paid" && <span className="text-rose-500">*</span>}
+                  Price{" "}
+                  {form.pricing_type === "paid" && (
+                    <span className="text-rose-500">*</span>
+                  )}
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500">
+                    ₦
+                  </span>
                   <input
                     type="number"
                     min="0"
@@ -397,10 +493,14 @@ export default function CreateEvent() {
                     onChange={handleChange("price")}
                     placeholder="0.00"
                     disabled={form.pricing_type === "free"}
-                    className={`w-full pl-8 bg-white/5 border ${errors.price ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/10 focus:border-rose-500'} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`w-full pl-8 bg-white/5 border ${errors.price ? "border-rose-500/50 focus:border-rose-500" : "border-white/10 focus:border-rose-500"} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                   />
                 </div>
-                {errors.price && <p className="text-[10px] text-rose-500 font-bold">{errors.price}</p>}
+                {errors.price && (
+                  <p className="text-[10px] text-rose-500 font-bold">
+                    {errors.price}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -418,15 +518,24 @@ export default function CreateEvent() {
                   />
                   <div className="pointer-events-none flex flex-col items-center">
                     <Camera className="w-8 h-8 mb-2 text-gray-500 group-hover:text-rose-400 transition-colors" />
-                    <span className="text-xs text-gray-500 group-hover:text-rose-400 font-medium">Click to upload cover image</span>
+                    <span className="text-xs text-gray-500 group-hover:text-rose-400 font-medium">
+                      Click to upload cover image
+                    </span>
                   </div>
                 </div>
                 {preview && (
                   <div className="relative h-40 w-full rounded-2xl overflow-hidden border border-white/10 mt-3 group">
-                    <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                    <img
+                      src={preview}
+                      alt="preview"
+                      className="w-full h-full object-cover"
+                    />
                     <button
                       type="button"
-                      onClick={() => { setImageFile(null); setPreview(null); }}
+                      onClick={() => {
+                        setImageFile(null);
+                        setPreview(null);
+                      }}
                       className="absolute top-2 right-2 bg-black/60 hover:bg-rose-600 text-white p-1.5 rounded-lg backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100"
                     >
                       <X className="w-4 h-4" />
@@ -444,11 +553,152 @@ export default function CreateEvent() {
                     id="seat-selection"
                     className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/20 bg-white/5 checked:border-rose-500 checked:bg-rose-500 transition-all"
                   />
-                  <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M20 6L9 17l-5-5" /></svg>
+                  <svg
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
                 </div>
-                <label htmlFor="seat-selection" className="text-sm text-gray-300 font-medium cursor-pointer select-none">
+                <label
+                  htmlFor="seat-selection"
+                  className="text-sm text-gray-300 font-medium cursor-pointer select-none"
+                >
                   Enable seat selection for this event
                 </label>
+              </div>
+
+              {/* Ticket Categories Section */}
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Ticket className="w-4 h-4 text-rose-500" />
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
+                      Ticket Categories
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addCategory}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/10 hover:bg-rose-600/20 text-rose-500 rounded-lg text-[10px] font-bold transition-all border border-rose-500/20 group"
+                  >
+                    <Plus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                    ADD CATEGORY
+                  </button>
+                </div>
+
+                {categories.length === 0 ? (
+                  <div className="bg-white/5 border border-white/5 rounded-xl p-6 text-center">
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      No ticket categories added. The event will use the base
+                      price.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {categories.map((cat, idx) => (
+                      <div
+                        key={idx}
+                        className="relative bg-white/5 border border-white/10 rounded-xl p-4 space-y-4 group"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => removeCategory(idx)}
+                          className="absolute top-3 right-3 p-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white rounded-lg transition-all"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Category Name{" "}
+                              <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              value={cat.name}
+                              onChange={(e) =>
+                                updateCategory(idx, "name", e.target.value)
+                              }
+                              placeholder="e.g. VIP, Early Bird"
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500 transition-all"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Price (₦) <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              value={cat.price}
+                              onChange={(e) =>
+                                updateCategory(idx, "price", e.target.value)
+                              }
+                              placeholder="0.00"
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500 transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Max Tickets
+                            </label>
+                            <input
+                              type="number"
+                              value={cat.max_tickets}
+                              onChange={(e) =>
+                                updateCategory(
+                                  idx,
+                                  "max_tickets",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Unlimited"
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500 transition-all"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Tickets Per Booking
+                            </label>
+                            <input
+                              type="number"
+                              value={cat.max_quantity_per_booking}
+                              onChange={(e) =>
+                                updateCategory(
+                                  idx,
+                                  "max_quantity_per_booking",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="No Limit"
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500 transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Description
+                          </label>
+                          <textarea
+                            value={cat.description}
+                            onChange={(e) =>
+                              updateCategory(idx, "description", e.target.value)
+                            }
+                            placeholder="Perks of this category..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500 transition-all h-16 resize-none"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -481,20 +731,29 @@ export default function CreateEvent() {
           {/* Preview Card */}
           <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
             <div className="h-48 relative overflow-hidden bg-white/5">
-              {(preview || imageFile) ? (
-                <img src={preview} alt="poster" className="w-full h-full object-cover" />
+              {preview || imageFile ? (
+                <img
+                  src={preview}
+                  alt="poster"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-gray-700 gap-2">
                   <ImageIcon className="w-10 h-10" />
-                  <span className="text-xs font-bold uppercase tracking-wider">No Cover Image</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">
+                    No Cover Image
+                  </span>
                 </div>
               )}
               <div className="absolute top-3 right-3">
-                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md border ${form.pricing_type === 'free'
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                  : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                  }`}>
-                  {form.pricing_type === 'paid' ? 'PAID' : 'FREE'}
+                <span
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md border ${
+                    form.pricing_type === "free"
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                      : "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                  }`}
+                >
+                  {form.pricing_type === "paid" ? "PAID" : "FREE"}
                 </span>
               </div>
             </div>
@@ -505,7 +764,9 @@ export default function CreateEvent() {
                   {form.name || "Untitled Event"}
                 </h3>
                 <p className="text-rose-500 text-xs font-bold mt-2 uppercase tracking-wider">
-                  {eventTypes.find((t) => t.value === form.event_type)?.label || form.event_type || "Event Type"}
+                  {eventTypes.find((t) => t.value === form.event_type)?.label ||
+                    form.event_type ||
+                    "Event Type"}
                 </p>
               </div>
 
@@ -526,15 +787,49 @@ export default function CreateEvent() {
 
               <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase">Price</p>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase">
+                    Price
+                  </p>
                   <p className="text-white font-bold text-lg">
-                    {form.pricing_type === 'paid' && form.price ? `₦${form.price}` : 'Free'}
+                    {form.pricing_type === "paid" && form.price
+                      ? `₦${form.price}`
+                      : "Free"}
                   </p>
                 </div>
-                <button disabled className="px-4 py-2 bg-white/5 text-gray-500 rounded-lg text-xs font-bold cursor-default">
+                <button
+                  disabled
+                  className="px-4 py-2 bg-white/5 text-gray-500 rounded-lg text-xs font-bold cursor-default"
+                >
                   Get Tickets
                 </button>
               </div>
+
+              {/* Categories Preview */}
+              {categories.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                    Available Tickets
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map(
+                      (cat, i) =>
+                        cat.name && (
+                          <div
+                            key={i}
+                            className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg flex items-center gap-2"
+                          >
+                            <span className="text-[10px] font-bold text-gray-300">
+                              {cat.name}
+                            </span>
+                            <span className="text-[10px] font-black text-rose-500">
+                              ₦{cat.price || "0"}
+                            </span>
+                          </div>
+                        )
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -549,28 +844,21 @@ export default function CreateEvent() {
           <div className="bg-[#0A0A0A] border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 transform animate-in zoom-in-95 duration-300">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Event Created!</h2>
-              <p className="text-gray-400">
-                Your event has been successfully created. Would you like to add ticket categories (like VIP or Regular) now?
+              <h2 className="text-2xl font-bold text-white">Event Created & Pending</h2>
+              <p className="text-gray-400 text-center max-w-md">
+                Your event has been successfully created and is currently pending approval. An email will be delivered to you once your event is approved and is live.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 pt-4">
+            <div className="space-y-4">
               <button
-                onClick={() => router.push(`/dashboard/org/my-event/${createdEventId}/tickets`)}
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group shadow-lg shadow-rose-600/20"
+                onClick={() => router.push("/dashboard/org/my-event")}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2"
               >
-                <Plus className="w-4 h-4" />
-                Add Ticket Categories
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={() => router.push('/dashboard/org/my-event')}
-                className="w-full bg-white/5 hover:bg-white/10 text-gray-300 py-3.5 rounded-2xl font-bold transition-all border border-white/5"
-              >
-                Maybe Later
+                Go to My Events
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
