@@ -11,29 +11,33 @@ const useAuthStore = create(
       hydrated: false,
       isAuthenticated: false,
       login: (userData, token, refresh, role) => {
-        // Clear organizer store when a new user logs in
+        // FIRST: Clear organizer store and user-specific data BEFORE setting new user
         if (typeof window !== 'undefined') {
+          // Clear the organizer Zustand store
           localStorage.removeItem('organizer-storage');
           
-          // Only clear PIN data if it's a different user (different email)
+          // Clear welcome flags for different users
           const storedPinKeys = Object.keys(localStorage).filter(key => 
-            key.startsWith('radar_pin_') || key.startsWith('radar_org_first_welcome:')
+            key.startsWith('radar_org_first_welcome:')
           );
           
-          // Clear welcome flags for different users
           storedPinKeys.forEach(key => {
-            if (key.startsWith('radar_org_first_welcome:')) {
-              const emailInKey = key.split(':')[1];
-              if (emailInKey !== userData.email) {
-                localStorage.removeItem(key);
-              }
+            const parts = key.split(':');
+            // Guard against unexpected key formats (e.g., missing email segment)
+            if (parts.length < 2) {
+              return;
+            }
+            const emailInKey = parts[1];
+            if (emailInKey && emailInKey.toLowerCase() !== userData.email.toLowerCase()) {
+              localStorage.removeItem(key);
             }
           });
           
-          // Clear PIN reminder dismissal (let each session decide)
+          // IMPORTANT: Clear PIN reminder dismissal so new users see it
           localStorage.removeItem('radar_pin_reminder_dismissed');
         }
         
+        // THEN: Set new user data
         set({
           user: userData,
           token,
