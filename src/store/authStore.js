@@ -22,7 +22,12 @@ const useAuthStore = create(
           );
           
           storedPinKeys.forEach(key => {
-            const emailInKey = key.split(':')[1];
+            const parts = key.split(':');
+            // Guard against unexpected key formats (e.g., missing email segment)
+            if (parts.length < 2) {
+              return;
+            }
+            const emailInKey = parts[1];
             if (emailInKey && emailInKey.toLowerCase() !== userData.email.toLowerCase()) {
               localStorage.removeItem(key);
             }
