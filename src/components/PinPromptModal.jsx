@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { X, Lock, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { verifyPinLocally, hasPinSet } from '@/lib/pinPrompt';
+import useAuthStore from '@/store/authStore';
 
 /**
  * PinPromptModal - Prompt for PIN to authorize sensitive actions
@@ -26,6 +27,62 @@ export default function PinPromptModal({
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const inputsRef = useRef([]);
+  const digits = Array.from({ length: 4 }, (_, i) => pin?.[i] || "");
+
+  const handleOtpChange = (index, raw) => {
+    if (loading) return;
+    const onlyDigits = (raw || '').replace(/\D/g, '');
+    if (!onlyDigits) {
+      const next = digits.slice();
+      next[index] = '';
+      setPin(next.join(''));
+      return;
+    }
+
+    const chars = onlyDigits.slice(0, 4 - index).split('');
+    const next = digits.slice();
+    chars.forEach((ch, offset) => {
+      next[index + offset] = ch;
+    });
+    setPin(next.join(''));
+
+    const nextIndex = Math.min(index + chars.length, 3);
+    inputsRef.current[nextIndex]?.focus?.();
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (loading) return;
+    if (e.key === 'Backspace') {
+      if (digits[index]) {
+        const next = digits.slice();
+        next[index] = '';
+        setPin(next.join(''));
+        return;
+      }
+      if (index > 0) {
+        inputsRef.current[index - 1]?.focus?.();
+        const next = digits.slice();
+        next[index - 1] = '';
+        setPin(next.join(''));
+      }
+    }
+    if (e.key === 'ArrowLeft' && index > 0) inputsRef.current[index - 1]?.focus?.();
+    if (e.key === 'ArrowRight' && index < 3) inputsRef.current[index + 1]?.focus?.();
+  };
+
+  const handleOtpPaste = (e) => {
+    if (loading) return;
+    const text = e.clipboardData?.getData('text') || '';
+    const onlyDigits = text.replace(/\D/g, '').slice(0, 4);
+    if (!onlyDigits) return;
+    e.preventDefault();
+    setPin(onlyDigits);
+    inputsRef.current[Math.min(onlyDigits.length - 1, 3)]?.focus?.();
+  };
+
+  const email = useAuthStore((s) => s.user?.email);
 
   const hasPin = hasPinSet();
 
@@ -62,7 +119,12 @@ export default function PinPromptModal({
   const handleForgotPin = async () => {
     setLoading(true);
     try {
-      await api.post('/forgot-pin/');
+      if (!email) {
+        toast.error('Unable to detect your email. Please re-login.');
+        return;
+      }
+
+      await api.post('/forgot-pin/', { Email: email });
       toast.success('PIN reset link sent to your email');
       handleClose();
     } catch (err) {
@@ -83,7 +145,7 @@ export default function PinPromptModal({
   // If PIN not set and setup is required, show setup message
   if (!hasPin && requireSetup) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
         
         <motion.div
@@ -138,7 +200,7 @@ export default function PinPromptModal({
 
   // Normal PIN entry
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
       
       <motion.div
@@ -171,18 +233,24 @@ export default function PinPromptModal({
             </div>
           )}
 
-          <div>
-            <input
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength="4"
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-              placeholder="4-digit PIN"
-              autoFocus
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-center text-xl tracking-widest focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
-            />
+          <div className="flex items-center justify-center gap-2" onPaste={handleOtpPaste}>
+            {digits.map((d, index) => (
+              <input
+                key={index}
+                ref={(el) => {
+                  inputsRef.current[index] = el;
+                }}
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={1}
+                value={d}
+                onChange={(e) => handleOtpChange(index, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                autoFocus={index === 0}
+                className="w-12 h-12 bg-white/5 border border-white/10 rounded-lg text-white text-center text-xl tracking-widest focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+              />
+            ))}
           </div>
 
           <div className="flex gap-2">

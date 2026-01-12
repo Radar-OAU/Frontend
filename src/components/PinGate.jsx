@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import api from "@/lib/axios";
 import useAuthStore from "@/store/authStore";
@@ -83,14 +83,29 @@ export default function PinGate({ children }) {
 			setError("Unable to detect your email. Please re-login.");
 			return;
 		}
-		if (!pin || pin.trim().length < 4) {
-			setError("PIN must be at least 4 digits.");
+		if (!pin || pin.trim().length !== 4) {
+			setError("PIN must be exactly 4 digits.");
 			return;
 		}
 
 		setSubmitting(true);
 		try {
-			await api.post("/pin/", { Email: email, pin });
+			try {
+				await api.post("/pin/", { Email: email, pin });
+			} catch (apiErr) {
+				const emailErr = apiErr?.response?.data?.Email?.[0];
+				const msg = apiErr?.response?.data?.Message || emailErr || apiErr?.message;
+				const alreadyExists =
+					typeof emailErr === "string" && emailErr.toLowerCase().includes("already exists");
+
+				// If the backend says a PIN already exists for this email,
+				// don't block the user: just proceed with local storage so the UI can continue.
+				if (!alreadyExists) {
+					throw apiErr;
+				}
+				toast.success("PIN already exists for this account");
+			}
+
 			await storePinLocally(pin);
 			setHasPin(true);
 			toast.success("PIN set successfully");
@@ -112,8 +127,8 @@ export default function PinGate({ children }) {
 
 	const handleVerifyPin = async () => {
 		setError("");
-		if (!pin || pin.trim().length < 4) {
-			setError("Enter your PIN to continue.");
+		if (!pin || pin.trim().length !== 4) {
+			setError("Enter your 4-digit PIN to continue.");
 			return;
 		}
 
@@ -154,6 +169,60 @@ export default function PinGate({ children }) {
 	const blockUntilReady = isProtectedRoute && !ready;
 	const showModal = blockUntilReady || (ready && open && (mode === "set" || mode === "enter"));
 
+	const pinInputsRef = useRef([]);
+	const pinDigits = Array.from({ length: 4 }, (_, i) => pin?.[i] || "");
+
+	const setPinAtIndex = (index, nextDigit) => {
+		const next = pinDigits.slice();
+		next[index] = nextDigit;
+		setPin(next.join(""));
+	};
+
+	const handleOtpChange = (index, raw) => {
+		if (submitting) return;
+		const onlyDigits = (raw || "").replace(/\D/g, "");
+		if (!onlyDigits) {
+			setPinAtIndex(index, "");
+			return;
+		}
+
+		const chars = onlyDigits.slice(0, 4 - index).split("");
+		const next = pinDigits.slice();
+		chars.forEach((ch, offset) => {
+			next[index + offset] = ch;
+		});
+		setPin(next.join(""));
+
+		const nextIndex = Math.min(index + chars.length, 3);
+		pinInputsRef.current[nextIndex]?.focus?.();
+	};
+
+	const handleOtpKeyDown = (index, e) => {
+		if (submitting) return;
+		if (e.key === "Backspace") {
+			if (pinDigits[index]) {
+				setPinAtIndex(index, "");
+				return;
+			}
+			if (index > 0) {
+				pinInputsRef.current[index - 1]?.focus?.();
+				setPinAtIndex(index - 1, "");
+			}
+		}
+		if (e.key === "ArrowLeft" && index > 0) pinInputsRef.current[index - 1]?.focus?.();
+		if (e.key === "ArrowRight" && index < 3) pinInputsRef.current[index + 1]?.focus?.();
+	};
+
+	const handleOtpPaste = (e) => {
+		if (submitting) return;
+		const text = e.clipboardData?.getData("text") || "";
+		const onlyDigits = text.replace(/\D/g, "").slice(0, 4);
+		if (!onlyDigits) return;
+		e.preventDefault();
+		setPin(onlyDigits);
+		pinInputsRef.current[Math.min(onlyDigits.length - 1, 3)]?.focus?.();
+	};
+
 	return (
 		<div className="relative">
 			<div
@@ -186,16 +255,26 @@ export default function PinGate({ children }) {
 
 								<div className="mt-5 space-y-2">
 									<label className="text-xs font-bold text-gray-500">PIN</label>
-									<input
-										type="password"
-										inputMode="numeric"
-										autoComplete="one-time-code"
-										value={pin}
-										onChange={(e) => setPin(e.target.value)}
-										className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all"
-										placeholder="Enter a 4+ digit PIN"
-										disabled={submitting}
-									/>
+									<div className="flex items-center gap-2 justify-center" onPaste={handleOtpPaste}>
+										{pinDigits.map((d, index) => (
+											<input
+												key={index}
+												ref={(el) => {
+													pinInputsRef.current[index] = el;
+												}}
+												type="password"
+												inputMode="numeric"
+												autoComplete="one-time-code"
+												pattern="[0-9]*"
+												maxLength={1}
+												value={d}
+												disabled={submitting}
+												onChange={(e) => handleOtpChange(index, e.target.value)}
+												onKeyDown={(e) => handleOtpKeyDown(index, e)}
+												className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-center text-lg tracking-widest focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all"
+											/>
+										))}
+									</div>
 									{error && <p className="text-xs text-rose-500 font-bold">{error}</p>}
 								</div>
 
@@ -229,16 +308,26 @@ export default function PinGate({ children }) {
 
 								<div className="mt-5 space-y-2">
 									<label className="text-xs font-bold text-gray-500">PIN</label>
-									<input
-										type="password"
-										inputMode="numeric"
-										autoComplete="one-time-code"
-										value={pin}
-										onChange={(e) => setPin(e.target.value)}
-										className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all"
-										placeholder="Enter PIN"
-										disabled={submitting}
-									/>
+									<div className="flex items-center gap-2 justify-center" onPaste={handleOtpPaste}>
+										{pinDigits.map((d, index) => (
+											<input
+												key={index}
+												ref={(el) => {
+													pinInputsRef.current[index] = el;
+												}}
+												type="password"
+												inputMode="numeric"
+												autoComplete="one-time-code"
+												pattern="[0-9]*"
+												maxLength={1}
+												value={d}
+												disabled={submitting}
+												onChange={(e) => handleOtpChange(index, e.target.value)}
+												onKeyDown={(e) => handleOtpKeyDown(index, e)}
+												className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-center text-lg tracking-widest focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all"
+											/>
+										))}
+									</div>
 									{error && <p className="text-xs text-rose-500 font-bold">{error}</p>}
 								</div>
 
