@@ -191,13 +191,29 @@ export default function QrScanner() {
     return () => { mounted = false; };
   }, [isScanning, activeTab, cameraFacingMode]);
 
-  const startScanning = () => {
+  const startScanning = async () => {
     if (!selectedEventId) {
       toast.error("Please select an event first.");
       return;
     }
-    setIsScanning(true);
-    setScanResult(null);
+
+    // Explicitly request permission on user click to ensure prompt appears
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Permission granted! Stop this stream so Html5Qrcode can take over
+        stream.getTracks().forEach(track => track.stop());
+        setIsScanning(true);
+        setScanResult(null);
+    } catch (err) {
+        console.error("Permission check failed", err);
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+            toast.error("Camera access denied. Please reset permissions in your browser URL bar.", { duration: 5000 });
+        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+            toast.error("No camera found.");
+        } else {
+            toast.error("Could not access camera. " + err.message);
+        }
+    }
   };
 
   const stopScanning = async () => {
@@ -211,6 +227,8 @@ export default function QrScanner() {
         console.error("Stop error", err);
       }
     }
+    // Also ensure state is reset if scanner ref was missing
+    setIsScanning(false);
   };
 
   const handleSwitchCamera = async () => {
