@@ -3,16 +3,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Calendar, MapPin, DollarSign, CheckCircle, XCircle, Star, Trash2 } from "lucide-react";
+import { Loader2, Calendar, MapPin, DollarSign, CheckCircle, XCircle, Star, Trash2, Search } from "lucide-react";
 import { adminService } from "../../../lib/admin";
 import { toast } from "react-hot-toast";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchEvents();
@@ -43,16 +47,7 @@ export default function EventsPage() {
     }
   };
 
-  const handleToggleFeatured = async (eventId, currentStatus) => {
-    try {
-      await adminService.toggleEventFeatured(eventId, !currentStatus);
-      toast.success(currentStatus ? "Removed from featured" : "Added to featured");
-      fetchEvents();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to update featured status");
-    }
-  };
+
 
   const handleDeleteEvent = async (eventId) => {
     if (!window.confirm("Are you sure you want to DELETE this event? This action cannot be undone.")) return;
@@ -67,9 +62,29 @@ export default function EventsPage() {
     }
   };
 
-  const filteredEvents = events.filter(event => 
-    filter === "all" ? true : event.status === filter
-  );
+  const filteredEvents = events.filter(event => {
+    const matchesStatus = filter === "all" ? true : event.status === filter;
+    const lowerQuery = searchQuery.toLowerCase();
+    const matchesSearch = 
+        (event.event_name && event.event_name.toLowerCase().includes(lowerQuery)) ||
+        (event.organisation_name && event.organisation_name.toLowerCase().includes(lowerQuery)) ||
+        (event.location && event.location.toLowerCase().includes(lowerQuery));
+    
+    return matchesStatus && matchesSearch;
+  });
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredEvents.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchQuery]);
 
   if (loading) {
     return (
@@ -88,20 +103,34 @@ export default function EventsPage() {
             Monitor and moderate all events on the platform.
           </p>
         </div>
-        <div className="flex gap-2 bg-muted p-1 rounded-lg self-start">
-          {["all", "pending", "verified", "denied"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                filter === status 
-                  ? "bg-white shadow text-foreground" 
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
+        
+        <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                    placeholder="Search events..."
+                    className="pl-8 h-8 text-xs bg-background"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            <div className="flex gap-2 bg-muted p-1 rounded-lg self-start sm:self-auto">
+            {["all", "pending", "verified", "denied"].map((status) => (
+                <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                    filter === status 
+                    ? "bg-primary text-primary-foreground shadow" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+                </button>
+            ))}
+            </div>
         </div>
       </div>
 
@@ -119,20 +148,19 @@ export default function EventsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {filteredEvents.length === 0 ? (
+                {currentItems.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-6 text-center text-xs text-muted-foreground">
                       No events found matching this filter.
                     </td>
                   </tr>
                 ) : (
-                  filteredEvents.map((event) => (
+                  currentItems.map((event) => (
                     <tr key={event.event_id} className="hover:bg-muted/30 transition-colors text-xs">
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                           {event.is_featured && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
                            <div className="font-medium">
-                              <Link href={`/dashboard/student/events/${event.event_id}`} className="hover:underline hover:text-primary transition-colors">
+                              <Link href={`/lighthouse/events/${event.event_id}`} className="hover:underline hover:text-primary transition-colors">
                                 {event.event_name}
                               </Link>
                            </div>
@@ -168,15 +196,7 @@ export default function EventsPage() {
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button 
-                             size="sm" 
-                             variant="ghost"
-                             className={`h-7 w-7 p-0 ${event.is_featured ? 'text-yellow-600 bg-yellow-50' : 'text-gray-400 hover:text-yellow-600'}`}
-                             onClick={() => handleToggleFeatured(event.event_id, event.is_featured)}
-                             title={event.is_featured ? "Unfeature" : "Feature"}
-                           >
-                             <Star className={`w-4 h-4 ${event.is_featured ? 'fill-current' : ''}`} />
-                           </Button>
+
 
                           {event.status === 'pending' && (
                             <>
@@ -241,6 +261,31 @@ export default function EventsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </Button>
+          <span className="text-sm text-gray-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
