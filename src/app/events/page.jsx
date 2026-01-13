@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import PublicNavbar from "@/components/PublicNavbar";
 import { getImageUrl } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Note: metadata must be exported from page.js in the same folder for client components
 // Create a separate page.js if you need static metadata
@@ -74,7 +75,7 @@ const PublicEventsPage = () => {
         {loading ? (
              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                {[1, 2, 3, 4, 5, 6].map((i) => (
-                 <div key={i} className="aspect-[4/3] rounded-2xl bg-white/5 animate-pulse" />
+                 <Skeleton key={i} className="aspect-[4/3] rounded-2xl bg-white/5" />
                ))}
              </div>
         ) : events.length === 0 ? (

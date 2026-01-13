@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 import PublicNavbar from "@/components/PublicNavbar";
 import useAuthStore from "@/store/authStore";
 import { getImageUrl } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const EventDetailsPage = () => {
   const params = useParams();
@@ -130,10 +131,52 @@ const EventDetailsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-20">
         <PublicNavbar />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)] pt-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container mx-auto px-4 pt-24 md:pt-32">
+          <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
+            {/* Hero Skeleton */}
+            <Skeleton className="w-full h-[200px] md:h-[400px] rounded-xl md:rounded-2xl" />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              {/* Main Content Skeleton */}
+              <div className="md:col-span-2 space-y-6">
+                <div className="space-y-4">
+                  <Skeleton className="h-8 md:h-12 w-3/4" />
+                  <div className="flex gap-4">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Skeleton className="h-6 w-40" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                    <Skeleton className="h-4 w-4/6" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar Skeleton */}
+              <div className="md:col-span-1 space-y-6">
+                <Card>
+                  <CardHeader className="p-4 md:p-6 space-y-2">
+                     <Skeleton className="h-6 w-32" />
+                  </CardHeader>
+                  <CardContent className="p-4 md:p-6 pt-0 space-y-4">
+                    <Skeleton className="h-20 w-full rounded-xl" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+                <Skeleton className="h-32 w-full rounded-xl" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

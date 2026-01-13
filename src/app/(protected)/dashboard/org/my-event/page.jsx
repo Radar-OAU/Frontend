@@ -7,6 +7,7 @@ import { Loader2, Copy, Check, ExternalLink, Plus, Clock, Search } from "lucide-
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../../../../lib/utils";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const MyEvent = () => {
   const router = useRouter();
@@ -160,9 +161,29 @@ const MyEvent = () => {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-32 space-y-4">
-          <Loader2 className="animate-spin h-10 w-10 text-rose-500" />
-          <p className="text-gray-500 text-sm font-medium animate-pulse">Loading your events...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+           {[1, 2, 3, 4, 5, 6].map((i) => (
+               <div key={i} className="rounded-[2rem] overflow-hidden border border-white/5 bg-[#0A0A0A]">
+                  <Skeleton className="h-48 w-full" />
+                  <div className="p-5 space-y-4">
+                     <div className="space-y-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-32" />
+                     </div>
+                     <Skeleton className="h-10 w-full" />
+                     <div className="pt-4 border-t border-white/5 flex gap-4">
+                        <div className="flex-1 space-y-2">
+                           <Skeleton className="h-3 w-16" />
+                           <Skeleton className="h-5 w-24" />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                           <Skeleton className="h-3 w-16" />
+                           <Skeleton className="h-5 w-24" />
+                        </div>
+                     </div>
+                  </div>
+               </div>
+           ))}
         </div>
       ) : events.length === 0 ? (
         <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-16 text-center space-y-6 max-w-2xl mx-auto shadow-2xl">
