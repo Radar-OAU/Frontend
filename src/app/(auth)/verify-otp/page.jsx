@@ -18,6 +18,7 @@ const VerifyOTPContent = () => {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
   const role = searchParams.get("role") || "";
+  const callbackUrl = searchParams.get("callbackUrl");
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -95,7 +96,12 @@ const VerifyOTPContent = () => {
       }
 
       toast.success("Email verified successfully! Redirecting...", { id: toastId });
-      router.push("/dashboard");
+      
+      if (callbackUrl) {
+        router.push(decodeURIComponent(callbackUrl));
+      } else {
+        router.push("/dashboard");
+      }
 
     } catch (err) {
       console.error("Verify OTP error:", err.response || err);
@@ -255,7 +261,7 @@ const VerifyOTPContent = () => {
             <p className="text-gray-400 text-sm">
               Want to use a different email?{" "}
               <Link
-                href="/signup"
+                href={callbackUrl ? `/signup?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/signup"}
                 className="text-[#FF3A66] hover:text-[#cf153e] font-semibold underline">
                 Go back to signup
               </Link>

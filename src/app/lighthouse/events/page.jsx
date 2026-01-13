@@ -45,16 +45,7 @@ export default function EventsPage() {
     }
   };
 
-  const handleToggleFeatured = async (eventId, currentStatus) => {
-    try {
-      await adminService.toggleEventFeatured(eventId, !currentStatus);
-      toast.success(currentStatus ? "Removed from featured" : "Added to featured");
-      fetchEvents();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to update featured status");
-    }
-  };
+
 
   const handleDeleteEvent = async (eventId) => {
     if (!window.confirm("Are you sure you want to DELETE this event? This action cannot be undone.")) return;
@@ -145,9 +136,8 @@ export default function EventsPage() {
                     <tr key={event.event_id} className="hover:bg-muted/30 transition-colors text-xs">
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                           {event.is_featured && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
                            <div className="font-medium">
-                              <Link href={`/dashboard/student/events/${event.event_id}`} className="hover:underline hover:text-primary transition-colors">
+                              <Link href={`/lighthouse/events/${event.event_id}`} className="hover:underline hover:text-primary transition-colors">
                                 {event.event_name}
                               </Link>
                            </div>
@@ -183,15 +173,7 @@ export default function EventsPage() {
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button 
-                             size="sm" 
-                             variant="ghost"
-                             className={`h-7 w-7 p-0 ${event.is_featured ? 'text-yellow-600 bg-yellow-50' : 'text-gray-400 hover:text-yellow-600'}`}
-                             onClick={() => handleToggleFeatured(event.event_id, event.is_featured)}
-                             title={event.is_featured ? "Unfeature" : "Feature"}
-                           >
-                             <Star className={`w-4 h-4 ${event.is_featured ? 'fill-current' : ''}`} />
-                           </Button>
+
 
                           {event.status === 'pending' && (
                             <>
