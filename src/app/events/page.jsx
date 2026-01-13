@@ -7,17 +7,25 @@ import { Loader2, MapPin, Calendar as CalendarIcon, Search, ArrowLeft } from "lu
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import PublicNavbar from "@/components/PublicNavbar";
 import { getImageUrl } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Note: metadata must be exported from page.js in the same folder for client components
-// Create a separate page.js if you need static metadata
 
 const PublicEventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState("all"); 
+
+  const shuffleArray = (array) => {
+    let currentIndex = array.length, randomIndex;
+    while (currentIndex != 0) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+    return array;
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -26,7 +34,8 @@ const PublicEventsPage = () => {
         const eventsData = Array.isArray(response.data) ? response.data : (response.data.events || []);
         // Only show verified events to public
         const verifiedEvents = eventsData.filter(event => !event.status || event.status === 'verified');
-        setEvents(verifiedEvents);
+        // Randomize initial load
+        setEvents(shuffleArray([...verifiedEvents]));
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
@@ -37,13 +46,32 @@ const PublicEventsPage = () => {
     fetchEvents();
   }, []);
 
-  const filteredEvents = events.filter((event) =>
-    event.event_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getFilteredAndSortedEvents = () => {
+    let filtered = events.filter((event) =>
+      event.event_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (filter === 'latest') {
+       return filtered.sort((a, b) => new Date(b.event_date) - new Date(a.event_date));
+    } else if (filter === 'popular') {
+       // Placeholder: In a real app, sort by ticket_sales or views. 
+       // For now, we'll just return the current list (which is likely randomized or in default order) 
+       // or we could re-shuffle if we wanted a different "random" look for popular.
+       // Let's just keep it as is, or maybe sort by price descending as a proxy? No, random is better for discovery.
+       return filtered; 
+    } else {
+       // 'all' - just return the list (which was randomized on load).
+       // Note: If we want 'all' to ALWAYS be random, we might need to re-shuffle here, 
+       // but that causes re-renders on every keystroke. 
+       // Best to stick with the initial random order for stability.
+       return filtered;
+    }
+  };
+
+  const filteredEvents = getFilteredAndSortedEvents();
 
   return (
     <div className="min-h-screen bg-[#0A0A14] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]">
-      <PublicNavbar />
       <div className="container mx-auto px-4 pt-20 pb-12 md:pt-28 md:pb-16">
         {/* Header & Search */}
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between mb-12">
@@ -69,6 +97,29 @@ const PublicEventsPage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+          {['all', 'latest', 'popular'].map((f) => (
+             <button
+               key={f}
+               onClick={() => {
+                 setFilter(f);
+                 if (f === 'all') {
+                    // Re-shuffle on explicit 'All' click to give a fresh look
+                    setEvents(prev => shuffleArray([...prev]));
+                 }
+               }}
+               className={`px-6 py-2 rounded-full text-sm font-semibold capitalize transition-all duration-300 ${
+                 filter === f 
+                   ? "bg-white text-black shadow-lg shadow-white/10 scale-105" 
+                   : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5"
+               }`}
+             >
+               {f}
+             </button>
+          ))}
         </div>
 
         {/* Content */}

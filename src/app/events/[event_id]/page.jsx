@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/select-component";
 import { Loader2, MapPin, Calendar, Clock, Ticket, Info, Share2, Copy, Check } from "lucide-react";
 import toast from "react-hot-toast";
-import PublicNavbar from "@/components/PublicNavbar";
 import useAuthStore from "@/store/authStore";
 import { getImageUrl } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -69,8 +68,10 @@ const EventDetailsPage = () => {
         setCategories(cats);
 
         if (cats.length > 0) {
-          const regular = cats.find(c => c.name.toLowerCase() === 'regular');
-          setSelectedCategory(regular || cats[0]);
+          // Priority: Regular (if available) -> First Available -> First (fallback)
+          const regular = cats.find(c => c.name.toLowerCase().includes('regular') && !c.is_sold_out);
+          const firstAvailable = cats.find(c => !c.is_sold_out);
+          setSelectedCategory(regular || firstAvailable || cats[0]);
         }
       } catch (error) {
         console.error("Error fetching event details:", error);
@@ -121,7 +122,11 @@ const EventDetailsPage = () => {
 
     } catch (error) {
       console.error("Booking error:", error);
-      const errorMessage = error.response?.data?.error || "Failed to book ticket";
+      let errorMessage = error.response?.data?.error || "Failed to book ticket";
+
+      if (errorMessage.toLowerCase().includes("only 0 tickets remaining")) {
+         errorMessage = "No more tickets available";
+      }
 
       toast.error(errorMessage, { id: toastId });
     } finally {
@@ -132,7 +137,6 @@ const EventDetailsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <PublicNavbar />
         <div className="container mx-auto px-4 pt-24 md:pt-32">
           <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
             {/* Hero Skeleton */}
@@ -185,7 +189,6 @@ const EventDetailsPage = () => {
   if (!event) {
     return (
       <div className="min-h-screen bg-background">
-        <PublicNavbar />
         <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] gap-4 pt-16">
           <Info className="h-12 w-12 text-muted-foreground" />
           <h2 className="text-xl font-semibold">Event not found</h2>
@@ -196,11 +199,10 @@ const EventDetailsPage = () => {
   }
 
   const eventDate = new Date(event.date);
+  const isSoldOut = selectedCategory?.is_sold_out;
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <PublicNavbar />
-
       <div className="container mx-auto px-4 pt-24 md:pt-32">
         <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
 
@@ -264,6 +266,13 @@ const EventDetailsPage = () => {
                     <CardTitle className="text-lg md:text-xl">Book Tickets</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pt-0 md:pt-0">
+                    {/* Sold Out Banner */}
+                    {isSoldOut && (
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium text-center animate-in fade-in zoom-in-95 duration-300">
+                        😔 This ticket category is sold out
+                      </div>
+                    )}
+
                     {/* Category Selector */}
                     {categories.length > 0 && (
                       <div className="space-y-3">
@@ -294,20 +303,13 @@ const EventDetailsPage = () => {
                     )}
 
                     <div className="space-y-2">
-                      <Label htmlFor="quantity" className="text-xs md:text-sm">Quantity</Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        min="1"
-                        max={selectedCategory?.max_quantity_per_booking || 10}
-                        value={quantity}
-                        onChange={(e) => {
-                          const val = Math.max(1, parseInt(e.target.value) || 1);
-                          const max = selectedCategory?.max_quantity_per_booking || 10;
-                          setQuantity(Math.min(val, max));
-                        }}
-                        className="h-9 md:h-10 text-sm md:text-base border-white/10 bg-white/5 text-white"
-                      />
+                      <Label className="text-xs md:text-sm text-muted-foreground">Quantity</Label>
+                      <div className="h-9 md:h-10 w-full flex items-center px-3 border border-white/10 rounded-md bg-white/5 text-gray-400 text-sm md:text-base cursor-not-allowed">
+                        1 Ticket (Maximum per transaction)
+                      </div>
+                      <p className="text-[10px] md:text-xs text-muted-foreground/80 italic">
+                        💡 Need more tickets? You can make another booking after this one.
+                      </p>
                     </div>
 
                     {/* Price Summary */}
@@ -335,12 +337,17 @@ const EventDetailsPage = () => {
                       className="w-full h-10 md:h-11 text-sm md:text-base"
                       size="lg"
                       onClick={handleBookTicket}
-                      disabled={bookingLoading}
+                      disabled={bookingLoading || isSoldOut}
                     >
                       {bookingLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processing...
+                        </>
+                      ) : isSoldOut ? (
+                        <>
+                           <Ticket className="mr-2 h-4 w-4" />
+                           Sold Out
                         </>
                       ) : (
                         <>

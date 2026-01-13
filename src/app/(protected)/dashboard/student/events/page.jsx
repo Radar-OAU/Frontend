@@ -12,6 +12,18 @@ const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+
+  const shuffleArray = (array) => {
+    let currentIndex = array.length, randomIndex;
+    while (currentIndex != 0) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+    return array;
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -20,7 +32,7 @@ const EventsPage = () => {
         const eventsData = Array.isArray(response.data) ? response.data : (response.data.events || []);
         // Only show verified events to students
         const verifiedEvents = eventsData.filter(event => !event.status || event.status === 'verified'); 
-        setEvents(verifiedEvents);
+        setEvents(shuffleArray([...verifiedEvents]));
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
@@ -31,9 +43,28 @@ const EventsPage = () => {
     fetchEvents();
   }, []);
 
-  const filteredEvents = events.filter((event) =>
-    event.event_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getFilteredAndSortedEvents = () => {
+    let filtered = events.filter((event) =>
+      event.event_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (filter === 'latest') {
+       // Sort by creation date (newest created first)
+       // If created_at is available, use it. Otherwise, use event_id as a proxy for creation order (descending)
+       // or fallback to event_date.
+       return filtered.sort((a, b) => {
+          const dateA = new Date(a.created_at || a.event_date);
+          const dateB = new Date(b.created_at || b.event_date);
+          return dateB - dateA;
+       });
+    } else if (filter === 'popular') {
+       return filtered; 
+    } else {
+       return filtered;
+    }
+  };
+
+  const filteredEvents = getFilteredAndSortedEvents();
 
   if (loading) {
     return (
@@ -59,6 +90,28 @@ const EventsPage = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {['all', 'latest', 'popular'].map((f) => (
+            <button
+              key={f}
+              onClick={() => {
+                setFilter(f);
+                if (f === 'all') {
+                  setEvents(prev => shuffleArray([...prev]));
+                }
+              }}
+              className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-medium capitalize transition-all duration-300 ${
+                filter === f 
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105" 
+                  : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent"
+              }`}
+            >
+              {f}
+            </button>
+        ))}
       </div>
 
       {/* Content */}

@@ -20,6 +20,12 @@ export default function Overview() {
   const [eventsSummary, setEventsSummary] = useState(null);
   const [recentEvents, setRecentEvents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [eventStatusStats, setEventStatusStats] = useState({
+    total_events_created: 0,
+    verified_events: 0,
+    pending_events: 0,
+    denied_events: 0
+  });
   const [showPinReminder, setShowPinReminder] = useState(false);
   const [showSetPinModal, setShowSetPinModal] = useState(false);
   const [pinValue, setPinValue] = useState('');
@@ -47,23 +53,18 @@ export default function Overview() {
           eventsRes,
           orgRes,
         ] = await Promise.allSettled([
-          api.get("/analytics/global/"),
+          api.get("/organizer/analytics/"),
           api.get("/analytics/events-summary/"),
           api.get("/organizer/events/"),
           api.get("/organizer/profile/"),
         ]);
-
-        if (analyticsRes.status === "fulfilled") {
-          setAnalytics(analyticsRes.value.data.analytics);
-        }
-
-        if (summaryRes.status === "fulfilled") {
-          setEventsSummary(summaryRes.value.data);
-        }
-
+        // Process events data first to calculate correct ticket counts
+        let totalTicketsFromEvents = 0;
         if (eventsRes.status === "fulfilled") {
           const eventsData = eventsRes.value.data.events || [];
+          console.log("Events Data with ticket_stats:", eventsData);
           setEvents(eventsData);
+          
           // Sort events by created_at in descending order (latest created first) and take the first 3
           const sortedEvents = [...eventsData].sort((a, b) => {
             const dateA = new Date(a.created_at || a.date);
@@ -71,6 +72,71 @@ export default function Overview() {
             return dateB - dateA;
           });
           setRecentEvents(sortedEvents.slice(0, 3));
+
+          // Calculate event status statistics from organizer's events
+          const stats = eventsData.reduce((acc, event) => {
+            acc.total_events_created++;
+            if (event.status === 'verified') acc.verified_events++;
+            else if (event.status === 'pending') acc.pending_events++;
+            else if (event.status === 'denied') acc.denied_events++;
+            return acc;
+          }, {
+            total_events_created: 0,
+            verified_events: 0,
+            pending_events: 0,
+            denied_events: 0
+          });
+          setEventStatusStats(stats);
+
+          // Calculate total tickets sold from event ticket_stats
+          totalTicketsFromEvents = eventsData.reduce((total, event) => {
+            return total + (event.ticket_stats?.confirmed_tickets || 0);
+          }, 0);
+          console.log("Total tickets calculated from events:", totalTicketsFromEvents);
+        }
+
+        // Set analytics with corrected ticket count
+        if (analyticsRes.status === "fulfilled") {
+          const analyticsData = analyticsRes.value.data;
+          console.log("Analytics API Response:", analyticsData);
+          
+          // Use calculated total from events instead of potentially incorrect API value
+          const correctedAnalytics = {
+            ...analyticsData,
+            total_tickets_sold: totalTicketsFromEvents
+          };
+          
+          if (analyticsData.total_tickets_sold !== totalTicketsFromEvents) {
+            console.warn(`Analytics endpoint returned ${analyticsData.total_tickets_sold} tickets, corrected to ${totalTicketsFromEvents} from events data`);
+          }
+          
+          setAnalytics(correctedAnalytics);
+        } else {
+          console.error("Analytics API failed:", analyticsRes.reason);
+          // Fallback: Create analytics from events data
+          if (eventsRes.status === "fulfilled") {
+            const eventsData = eventsRes.value.data.events || [];
+            const totalPendingTickets = eventsData.reduce((total, event) => {
+              return total + (event.ticket_stats?.pending_tickets || 0);
+            }, 0);
+            const totalRevenue = eventsData.reduce((total, event) => {
+              return total + (event.ticket_stats?.total_revenue || 0);
+            }, 0);
+            
+            setAnalytics({
+              total_events: eventsData.length,
+              total_tickets_sold: totalTicketsFromEvents,
+              total_tickets_pending: totalPendingTickets,
+              total_revenue: totalRevenue,
+              revenue_by_event: [],
+              average_revenue_per_event: eventsData.length > 0 ? totalRevenue / eventsData.length : 0
+            });
+            console.log("Using fallback analytics calculated from events data");
+          }
+        }
+
+        if (summaryRes.status === "fulfilled") {
+          setEventsSummary(summaryRes.value.data);
         }
 
         if (orgRes.status === "fulfilled") {
@@ -174,13 +240,43 @@ export default function Overview() {
   useEffect(() => {
     async function refetchData() {
       try {
-        const [analyticsRes, summaryRes] = await Promise.allSettled([
-          api.get("/analytics/global/"),
-          api.get("/analytics/events-summary/")
+        const [analyticsRes, summaryRes, eventsRes] = await Promise.allSettled([
+          api.get("/organizer/analytics/"),
+          api.get("/analytics/events-summary/"),
+          api.get("/organizer/events/")
         ]);
 
+        // Calculate correct ticket count from events
+        let totalTicketsFromEvents = 0;
+        if (eventsRes.status === 'fulfilled') {
+          const eventsData = eventsRes.value.data.events || [];
+          totalTicketsFromEvents = eventsData.reduce((total, event) => {
+            return total + (event.ticket_stats?.confirmed_tickets || 0);
+          }, 0);
+        }
+
         if (analyticsRes.status === 'fulfilled') {
-          setAnalytics(analyticsRes.value.data.analytics);
+          const analyticsData = analyticsRes.value.data;
+          setAnalytics({
+            ...analyticsData,
+            total_tickets_sold: totalTicketsFromEvents
+          });
+        } else if (eventsRes.status === 'fulfilled') {
+          // Fallback if analytics endpoint fails
+          const eventsData = eventsRes.value.data.events || [];
+          const totalPendingTickets = eventsData.reduce((total, event) => {
+            return total + (event.ticket_stats?.pending_tickets || 0);
+          }, 0);
+          const totalRevenue = eventsData.reduce((total, event) => {
+            return total + (event.ticket_stats?.total_revenue || 0);
+          }, 0);
+          
+          setAnalytics({
+            total_events: eventsData.length,
+            total_tickets_sold: totalTicketsFromEvents,
+            total_tickets_pending: totalPendingTickets,
+            total_revenue: totalRevenue
+          });
         }
 
         if (summaryRes.status === 'fulfilled') {
@@ -409,7 +505,7 @@ export default function Overview() {
         <StatCard
           icon={<Calendar className="w-5 h-5 text-cyan-500" />}
           label="Total events"
-          value={analytics.total_events_created?.toLocaleString() || 0}
+          value={analytics.total_events?.toLocaleString() || 0}
           description="Events created on the platform"
         />
         <StatCard
@@ -430,10 +526,10 @@ export default function Overview() {
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          <SummaryBox label="Total created" value={analytics.total_events_created} color="text-white" />
-          <SummaryBox label="Verified & live" value={analytics.verified_events} color="text-emerald-500" />
-          <SummaryBox label="Pending review" value={analytics.pending_events} color="text-amber-500" />
-          <SummaryBox label="Denied" value={analytics.denied_events} color="text-rose-500" />
+          <SummaryBox label="Total created" value={eventStatusStats.total_events_created} color="text-white" />
+          <SummaryBox label="Verified & live" value={eventStatusStats.verified_events} color="text-emerald-500" />
+          <SummaryBox label="Pending review" value={eventStatusStats.pending_events} color="text-amber-500" />
+          <SummaryBox label="Denied" value={eventStatusStats.denied_events} color="text-rose-500" />
         </div>
       </div>
 

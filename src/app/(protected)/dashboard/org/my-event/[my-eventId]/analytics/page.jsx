@@ -60,11 +60,17 @@ export default function AnalyticsPage() {
 
   if (!data) return null;
 
+  // Calculate total tickets by summing quantities (not counting records)
+  const totalTickets = data.tickets?.reduce((sum, ticket) => sum + (ticket.quantity || 0), 0) || 0;
+  const confirmedTickets = data.tickets?.filter(t => t.status === 'confirmed').reduce((sum, ticket) => sum + (ticket.quantity || 0), 0) || 0;
+  const pendingTickets = data.tickets?.filter(t => t.status === 'pending').reduce((sum, ticket) => sum + (ticket.quantity || 0), 0) || 0;
+  const usedTickets = data.tickets?.filter(t => t.status === 'used').reduce((sum, ticket) => sum + (ticket.quantity || 0), 0) || 0;
+
   const stats = [
-    { label: "Total Bookings", value: data.count, icon: <Ticket className="w-5 h-5 text-rose-500" />, sub: "Confirmed & Pending" },
-    { label: "Attendees", value: data.statistics?.used || 0, icon: <UserCheck className="w-5 h-5 text-emerald-500" />, sub: "Checked In" },
+    { label: "Total Tickets", value: totalTickets, icon: <Ticket className="w-5 h-5 text-rose-500" />, sub: "All Bookings" },
+    { label: "Checked In", value: usedTickets, icon: <UserCheck className="w-5 h-5 text-emerald-500" />, sub: "Attended" },
     { label: "Revenue", value: `₦${data.statistics?.total_revenue?.toLocaleString() || 0}`, icon: <TrendingUp className="w-5 h-5 text-blue-500" />, sub: "Gross Earnings" },
-    { label: "Pending", value: data.statistics?.pending || 0, icon: <CreditCard className="w-5 h-5 text-amber-500" />, sub: "Awaiting Payment" },
+    { label: "Pending", value: pendingTickets, icon: <CreditCard className="w-5 h-5 text-amber-500" />, sub: "Awaiting Payment" },
   ];
 
   return (
