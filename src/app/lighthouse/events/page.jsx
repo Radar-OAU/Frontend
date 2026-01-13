@@ -95,7 +95,7 @@ export default function EventsPage() {
               onClick={() => setFilter(status)}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                 filter === status 
-                  ? "bg-white shadow text-foreground" 
+                  ? "bg-primary text-primary-foreground shadow" 
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >

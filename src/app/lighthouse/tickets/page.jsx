@@ -49,7 +49,7 @@ export default function TicketsPage() {
                onClick={() => setStatusFilter(status)}
                className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
                  statusFilter === status 
-                   ? "bg-white shadow text-foreground" 
+                   ? "bg-primary text-primary-foreground shadow" 
                    : "text-muted-foreground hover:text-foreground"
                }`}
              >
@@ -59,7 +59,7 @@ export default function TicketsPage() {
         </div>
       </div>
 
-       <Card className="shadow-sm border-border">
+       <Card className="shadow-sm border-white/10">
          <CardContent className="p-0">
            <div className="border-t-0 overflow-x-auto">
              <table className="w-full text-sm text-left">
@@ -73,7 +73,7 @@ export default function TicketsPage() {
                    <th className="p-3 font-medium whitespace-nowrap text-right">Sold At</th>
                  </tr>
                </thead>
-               <tbody className="divide-y">
+               <tbody className="divide-y divide-white/10">
                  {loading ? (
                    <tr>
                      <td colSpan={6} className="p-10 text-center">
