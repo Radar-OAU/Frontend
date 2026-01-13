@@ -48,18 +48,17 @@ export default function Overview() {
 
         const [
           analyticsRes,
+          summaryRes,
           eventsRes,
           orgRes,
         ] = await Promise.allSettled([
           api.get("/organizer/analytics/"),
+          api.get("/analytics/events-summary/"),
           api.get("/organizer/events/"),
           api.get("/organizer/profile/"),
         ]);
         // Process events data first to calculate correct ticket counts
         let totalTicketsFromEvents = 0;
-        let totalPendingTickets = 0;
-        let totalRevenue = 0;
-        
         if (eventsRes.status === "fulfilled") {
           const eventsData = eventsRes.value.data.events || [];
           console.log("Events Data with ticket_stats:", eventsData);
@@ -88,88 +87,40 @@ export default function Overview() {
           });
           setEventStatusStats(stats);
 
-          // Fetch actual ticket data for each event to get accurate counts
-          console.log("Fetching ticket statistics for each event...");
-          const ticketPromises = eventsData
-            .filter(event => event.event_id) // Only process events with valid IDs
-            .map(event => 
-              api.get(`/tickets/organizer/${event.event_id}/tickets/`)
-                .then(res => ({
-                  eventId: event.event_id,
-                  statistics: res.data.statistics,
-                  tickets: res.data.tickets || []
-                }))
-                .catch(err => {
-                  console.warn(`Failed to fetch tickets for ${event.event_id}:`, err.response?.status || err.message);
-                  // Return empty data instead of throwing
-                  return {
-                    eventId: event.event_id,
-                    statistics: null,
-                    tickets: []
-                  };
-                })
-            );
-
-          const ticketResults = await Promise.all(ticketPromises);
-          
-          // Calculate totals by summing ticket quantities from actual ticket data
-          // If that fails, fall back to ticket_stats from events
-          ticketResults.forEach(result => {
-            if (result.statistics) {
-              // Use statistics if available (backend already calculated)
-              totalTicketsFromEvents += result.statistics.confirmed || 0;
-              totalPendingTickets += result.statistics.pending || 0;
-              totalRevenue += result.statistics.total_revenue || 0;
-            } else if (result.tickets.length > 0) {
-              // Fallback: calculate from tickets array by summing quantities
-              result.tickets.forEach(ticket => {
-                if (ticket.status === 'confirmed') {
-                  totalTicketsFromEvents += ticket.quantity || 0;
-                } else if (ticket.status === 'pending') {
-                  totalPendingTickets += ticket.quantity || 0;
-                }
-              });
-            }
-          });
-          
-          // If we didn't get data from ticket endpoints, use ticket_stats from events as final fallback
-          if (totalTicketsFromEvents === 0 && totalPendingTickets === 0 && totalRevenue === 0) {
-            console.log("No ticket data from endpoints, using ticket_stats from events");
-            eventsData.forEach(event => {
-              totalTicketsFromEvents += event.ticket_stats?.confirmed_tickets || 0;
-              totalPendingTickets += event.ticket_stats?.pending_tickets || 0;
-              totalRevenue += event.ticket_stats?.total_revenue || 0;
-            });
-          }
-          
-          console.log("Total tickets calculated from actual ticket data:", totalTicketsFromEvents);
-          console.log("Total pending tickets:", totalPendingTickets);
-          console.log("Total revenue:", totalRevenue);
+          // Calculate total tickets sold from event ticket_stats
+          totalTicketsFromEvents = eventsData.reduce((total, event) => {
+            return total + (event.ticket_stats?.confirmed_tickets || 0);
+          }, 0);
+          console.log("Total tickets calculated from events:", totalTicketsFromEvents);
         }
 
-        // Set analytics with corrected ticket counts from actual ticket data
+        // Set analytics with corrected ticket count
         if (analyticsRes.status === "fulfilled") {
           const analyticsData = analyticsRes.value.data;
           console.log("Analytics API Response:", analyticsData);
           
-          // Use calculated totals from actual ticket data instead of potentially incorrect API values
+          // Use calculated total from events instead of potentially incorrect API value
           const correctedAnalytics = {
             ...analyticsData,
-            total_tickets_sold: totalTicketsFromEvents,
-            total_tickets_pending: totalPendingTickets,
-            total_revenue: totalRevenue
+            total_tickets_sold: totalTicketsFromEvents
           };
           
           if (analyticsData.total_tickets_sold !== totalTicketsFromEvents) {
-            console.warn(`Analytics endpoint returned ${analyticsData.total_tickets_sold} tickets, corrected to ${totalTicketsFromEvents} from actual ticket data`);
+            console.warn(`Analytics endpoint returned ${analyticsData.total_tickets_sold} tickets, corrected to ${totalTicketsFromEvents} from events data`);
           }
           
           setAnalytics(correctedAnalytics);
         } else {
           console.error("Analytics API failed:", analyticsRes.reason);
-          // Fallback: Create analytics from calculated ticket data
+          // Fallback: Create analytics from events data
           if (eventsRes.status === "fulfilled") {
             const eventsData = eventsRes.value.data.events || [];
+            const totalPendingTickets = eventsData.reduce((total, event) => {
+              return total + (event.ticket_stats?.pending_tickets || 0);
+            }, 0);
+            const totalRevenue = eventsData.reduce((total, event) => {
+              return total + (event.ticket_stats?.total_revenue || 0);
+            }, 0);
             
             setAnalytics({
               total_events: eventsData.length,
@@ -179,7 +130,7 @@ export default function Overview() {
               revenue_by_event: [],
               average_revenue_per_event: eventsData.length > 0 ? totalRevenue / eventsData.length : 0
             });
-            console.log("Using fallback analytics calculated from actual ticket data");
+            console.log("Using fallback analytics calculated from events data");
           }
         }
 
