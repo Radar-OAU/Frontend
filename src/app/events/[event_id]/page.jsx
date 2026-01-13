@@ -102,7 +102,7 @@ const EventDetailsPage = () => {
 
     try {
       const payload = {
-        event_id: eventId,
+        event_id: event?.event_id || event?.id || eventId,
         quantity: parseInt(quantity),
         category_name: selectedCategory ? selectedCategory.name : undefined
       };
