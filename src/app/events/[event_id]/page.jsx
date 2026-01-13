@@ -50,14 +50,23 @@ const EventDetailsPage = () => {
       if (!eventId) return;
 
       try {
-        const [eventRes, catRes] = await Promise.all([
-          api.get(`/events/${eventId}/details/`),
-          api.get(`/tickets/categories/?event_id=${eventId}`)
-        ]);
-        setEvent(eventRes.data);
-        const cats = catRes.data.categories || [];
+        const response = await api.get(`/events/${eventId}/details/`);
+        setEvent(response.data);
+        
+        let cats = [];
+        if (response.data.ticket_categories) {
+           cats = response.data.ticket_categories;
+        } else {
+           try {
+             // Fallback to fetch categories if not present in details response
+             const catRes = await api.get(`/tickets/categories/?event_id=${eventId}`);
+             cats = catRes.data.categories || [];
+           } catch (err) {
+             console.warn("Failed to fetch categories separately", err);
+           }
+        }
         setCategories(cats);
-        // Default to Regular if exists, or first category, or null
+
         if (cats.length > 0) {
           const regular = cats.find(c => c.name.toLowerCase() === 'regular');
           setSelectedCategory(regular || cats[0]);
