@@ -7,12 +7,8 @@ import { Loader2, MapPin, Calendar as CalendarIcon, Search, ArrowLeft } from "lu
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import PublicNavbar from "@/components/PublicNavbar";
 import { getImageUrl } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Note: metadata must be exported from page.js in the same folder for client components
-// Create a separate page.js if you need static metadata
 
 const PublicEventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -43,7 +39,6 @@ const PublicEventsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#0A0A14] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]">
-      <PublicNavbar />
       <div className="container mx-auto px-4 pt-20 pb-12 md:pt-28 md:pb-16">
         {/* Header & Search */}
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between mb-12">

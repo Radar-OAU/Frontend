@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/select-component";
 import { Loader2, MapPin, Calendar, Clock, Ticket, Info, Share2, Copy, Check } from "lucide-react";
 import toast from "react-hot-toast";
-import PublicNavbar from "@/components/PublicNavbar";
 import useAuthStore from "@/store/authStore";
 import { getImageUrl } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -132,7 +131,6 @@ const EventDetailsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <PublicNavbar />
         <div className="container mx-auto px-4 pt-24 md:pt-32">
           <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
             {/* Hero Skeleton */}
@@ -185,7 +183,6 @@ const EventDetailsPage = () => {
   if (!event) {
     return (
       <div className="min-h-screen bg-background">
-        <PublicNavbar />
         <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] gap-4 pt-16">
           <Info className="h-12 w-12 text-muted-foreground" />
           <h2 className="text-xl font-semibold">Event not found</h2>
@@ -199,8 +196,6 @@ const EventDetailsPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <PublicNavbar />
-
       <div className="container mx-auto px-4 pt-24 md:pt-32">
         <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
 
