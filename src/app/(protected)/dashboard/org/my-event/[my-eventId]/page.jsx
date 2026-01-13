@@ -66,23 +66,40 @@ export default function EventDetailsPage() {
     }
     setLoading(true);
     try {
-      // Use the canonical trailing-slash endpoint (matches API docs and other pages).
-      const res = await api.get(`/events/${id}/details/`);
-      if (isMountedRef.current) setEvent(res?.data ?? null);
+      // First, try to get event from organizer endpoint (has ticket_stats)
+      const orgRes = await api.get("/organizer/events/");
+      const list = Array.isArray(orgRes.data) ? orgRes.data : (orgRes.data?.events ?? []);
+      const found = list.find((e) => String(e.event_id ?? e.id) === String(id));
+      
+      if (found) {
+        // Found in organizer events with ticket_stats
+        if (isMountedRef.current) setEvent(found);
+      } else {
+        // Not in organizer events, try public endpoint
+        const publicRes = await api.get(`/events/${id}/details/`);
+        const eventData = publicRes?.data;
+        
+        if (eventData) {
+          // Fetch ticket stats separately for this event
+          try {
+            const ticketsRes = await api.get(`/tickets/organizer/${id}/tickets/`);
+            eventData.ticket_stats = {
+              confirmed_tickets: ticketsRes.data.statistics?.confirmed || 0,
+              pending_tickets: ticketsRes.data.statistics?.pending || 0,
+              total_revenue: ticketsRes.data.statistics?.total_revenue || 0,
+              available_spots: ticketsRes.data.statistics?.available_spots || "∞"
+            };
+          } catch (ticketErr) {
+            console.warn("Could not fetch ticket stats:", ticketErr);
+          }
+          
+          if (isMountedRef.current) setEvent(eventData);
+        }
+      }
     } catch (err) {
-      // Fallback for organizers
-      try {
-        const fallback = await api.get("/organizer/events/");
-        const list = Array.isArray(fallback.data) ? fallback.data : (fallback.data?.events ?? []);
-        const found = list.find((e) => String(e.event_id ?? e.id) === String(id));
-        if (isMountedRef.current) {
-          if (found) setEvent(found);
-          else toast.error("Event not found");
-        }
-      } catch (inner) {
-        if (isMountedRef.current) {
-          toast.error("Failed to load event details");
-        }
+      console.error("Error fetching event:", err);
+      if (isMountedRef.current) {
+        toast.error("Failed to load event details");
       }
     } finally {
       if (isMountedRef.current) setLoading(false);
