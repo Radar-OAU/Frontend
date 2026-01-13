@@ -59,12 +59,20 @@ export default function AdminEventDetailsPage() {
     if (!window.confirm(`Are you sure you want to mark this event as ${newStatus}?`)) return;
 
     try {
+      // Optimistically update the UI to show the new status immediately
+      setEvent((prev) => ({ ...prev, status: newStatus }));
+
       await adminService.updateEventStatus(event_id, newStatus);
       toast.success(`Event marked as ${newStatus}`);
-      fetchEventDetails(); 
+      
+      // We can optionally re-fetch, but if the API is slow to index, it might revert to old data.
+      // For now, let's trust the optimistic update and the successful API call.
+      // fetchEventDetails(); 
     } catch (error) {
       console.error(error);
       toast.error("Failed to update event status");
+      // Revert on error
+      fetchEventDetails();
     }
   };
 

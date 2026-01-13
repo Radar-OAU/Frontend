@@ -213,100 +213,125 @@ const EventDetailsPage = () => {
               </div>
             </div>
 
-            {/* Booking Card */}
+            {/* Booking Card & Share Section */}
             <div className="md:col-span-1">
-              <Card className="sticky top-24">
-                <CardHeader className="p-4 md:p-6">
-                  <CardTitle className="text-lg md:text-xl">Book Tickets</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pt-0 md:pt-0">
-                  {/* Category Selector */}
-                  {categories.length > 0 && (
-                    <div className="space-y-3">
-                      <Label className="text-xs md:text-sm">Ticket Category</Label>
-                      <div className="grid grid-cols-1 gap-2">
-                        {categories.map((cat) => (
-                          <button
-                            key={cat.category_id}
-                            disabled={cat.is_sold_out}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`flex flex-col p-3 rounded-xl border text-left transition-all ${selectedCategory?.category_id === cat.category_id
-                                ? "border-rose-600 bg-rose-600/5 ring-1 ring-rose-600"
-                                : "border-white/10 bg-white/5 hover:border-white/20"
-                              } ${cat.is_sold_out ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
-                          >
-                            <div className="flex justify-between items-center mb-1">
-                              <span className={`text-sm font-bold ${selectedCategory?.category_id === cat.category_id ? "text-rose-500" : "text-white"}`}>
-                                {cat.name}
-                              </span>
-                              <span className="text-xs font-bold text-white">₦{cat.price}</span>
-                            </div>
-                            {cat.description && <p className="text-[10px] text-gray-500 line-clamp-1">{cat.description}</p>}
-                            {cat.is_sold_out && <span className="text-[10px] text-rose-500 font-bold uppercase mt-1">Sold Out</span>}
-                          </button>
-                        ))}
+              <div className="sticky top-24 space-y-6">
+                <Card>
+                  <CardHeader className="p-4 md:p-6">
+                    <CardTitle className="text-lg md:text-xl">Book Tickets</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pt-0 md:pt-0">
+                    {/* Category Selector */}
+                    {categories.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-xs md:text-sm">Ticket Category</Label>
+                        <div className="grid grid-cols-1 gap-2">
+                          {categories.map((cat) => (
+                            <button
+                              key={cat.category_id}
+                              disabled={cat.is_sold_out}
+                              onClick={() => setSelectedCategory(cat)}
+                              className={`flex flex-col p-3 rounded-xl border text-left transition-all ${selectedCategory?.category_id === cat.category_id
+                                  ? "border-rose-600 bg-rose-600/5 ring-1 ring-rose-600"
+                                  : "border-white/10 bg-white/5 hover:border-white/20"
+                                } ${cat.is_sold_out ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
+                            >
+                              <div className="flex justify-between items-center mb-1">
+                                <span className={`text-sm font-bold ${selectedCategory?.category_id === cat.category_id ? "text-rose-500" : "text-white"}`}>
+                                  {cat.name}
+                                </span>
+                                <span className="text-xs font-bold text-white">₦{cat.price}</span>
+                              </div>
+                              {cat.description && <p className="text-[10px] text-gray-500 line-clamp-1">{cat.description}</p>}
+                              {cat.is_sold_out && <span className="text-[10px] text-rose-500 font-bold uppercase mt-1">Sold Out</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="quantity" className="text-xs md:text-sm">Quantity</Label>
+                      <Input
+                        id="quantity"
+                        type="number"
+                        min="1"
+                        max={selectedCategory?.max_quantity_per_booking || 10}
+                        value={quantity}
+                        onChange={(e) => {
+                          const val = Math.max(1, parseInt(e.target.value) || 1);
+                          const max = selectedCategory?.max_quantity_per_booking || 10;
+                          setQuantity(Math.min(val, max));
+                        }}
+                        className="h-9 md:h-10 text-sm md:text-base border-white/10 bg-white/5 text-white"
+                      />
+                    </div>
+
+                    {/* Price Summary */}
+                    <div className="pt-4 border-t border-white/10 space-y-2">
+                      <div className="flex justify-between text-xs md:text-sm text-gray-400">
+                        <span>Price per ticket</span>
+                        <span className="text-white">
+                          {selectedCategory
+                            ? `₦${selectedCategory.price}`
+                            : (event.pricing_type === 'free' ? 'Free' : `₦${event.price}`)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-bold text-base md:text-lg">
+                        <span>Total</span>
+                        <span className="text-rose-500">
+                          {event.pricing_type === 'free' && !selectedCategory
+                            ? 'Free'
+                            : `₦${(((selectedCategory ? parseFloat(selectedCategory.price) : parseFloat(event.price)) * quantity)).toLocaleString()}`}
+                        </span>
                       </div>
                     </div>
-                  )}
+                  </CardContent>
+                  <CardFooter className="p-4 md:p-6 pt-0 md:pt-0">
+                    <Button
+                      className="w-full h-10 md:h-11 text-sm md:text-base"
+                      size="lg"
+                      onClick={handleBookTicket}
+                      disabled={bookingLoading}
+                    >
+                      {bookingLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Ticket className="mr-2 h-4 w-4" />
+                          {event.pricing_type === 'free' ? 'Get Ticket' : 'Proceed to Payment'}
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="quantity" className="text-xs md:text-sm">Quantity</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      max={selectedCategory?.max_quantity_per_booking || 10}
-                      value={quantity}
-                      onChange={(e) => {
-                        const val = Math.max(1, parseInt(e.target.value) || 1);
-                        const max = selectedCategory?.max_quantity_per_booking || 10;
-                        setQuantity(Math.min(val, max));
-                      }}
-                      className="h-9 md:h-10 text-sm md:text-base border-white/10 bg-white/5 text-white"
-                    />
-                  </div>
-
-                  {/* Price Summary */}
-                  <div className="pt-4 border-t border-white/10 space-y-2">
-                    <div className="flex justify-between text-xs md:text-sm text-gray-400">
-                      <span>Price per ticket</span>
-                      <span className="text-white">
-                        {selectedCategory
-                          ? `₦${selectedCategory.price}`
-                          : (event.pricing_type === 'free' ? 'Free' : `₦${event.price}`)}
-                      </span>
+                {/* Share Section */}
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Share2 className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm md:text-base">Share this event</h3>
                     </div>
-                    <div className="flex justify-between font-bold text-base md:text-lg">
-                      <span>Total</span>
-                      <span className="text-rose-500">
-                        {event.pricing_type === 'free' && !selectedCategory
-                          ? 'Free'
-                          : `₦${(((selectedCategory ? parseFloat(selectedCategory.price) : parseFloat(event.price)) * quantity)).toLocaleString()}`}
-                      </span>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-muted px-3 py-2 rounded-md text-xs md:text-sm text-muted-foreground truncate border border-border">
+                        {typeof window !== 'undefined' ? `${window.location.origin}/events/${eventId}` : ''}
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        onClick={handleCopyLink}
+                        className="shrink-0"
+                      >
+                        {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 md:p-6 pt-0 md:pt-0">
-                  <Button
-                    className="w-full h-10 md:h-11 text-sm md:text-base"
-                    size="lg"
-                    onClick={handleBookTicket}
-                    disabled={bookingLoading}
-                  >
-                    {bookingLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Ticket className="mr-2 h-4 w-4" />
-                        {event.pricing_type === 'free' ? 'Get Ticket' : 'Proceed to Payment'}
-                      </>
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>
