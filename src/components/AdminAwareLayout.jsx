@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export function AdminAwareLayout({ children }) {
+export default function AdminAwareLayout({ children }) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith("/lighthouse");
   const isResetPin = pathname === "/reset-pin";

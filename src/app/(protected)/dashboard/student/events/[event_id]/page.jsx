@@ -217,7 +217,7 @@ const EventDetailsPage = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {Array.from({ length: event?.max_quantity_per_booking || 10 }, (_, i) => i + 1).map((num) => (
+                          {Array.from({ length: event?.max_quantity_per_booking || 3 }, (_, i) => i + 1).map((num) => (
                             <SelectItem key={num} value={num.toString()}>
                               {num} {num === 1 ? 'Ticket' : 'Tickets'}
                             </SelectItem>
@@ -225,7 +225,7 @@ const EventDetailsPage = () => {
                         </SelectContent>
                       </Select>
                       <p className="text-[10px] md:text-xs text-muted-foreground/80">
-                        Maximum {event?.max_quantity_per_booking || 10} tickets per booking. Each ticket gets a unique QR code.
+                        Maximum {event?.max_quantity_per_booking || 3} tickets per booking. Each ticket gets a unique QR code.
                       </p>
                     </div>
 

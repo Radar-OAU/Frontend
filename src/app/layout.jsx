@@ -4,7 +4,7 @@ import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
 import { Toaster } from "react-hot-toast";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { Suspense } from "react";
-import { AdminAwareLayout } from "@/components/AdminAwareLayout";
+import AdminAwareLayout from "@/components/AdminAwareLayout";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
