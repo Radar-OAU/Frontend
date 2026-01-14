@@ -68,7 +68,7 @@ const MyTicketsPage = () => {
         <div className="flex flex-col gap-1 md:gap-2">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">My Tickets</h1>
           <p className="text-sm md:text-base text-muted-foreground">
-            View and manage your booked tickets. Click on a ticket to view it full screen.
+            View and manage your booked tickets. Each ticket has a unique QR code for check-in.
           </p>
         </div>
         
@@ -152,10 +152,15 @@ const MyTicketsPage = () => {
                     </div>
                   </div>
 
-                  {/* Small QR Code Preview */}
-                  {ticket.status === "confirmed" && ticket.qr_code && (
-                    <div className="flex flex-col items-center justify-center p-2 bg-white rounded-lg mt-2 opacity-50">
-                      <QrCode className="h-8 w-8 text-black" />
+                  {/* Small QR Code Preview - Show actual QR code */}
+                  {ticket.status === "confirmed" && ticket.ticket_id && (
+                    <div className="flex flex-col items-center justify-center p-3 bg-white rounded-lg mt-2">
+                      <QRCodeSVG
+                        value={ticket.ticket_id}
+                        size={80}
+                        level={"H"}
+                        marginSize={0}
+                      />
                       <span className="text-[10px] text-black mt-1">Click to expand</span>
                     </div>
                   )}
@@ -163,10 +168,10 @@ const MyTicketsPage = () => {
                 <CardFooter className="bg-muted/50 pt-4">
                   <div className="flex justify-between items-center w-full text-sm">
                     <span className="text-muted-foreground">
-                      {ticket.quantity} {ticket.quantity === 1 ? "Ticket" : "Tickets"}
+                      Individual Ticket
                     </span>
                     <span className="font-bold text-lg">
-                      {ticket.total_price > 0 ? `₦${ticket.total_price}` : "Free"}
+                      {ticket.total_price > 0 ? `₦${parseFloat(ticket.total_price).toLocaleString()}` : "Free"}
                     </span>
                   </div>
                 </CardFooter>
@@ -216,10 +221,10 @@ const MyTicketsPage = () => {
                     </div>
 
                     {/* QR Code Area - Bright and Big */}
-                    {selectedTicket.status === "confirmed" && selectedTicket.qr_code ? (
+                    {selectedTicket.status === "confirmed" && selectedTicket.ticket_id ? (
                         <div className="bg-white p-4 rounded-2xl shadow-inner w-64 h-64 md:w-72 md:h-72 flex items-center justify-center">
                             <QRCodeSVG
-                                value={selectedTicket.qr_code}
+                                value={selectedTicket.ticket_id}
                                 size={256}
                                 className="w-full h-full"
                                 level={"H"}

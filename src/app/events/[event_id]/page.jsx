@@ -304,11 +304,43 @@ const EventDetailsPage = () => {
 
                     <div className="space-y-2">
                       <Label className="text-xs md:text-sm text-muted-foreground">Quantity</Label>
-                      <div className="h-9 md:h-10 w-full flex items-center px-3 border border-gray-600 rounded-md bg-gray-600/5 text-gray-400 text-sm md:text-base cursor-not-allowed">
-                        1 Ticket (Maximum per transaction)
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          disabled={quantity <= 1 || bookingLoading}
+                        >
+                          -
+                        </Button>
+                        <Input
+                          type="number"
+                          min="1"
+                          max={event?.max_quantity_per_booking || 3}
+                          value={quantity}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 1;
+                            const maxQty = event?.max_quantity_per_booking || 3;
+                            setQuantity(Math.min(Math.max(1, val), maxQty));
+                          }}
+                          className="text-center border-gray-600 bg-gray-600/5 h-10"
+                          disabled={bookingLoading}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10"
+                          onClick={() => setQuantity(Math.min((event?.max_quantity_per_booking || 3), quantity + 1))}
+                          disabled={quantity >= (event?.max_quantity_per_booking || 3) || bookingLoading}
+                        >
+                          +
+                        </Button>
                       </div>
-                      <p className="text-[10px] md:text-xs text-muted-foreground/80 italic">
-                        💡 Need more tickets? You can make another booking after this one.
+                      <p className="text-[10px] md:text-xs text-muted-foreground/80">
+                        Maximum {event?.max_quantity_per_booking || 3} tickets per booking. Each ticket gets a unique QR code.
                       </p>
                     </div>
 
