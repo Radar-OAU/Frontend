@@ -33,6 +33,53 @@ export const adminService = {
     const response = await api.get("/api/admin/events/");
     return response.data.events;
   },
+  getEventDetails: async (eventId) => {
+    // 1. Fetch public details (rich content: description, images, etc.)
+    const publicResponse = await api.get(`/events/${eventId}/details/`);
+    const publicData = publicResponse.data;
+
+    // 2. Fetch admin list to get internal details (organizer ID, status, flags)
+    // This is necessary because the public endpoint might sanitize organizer ID, and there's no direct admin detail endpoint.
+    let adminData = {};
+    try {
+      const adminResponse = await api.get("/api/admin/events/");
+      const allEvents = adminResponse.data.events || [];
+      const found = allEvents.find(
+        (e) =>
+          String(e.event_id) === String(eventId) ||
+          String(e.id) === String(eventId)
+      );
+      if (found) adminData = found;
+    } catch (e) {
+      console.warn("Failed to fetch admin event list for enrichment", e);
+    }
+
+    // 3. Merge data
+    return {
+      ...publicData,
+      ...adminData, // Admin data takes precedence for status and internal IDs
+
+      // Normalize fields
+      event_name:
+        adminData.event_name || publicData.name || publicData.event_name,
+      // Admin list usually has 'organisation_name'
+      organisation_name:
+        adminData.organisation_name ||
+        publicData.organization_name ||
+        publicData.organisation_name,
+      // Public often has better image reference
+      image_url:
+        publicData.image || publicData.image_url || adminData.image_url,
+      ticket_tiers:
+        publicData.ticket_categories ||
+        publicData.ticket_tiers ||
+        adminData.ticket_tiers,
+
+      // Ensure we have an ID for fetching user details if needed
+      organizer:
+        adminData.organizer || adminData.organizer_id || publicData.organizer,
+    };
+  },
   updateEventStatus: async (eventId, status) => {
     const response = await api.patch(`/api/admin/events/${eventId}/status/`, {
       status,

@@ -1386,6 +1386,7 @@ async function getAllEvents() {
   "date": "2024-12-15T10:00:00Z",
   "capacity": 100,
   "price": 5000.00,
+  "max_quantity_per_booking": 3,
   "image": "/media/event/images/tech.jpg",
   "ticket_categories": [
     {
@@ -1394,7 +1395,6 @@ async function getAllEvents() {
       "price": "4000.00",
       "description": "Limited early bird tickets",
       "is_active": true,
-      "max_quantity_per_booking": 2,
       "max_tickets": 50,
       "tickets_sold": 30,
       "available_tickets": 20,
@@ -1406,7 +1406,6 @@ async function getAllEvents() {
       "price": "15000.00",
       "description": "VIP access with premium benefits",
       "is_active": true,
-      "max_quantity_per_booking": null,
       "max_tickets": 20,
       "tickets_sold": 15,
       "available_tickets": 5,
@@ -1423,7 +1422,7 @@ async function getAllEvents() {
 }
 ```
 
-**Frontend Implementation:**
+**Frontend Implementation (without authentication):**
 ```javascript
 async function getEventDetails(eventId) {
   const response = await fetch(
@@ -1438,6 +1437,34 @@ async function getEventDetails(eventId) {
   return await response.json();
 }
 ```
+
+**Frontend Implementation (with optional authentication):**
+```javascript
+async function getEventDetails(eventId) {
+  const token = localStorage.getItem('access_token');
+  
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const response = await fetch(
+    `http://localhost:8000/events/${eventId}/details/`,
+    {
+      headers
+    }
+  );
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Event not found');
+  }
+  
+  return await response.json();
+}
+```
+
+**Note:** This endpoint works with or without authentication. If you provide a valid token, it will be accepted but not required. Invalid tokens are ignored, and the request will still succeed.
 
 ---
 
@@ -1476,6 +1503,7 @@ When using FormData, append each field with the correct type:
 | `date` | string | Yes | `"2024-12-15T10:00:00Z"` | ISO 8601 datetime format |
 | `capacity` | integer/string | No | `100` or `"100"` | Can be null/empty |
 | `price` | number/string | Yes | `5000.00` or `"5000.00"` | Decimal, 0.00 for free events |
+| `max_quantity_per_booking` | integer/string | No | `5` or `"5"` | Maximum tickets per booking. Defaults to 3 if not set |
 | `image` | File | No | File object | Must be actual File, not dict/object |
 
 **Event Type Values:**
@@ -1495,6 +1523,7 @@ formData.append('location', 'OAU Campus');
 formData.append('date', '2024-12-15T10:00:00Z'); // ISO 8601 format
 formData.append('capacity', '100'); // Can be number or string
 formData.append('price', '5000.00'); // Must be number or numeric string
+formData.append('max_quantity_per_booking', '5'); // Optional, defaults to 3 if not set
 
 // Add image file (if provided)
 if (imageFile) {
@@ -1545,6 +1574,7 @@ const response = await fetch('http://localhost:8000/event/', {
   "date": "2024-12-15T10:00:00Z",
   "capacity": 100,
   "price": "5000.00",
+  "max_quantity_per_booking": 3,
   "image": "https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/radar/events/tech.jpg"
 }
 ```
@@ -1594,6 +1624,7 @@ const response = await fetch('http://localhost:8000/event/', {
  * @param {Date|string} eventData.date - Event date (Date object or ISO string)
  * @param {number} eventData.capacity - Event capacity (optional)
  * @param {number} eventData.price - Event price (required, 0.00 for free)
+ * @param {number} eventData.max_quantity_per_booking - Maximum tickets per booking (optional, defaults to 3)
  * @param {File|null} eventData.image - Image file (optional)
  * @returns {Promise<Object>} Created event data
  */
@@ -1623,6 +1654,10 @@ async function createEvent(eventData) {
   // Add optional fields
   if (eventData.capacity !== undefined && eventData.capacity !== null) {
     formData.append('capacity', String(eventData.capacity));
+  }
+  
+  if (eventData.max_quantity_per_booking !== undefined && eventData.max_quantity_per_booking !== null) {
+    formData.append('max_quantity_per_booking', String(eventData.max_quantity_per_booking));
   }
   
   // Price must be a number or numeric string, NOT an object
@@ -1673,6 +1708,7 @@ const eventData = {
   date: new Date('2024-12-15T10:00:00Z'), // Date object or ISO string
   capacity: 100,
   price: 5000.00, // Number, NOT {value: 5000} or {amount: 5000}
+  max_quantity_per_booking: 5, // Optional, defaults to 3 if not set
   image: imageFile // File object, NOT {data: "...", type: "..."}
 };
 
@@ -1841,7 +1877,9 @@ All ticket responses include the following fields:
 
 **Description:** Book tickets for an event. For paid events, initiates Paystack payment. Can optionally select a ticket category (e.g., "Early Bird", "VIP") for custom pricing.
 
-**Important:** When booking multiple tickets (quantity > 1), the system creates **individual ticket records** - one for each person. Each ticket has its own `ticket_id` and `qr_code` for individual check-in. All tickets from the same purchase are grouped by a `booking_id`.
+**Important:** 
+- When booking multiple tickets (quantity > 1), the system creates **individual ticket records** - one for each person. Each ticket has its own `ticket_id` and `qr_code` for individual check-in. All tickets from the same purchase are grouped by a `booking_id`.
+- The maximum number of tickets per booking is controlled by the event's `max_quantity_per_booking` field (defaults to 3 if not set by the organizer).
 
 **Platform Fee (Paid Events Only):**
 - Customer pays: `ticket_price + ₦80` (₦80 is an additional charge)
@@ -2003,9 +2041,11 @@ All ticket responses include the following fields:
 **Error Response (400 Bad Request - Max Quantity Exceeded):**
 ```json
 {
-  "error": "Maximum 2 tickets allowed per booking for category 'Early Bird'"
+  "error": "Maximum 3 tickets allowed per booking for this event"
 }
 ```
+
+**Note:** The maximum tickets per booking is set at the event level (via `max_quantity_per_booking` field). If not set when creating the event, it defaults to 3 tickets per booking.
 
 **Frontend Implementation:**
 ```javascript
@@ -2364,7 +2404,6 @@ async function getEventTickets(eventId, status = null) {
       "price": "5000.00",
       "description": "Limited early bird tickets at discounted price",
       "is_active": true,
-      "max_quantity_per_booking": 2,
       "max_tickets": 50,
       "tickets_sold": 30,
       "available_tickets": 20,
@@ -2380,7 +2419,6 @@ async function getEventTickets(eventId, status = null) {
       "price": "15000.00",
       "description": "VIP access with premium benefits",
       "is_active": true,
-      "max_quantity_per_booking": null,
       "max_tickets": 20,
       "tickets_sold": 20,
       "available_tickets": 0,
@@ -2396,11 +2434,12 @@ async function getEventTickets(eventId, status = null) {
 **Response Fields:**
 - `name`: Category name (e.g., "Early Bird", "VIP")
 - `price`: Price per ticket in this category
-- `max_tickets`: Maximum total tickets available (null = unlimited)
+- `max_tickets`: Maximum total tickets available for this category (null = unlimited)
 - `tickets_sold`: Number of tickets already sold
 - `available_tickets`: Number of tickets still available (null = unlimited)
 - `is_sold_out`: Whether category is sold out
-- `max_quantity_per_booking`: Maximum tickets per booking (null = unlimited)
+
+**Note:** Maximum tickets per booking is controlled at the event level via `max_quantity_per_booking` field (defaults to 3 if not set).
 
 **Frontend Implementation:**
 ```javascript
@@ -2441,7 +2480,6 @@ async function getTicketCategories(eventId) {
   "price": 5000.00,
   "description": "Limited early bird tickets at discounted price",
   "is_active": true,
-  "max_quantity_per_booking": 2,
   "max_tickets": 50
 }
 ```
@@ -2452,8 +2490,9 @@ async function getTicketCategories(eventId) {
 - `price`: Required, price per ticket (must be >= 0)
 - `description`: Optional, description of the category
 - `is_active`: Optional, whether category is active (default: true)
-- `max_quantity_per_booking`: Optional, maximum tickets per booking (null = unlimited)
-- `max_tickets`: Optional, maximum total tickets available (null = unlimited)
+- `max_tickets`: Optional, maximum total tickets available for this category (null = unlimited)
+
+**Note:** Maximum tickets per booking is controlled at the event level via `max_quantity_per_booking` field (defaults to 3 if not set).
 
 **Success Response (201 Created):**
 ```json
@@ -2467,7 +2506,6 @@ async function getTicketCategories(eventId) {
     "price": "5000.00",
     "description": "Limited early bird tickets at discounted price",
     "is_active": true,
-    "max_quantity_per_booking": 2,
     "max_tickets": 50,
     "tickets_sold": 0,
     "available_tickets": 50,
@@ -2509,7 +2547,6 @@ async function getTicketCategories(eventId) {
   "price": 4500.00,
   "description": "Updated description",
   "is_active": true,
-  "max_quantity_per_booking": 3,
   "max_tickets": 60
 }
 ```
@@ -4608,7 +4645,10 @@ await toggleUserStatus('organiser:ABC12-XYZ34', 'organizer', false);
 await toggleUserStatus('organiser:ABC12-XYZ34', 'organizer', true);
 ```
 
----
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | string | Yes | User role: `student` or `organizer` |
 
 ### 10. Verify/Unverify Organizer
 
@@ -4679,7 +4719,7 @@ async function toggleOrganizerVerification(organiserId, isVerified) {
 await toggleOrganizerVerification('organiser:ABC12-XYZ34', true);
 ```
 
----
+**Description:** Mark an organizer as verified (trusted) or unverified. Verified organizers display a verification badge.
 
 ### 11. Delete User
 
@@ -5713,6 +5753,30 @@ const organizers = await getUsers({ role: 'organizer' });
 
 ## Recent Updates
 
+### Event-Level Maximum Tickets Per Booking
+
+**Updated:** Maximum tickets per booking is now controlled at the event level only.
+
+**Changes:**
+- ✅ Removed `max_quantity_per_booking` from ticket categories
+- ✅ Added `max_quantity_per_booking` field to Event model
+- ✅ Defaults to 3 tickets per booking if not set by organizer
+- ✅ Applies to all ticket categories for the event
+
+**Usage:**
+- When creating an event, organizers can optionally set `max_quantity_per_booking`
+- If not set, defaults to 3 tickets per booking
+- This limit applies to all bookings regardless of ticket category
+
+**Example:**
+```json
+{
+  "name": "Tech Conference",
+  "max_quantity_per_booking": 5,  // Custom limit
+  // If not set, defaults to 3
+}
+```
+
 ### PIN Management - Profile Integration and Verification
 
 **Updated:** PIN functionality has been enhanced with profile integration and verification endpoint.
@@ -5786,7 +5850,10 @@ const organizers = await getUsers({ role: 'organizer' });
 
 ---
 
----
+#### 5. **Serializer Architecture**
+- Serializers only validate data format
+- No business logic in serializers
+- Clean separation of concerns
 
 ## Architecture Notes ✨ NEW
 

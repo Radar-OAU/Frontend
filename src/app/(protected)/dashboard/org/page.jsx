@@ -12,6 +12,7 @@ import OtpPinInput from "@/components/OtpPinInput";
 import { getImageUrl } from "../../../../lib/utils";
 import { hasPinSet } from "@/lib/pinPrompt";
 import { AnimatePresence,motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function Overview() {
@@ -323,7 +324,55 @@ export default function Overview() {
   }, [lastUpdate]);
 
   if (loading) {
-    return <Loading />;
+    return (
+      <div className="min-h-screen p-4 md:p-8 space-y-10 max-w-7xl mx-auto">
+        {/* Header Skeleton */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64 md:w-80" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-10 w-40 rounded-xl" />
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+             <Skeleton key={i} className="h-32 w-full rounded-2xl bg-[#0A0A0A] border border-white/5" />
+          ))}
+        </div>
+
+        {/* Analytics Section Skeleton */}
+        <Skeleton className="h-48 w-full rounded-2xl bg-[#0A0A0A] border border-white/5" />
+
+        {/* Recent Events Skeleton */}
+        <div className="space-y-4">
+           <div className="flex justify-between items-center">
+             <Skeleton className="h-8 w-40" />
+             <Skeleton className="h-5 w-20" />
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {[1, 2, 3].map((i) => (
+               <div key={i} className="rounded-2xl overflow-hidden border border-white/5 bg-[#0A0A0A]">
+                  <Skeleton className="h-40 w-full" />
+                  <div className="p-5 space-y-4">
+                     <div className="space-y-2">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                     </div>
+                     <Skeleton className="h-px w-full" />
+                     <div className="flex justify-between">
+                        <Skeleton className="h-10 w-20" />
+                        <Skeleton className="h-10 w-20" />
+                     </div>
+                  </div>
+               </div>
+             ))}
+           </div>
+        </div>
+      </div>
+    );
   }
 
   if (!analytics) {

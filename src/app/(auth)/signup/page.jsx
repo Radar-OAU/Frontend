@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../../../components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -14,9 +15,10 @@ import Logo from "@/components/Logo";
 import BackgroundCarousel from "../../../components/BackgroundCarousel";
 import axios from 'axios';
 
-const SignUp = () => {
+const SignUpContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
   const loginUser = useAuthStore((state) => state.login);
 
   const [role, setRole] = useState("Student");
@@ -124,9 +126,13 @@ const SignUp = () => {
       // Both student and organizer now require OTP verification
       toast.success(res.data.message || 'OTP sent to email.', { id: toastId });
       if (role === "Student") {
-        router.push(`/verify-otp?email=${email}&role=student`);
+        let redirectUrl = `/verify-otp?email=${email}&role=student`;
+        if (callbackUrl) redirectUrl += `&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+        router.push(redirectUrl);
       } else {
-        router.push(`/verify-otp?email=${organiserEmail}&role=organizer`);
+        let redirectUrl = `/verify-otp?email=${organiserEmail}&role=organizer`;
+        if (callbackUrl) redirectUrl += `&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+        router.push(redirectUrl);
       }
 
     } catch (err) {
@@ -508,7 +514,7 @@ const SignUp = () => {
           <div className="text-center mt-3">
             <p className="text-gray-400 text-xs md:text-sm">
               Already have an account?{" "}
-              <Link href="/login" className="text-[#FF3A66] hover:text-[#cf153e] font-semibold underline">
+              <Link href={callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login"} className="text-[#FF3A66] hover:text-[#cf153e] font-semibold underline">
                 Sign in
               </Link>
             </p>
@@ -516,6 +522,14 @@ const SignUp = () => {
         </div>
       </motion.div>
     </div>
+  );
+};
+
+const SignUp = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen w-full flex items-center justify-center bg-[#0A0A14]"><Loader2 className="animate-spin h-8 w-8 text-rose-600" /></div>}>
+      <SignUpContent />
+    </Suspense>
   );
 };
 

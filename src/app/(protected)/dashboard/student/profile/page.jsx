@@ -42,13 +42,32 @@ const StudentProfile = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
+    
+    // Prepare payload: convert empty strings to null for optional fields like Date_of_birth
+    const payload = {
+        Preferred_name: formData.Preferred_name,
+        Date_of_birth: formData.Date_of_birth || null // Send null if empty string
+    };
+
     try {
-      await api.patch("student/profile/", formData);
+      await api.patch("student/profile/", payload);
       toast.success("Profile updated successfully");
-      setProfile(prev => ({...prev, ...formData}));
+      setProfile(prev => ({...prev, ...payload}));
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to update profile");
+      console.error("Profile update error:", error.response?.data || error);
+      // Try to extract a meaningful error message
+      const errorData = error.response?.data;
+      let errorMsg = "Failed to update profile";
+      
+      if (errorData) {
+          if (typeof errorData === 'string') errorMsg = errorData;
+          else if (errorData.error) errorMsg = errorData.error;
+          else if (errorData.detail) errorMsg = errorData.detail;
+          else if (errorData.Date_of_birth) errorMsg = `Date of Birth: ${errorData.Date_of_birth.join(', ')}`;
+          else if (errorData.Preferred_name) errorMsg = `Preferred Name: ${errorData.Preferred_name.join(', ')}`;
+      }
+      
+      toast.error(errorMsg);
     } finally {
       setSaving(false);
     }

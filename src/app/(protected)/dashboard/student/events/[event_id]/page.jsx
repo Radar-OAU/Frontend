@@ -55,6 +55,9 @@ const EventDetailsPage = () => {
           if (activeCategories.length > 0) {
             setSelectedCategory(activeCategories[0]);
           }
+        } else if (response.data.ticket_categories?.length > 0) {
+           // If no active/unsold categories, select the first one anyway so we can show it's sold out
+           setSelectedCategory(response.data.ticket_categories[0]);
         }
       } catch (error) {
         console.error("Error fetching event details:", error);
@@ -78,7 +81,7 @@ const EventDetailsPage = () => {
 
     try {
       const payload = {
-        event_id: eventId,
+        event_id: event.event_id || event.id || eventId,
         quantity: parseInt(quantity),
         category_name: selectedCategory?.name,
       };
@@ -98,7 +101,11 @@ const EventDetailsPage = () => {
       
     } catch (error) {
       console.error("Booking error:", error);
-      const errorMessage = error.response?.data?.error || "Failed to book ticket";
+      let errorMessage = error.response?.data?.error || "Failed to book ticket";
+      
+      if (errorMessage.toLowerCase().includes("only 0 tickets remaining")) {
+         errorMessage = "No more tickets available";
+      }
       
       toast.error(errorMessage, { id: toastId });
     } finally {
@@ -125,6 +132,7 @@ const EventDetailsPage = () => {
   }
 
   const eventDate = new Date(event.date);
+  const isSoldOut = selectedCategory?.is_sold_out;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 md:space-y-8 pb-20">
@@ -181,128 +189,133 @@ const EventDetailsPage = () => {
           </div>
         </div>
 
-        {/* Booking Card */}
-        <div className="md:col-span-1">
-          <Card className="sticky top-24">
-            <CardHeader className="p-4 md:p-6">
-              <CardTitle className="text-lg md:text-xl">Book Tickets</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pt-0 md:pt-0">
-              {/* Quantity Selector */}
-              <div className="space-y-2">
-                <Label htmlFor="quantity" className="text-xs md:text-sm">Quantity</Label>
-                <Select 
-                  value={quantity.toString()} 
-                  onValueChange={(val) => setQuantity(parseInt(val))}
-                >
-                  <SelectTrigger id="quantity" className="h-9 md:h-10 text-sm md:text-base w-full">
-                    <SelectValue placeholder="Select quantity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num} {num === 1 ? 'Ticket' : 'Tickets'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Booking Card & Share Section */}
+            <div className="md:col-span-1">
+              <div className="sticky top-24 space-y-6">
+                <Card>
+                  <CardHeader className="p-4 md:p-6">
+                    <CardTitle className="text-lg md:text-xl">Book Tickets</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pt-0 md:pt-0">
+                    {/* Sold Out Banner */}
+                    {isSoldOut && (
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium text-center animate-in fade-in zoom-in-95 duration-300">
+                        😔 No more tickets available for this category
+                      </div>
+                    )}
+                    
+                    {/* Quantity Selector - RESTRICTED TO 1 */}
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm text-muted-foreground">Quantity</Label>
+                      <div className="h-9 md:h-10 w-full flex items-center px-3 border rounded-md bg-muted/50 text-muted-foreground text-sm md:text-base cursor-not-allowed">
+                        1 Ticket (Maximum per transaction)
+                      </div>
+                      <p className="text-[10px] md:text-xs text-muted-foreground/80 italic">
+                        💡 Need more tickets? You can make another booking after this one.
+                      </p>
+                    </div>
 
-              {/* Category Selector */}
-              {event.ticket_categories && event.ticket_categories.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="text-xs md:text-sm">Ticket Category</Label>
-                  <Select 
-                    value={selectedCategory?.name || ""} 
-                    onValueChange={(val) => {
-                      const cat = event.ticket_categories.find(c => c.name === val);
-                      setSelectedCategory(cat);
-                    }}
-                  >
-                    <SelectTrigger id="category" className="h-9 md:h-10 text-sm md:text-base w-full">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {event.ticket_categories.map((cat) => (
-                        <SelectItem 
-                          key={cat.category_id} 
-                          value={cat.name}
-                          disabled={!cat.is_active || cat.is_sold_out}
+                    {/* Category Selector */}
+                    {event.ticket_categories && event.ticket_categories.length > 0 && (
+                      <div className="space-y-2">
+                        <Label htmlFor="category" className="text-xs md:text-sm">Ticket Category</Label>
+                        <Select 
+                          value={selectedCategory?.name || ""} 
+                          onValueChange={(val) => {
+                            const cat = event.ticket_categories.find(c => c.name === val);
+                            setSelectedCategory(cat);
+                          }}
                         >
-                          {cat.name} - ₦{parseFloat(cat.price).toLocaleString()} {cat.is_sold_out ? "(Sold Out)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedCategory?.description && (
-                    <p className="text-[10px] md:text-xs text-muted-foreground italic">
-                      {selectedCategory.description}
-                    </p>
-                  )}
-                </div>
-              )}
+                          <SelectTrigger id="category" className="h-9 md:h-10 text-sm md:text-base w-full">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {event.ticket_categories.map((cat) => (
+                              <SelectItem 
+                                key={cat.category_id} 
+                                value={cat.name}
+                                disabled={!cat.is_active || cat.is_sold_out}
+                              >
+                                {cat.name} - ₦{parseFloat(cat.price).toLocaleString()} {cat.is_sold_out ? "(Sold Out)" : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {selectedCategory?.description && (
+                          <p className="text-[10px] md:text-xs text-muted-foreground italic">
+                            {selectedCategory.description}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
-              {/* Price Summary */}
-              <div className="pt-4 border-t space-y-2">
-                <div className="flex justify-between text-xs md:text-sm">
-                  <span>Price per ticket</span>
-                  <span>{event.pricing_type === 'free' ? 'Free' : `₦${event.price}`}</span>
-                </div>
-                <div className="flex justify-between font-bold text-base md:text-lg">
-                  <span>Total</span>
-                  <span>
-                    {event.pricing_type === 'free' 
-                      ? 'Free' 
-                      : `₦${((selectedCategory ? parseFloat(selectedCategory.price) : event.price) * quantity).toLocaleString()}`}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="p-4 md:p-6 pt-0 md:pt-0">
-              <Button 
-                className="w-full h-10 md:h-11 text-sm md:text-base" 
-                size="lg" 
-                onClick={handleBookTicket}
-                disabled={bookingLoading}
-              >
-                {bookingLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Ticket className="mr-2 h-4 w-4" />
-                    {event.pricing_type === 'free' ? 'Get Ticket' : 'Proceed to Payment'}
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
+                    {/* Price Summary */}
+                    <div className="pt-4 border-t space-y-2">
+                      <div className="flex justify-between text-xs md:text-sm">
+                        <span>Price per ticket</span>
+                        <span>{event.pricing_type === 'free' ? 'Free' : `₦${event.price}`}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-base md:text-lg">
+                        <span>Total</span>
+                        <span>
+                          {event.pricing_type === 'free' 
+                            ? 'Free' 
+                            : `₦${((selectedCategory ? parseFloat(selectedCategory.price) : event.price) * quantity).toLocaleString()}`}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="p-4 md:p-6 pt-0 md:pt-0">
+                    <Button 
+                      className="w-full h-10 md:h-11 text-sm md:text-base" 
+                      size="lg" 
+                      onClick={handleBookTicket}
+                      disabled={bookingLoading || isSoldOut}
+                    >
+                      {bookingLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : isSoldOut ? (
+                        <>
+                           <Ticket className="mr-2 h-4 w-4" />
+                           Sold Out
+                        </>
+                      ) : (
+                        <>
+                          <Ticket className="mr-2 h-4 w-4" />
+                          {event.pricing_type === 'free' ? 'Get Ticket' : 'Proceed to Payment'}
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
 
-          {/* Share Section */}
-          <Card className="mt-6 md:mt-8 overflow-hidden">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Share2 className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm md:text-base">Share this event</h3>
+                {/* Share Section */}
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Share2 className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm md:text-base">Share this event</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-muted px-3 py-2 rounded-md text-xs md:text-sm text-muted-foreground truncate border border-border">
+                        {typeof window !== 'undefined' ? `${window.location.origin}/events/${eventId}` : ''}
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        onClick={handleCopyLink}
+                        className="shrink-0"
+                      >
+                        {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-              <div className="flex gap-2">
-                <div className="flex-1 bg-muted px-3 py-2 rounded-md text-xs md:text-sm text-muted-foreground truncate border border-border">
-                  {typeof window !== 'undefined' ? `${window.location.origin}/events/${eventId}` : ''}
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
-                  onClick={handleCopyLink}
-                  className="shrink-0"
-                >
-                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
       </div>
     </div>
   );

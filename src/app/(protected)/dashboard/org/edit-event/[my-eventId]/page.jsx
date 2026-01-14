@@ -6,6 +6,7 @@ import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { ChevronLeft, Save, Loader2 } from "lucide-react";
 import Loading from "@/components/ui/Loading";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EditEventPage() {
   const router = useRouter();
@@ -160,8 +161,40 @@ export default function EditEventPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <Loading />
+      <div className="min-h-screen bg-black text-white p-4 md:p-10 pb-32">
+        <div className="max-w-4xl mx-auto space-y-8">
+           <Skeleton className="h-6 w-24" />
+           
+           <div className="space-y-4">
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-4 w-64" />
+           </div>
+
+           {/* Form Skeleton */}
+           <div className="space-y-8">
+              <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 md:p-8 space-y-6">
+                 <Skeleton className="h-8 w-40 mb-6" />
+                 <div className="space-y-4">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-12 w-full rounded-xl" />
+                 </div>
+                 <div className="space-y-4">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-32 w-full rounded-xl" />
+                 </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                       <Skeleton className="h-4 w-24" />
+                       <Skeleton className="h-12 w-full rounded-xl" />
+                    </div>
+                    <div className="space-y-4">
+                       <Skeleton className="h-4 w-24" />
+                       <Skeleton className="h-12 w-full rounded-xl" />
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
       </div>
     );
   }

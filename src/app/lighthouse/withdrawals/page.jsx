@@ -11,6 +11,8 @@ export default function WithdrawalsPage() {
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchWithdrawals();
@@ -46,6 +48,19 @@ export default function WithdrawalsPage() {
   };
 
   const statuses = ["all", "pending", "completed", "failed"];
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = withdrawals.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(withdrawals.length / itemsPerPage);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
 
   return (
     <div className="space-y-4">
@@ -94,14 +109,14 @@ export default function WithdrawalsPage() {
                         <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
                      </td>
                    </tr>
-                 ) : withdrawals.length === 0 ? (
+                 ) : currentItems.length === 0 ? (
                    <tr>
                      <td colSpan={6} className="p-8 text-center text-xs text-muted-foreground">
                        No withdrawals found.
                      </td>
                    </tr>
                  ) : (
-                   withdrawals.map((w) => (
+                   currentItems.map((w) => (
                      <tr key={w.transaction_id} className="hover:bg-muted/30 transition-colors text-xs">
                        <td className="p-3">
                          <div className="font-medium">{w.organizer_name}</div>
@@ -109,10 +124,10 @@ export default function WithdrawalsPage() {
                        </td>
                        <td className="p-3">
                          <div className="flex items-center gap-2">
-                           <CreditCard className="w-3 h-3 text-muted-foreground" />
-                           <span className="font-medium">{w.bank_name}</span>
-                         </div>
-                         <div className="text-[10px] text-muted-foreground">{w.account_name}</div>
+                            <CreditCard className="w-3 h-3 text-muted-foreground" />
+                            <span className="font-medium">{w.bank_name}</span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">{w.account_name}</div>
                        </td>
                        <td className="p-3 font-medium">
                          ₦{Number(w.amount).toLocaleString()}
@@ -161,6 +176,31 @@ export default function WithdrawalsPage() {
            </div>
          </CardContent>
        </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </Button>
+          <span className="text-sm text-gray-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { getImageUrl } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const LandingPage = () => {
   const { token } = useAuthStore();
@@ -81,7 +82,7 @@ const LandingPage = () => {
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.1]">
               Experience Events
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-primary animate-gradient-x">
+              <span className="text-primary">
                 Like Never Before
               </span>
             </h1>
@@ -165,7 +166,7 @@ const LandingPage = () => {
           {loadingEvents ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="aspect-[4/5] rounded-3xl bg-muted animate-pulse" />
+                <Skeleton key={i} className="aspect-[4/5] rounded-3xl" />
               ))}
             </div>
           ) : events.length > 0 ? (
@@ -367,7 +368,7 @@ const LandingPage = () => {
             <h2 className="text-5xl md:text-6xl font-black tracking-tight">
               Ready to transform your
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">
+              <span className="text-primary">
                 event experience?
               </span>
             </h2>

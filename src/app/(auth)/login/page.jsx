@@ -2,7 +2,8 @@
 // Force rebuild login page
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, Loader2, User, Sparkles, Eye, EyeOff, Check, ArrowRight } from 'lucide-react'
@@ -15,8 +16,10 @@ import { getErrorMessage } from '@/lib/utils'
 import BackgroundCarousel from '@/components/BackgroundCarousel'
 import { useGoogleLogin } from '@react-oauth/google';
 
-const LoginPage = () => {
+const LoginContent = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
   const login = useAuthStore((state) => state.login);
 
   const [role, setRole] = useState("Student");
@@ -118,8 +121,14 @@ const LoginPage = () => {
       }
 
       login({ ...response.data }, access, refresh, userRole)
+      login({ ...response.data }, access, refresh, userRole)
       toast.success('Login successful! Redirecting...', { id: toastId })
-      router.push('/dashboard')
+      
+      if (callbackUrl) {
+        router.push(decodeURIComponent(callbackUrl));
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       console.error("Login error:", err);
       const message = err.response?.data?.error || "Invalid email or password";
@@ -154,7 +163,7 @@ const LoginPage = () => {
         className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-8 md:py-12 lg:px-16 xl:px-24 overflow-y-auto"
       >
         <div className="w-full max-w-md">
-          <div className="flex justify-center mb-6 md:mb-8">
+          <div className="hidden lg:flex justify-center mb-6 md:mb-8">
             <Logo
               href="/"
               textColor="white"
@@ -293,7 +302,7 @@ const LoginPage = () => {
             <div className="text-xs md:text-sm text-center text-gray-400">
               Don&apos;t have an account?{" "}
               <Link
-                href="/signup"
+                href={callbackUrl ? `/signup?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/signup"}
                 className="font-semibold text-rose-400 hover:text-rose-300 hover:underline transition-colors"
               >
                 Create an account
@@ -334,6 +343,14 @@ const LoginPage = () => {
         </div>
       </motion.div>
     </div>
+  );
+};
+
+const LoginPage = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen w-full flex items-center justify-center bg-[#0A0A14]"><Loader2 className="animate-spin h-8 w-8 text-rose-600" /></div>}>
+      <LoginContent />
+    </Suspense>
   );
 };
 

@@ -10,6 +10,8 @@ export default function TicketsPage() {
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchTickets();
@@ -33,6 +35,19 @@ export default function TicketsPage() {
 
   const statuses = ["all", "confirmed", "pending", "checked_in", "cancelled"];
 
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = tickets.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(tickets.length / itemsPerPage);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
+
   return (
     <div className="space-y-4">
        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -49,7 +64,7 @@ export default function TicketsPage() {
                onClick={() => setStatusFilter(status)}
                className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
                  statusFilter === status 
-                   ? "bg-white shadow text-foreground" 
+                   ? "bg-primary text-primary-foreground shadow" 
                    : "text-muted-foreground hover:text-foreground"
                }`}
              >
@@ -59,7 +74,7 @@ export default function TicketsPage() {
         </div>
       </div>
 
-       <Card className="shadow-sm border-border">
+       <Card className="shadow-sm border-white/10">
          <CardContent className="p-0">
            <div className="border-t-0 overflow-x-auto">
              <table className="w-full text-sm text-left">
@@ -73,21 +88,21 @@ export default function TicketsPage() {
                    <th className="p-3 font-medium whitespace-nowrap text-right">Sold At</th>
                  </tr>
                </thead>
-               <tbody className="divide-y">
+               <tbody className="divide-y divide-white/10">
                  {loading ? (
                    <tr>
                      <td colSpan={6} className="p-10 text-center">
                         <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
                      </td>
                    </tr>
-                 ) : tickets.length === 0 ? (
+                 ) : currentItems.length === 0 ? (
                    <tr>
                      <td colSpan={6} className="p-8 text-center text-xs text-muted-foreground">
                        No tickets found.
                      </td>
                    </tr>
                  ) : (
-                   tickets.map((t) => (
+                   currentItems.map((t) => (
                      <tr key={t.ticket_id} className="hover:bg-muted/30 transition-colors text-xs">
                        <td className="p-3 font-mono text-muted-foreground">
                          <div className="flex items-center gap-2">
@@ -128,6 +143,31 @@ export default function TicketsPage() {
            </div>
          </CardContent>
        </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </Button>
+          <span className="text-sm text-gray-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
