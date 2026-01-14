@@ -1,6 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+// Import token refresh timer functions (dynamic import to avoid circular dependency)
+let startTokenRefreshTimer, stopTokenRefreshTimer;
+if (typeof window !== 'undefined') {
+  import("../lib/axios").then((module) => {
+    startTokenRefreshTimer = module.startTokenRefreshTimer;
+    stopTokenRefreshTimer = module.stopTokenRefreshTimer;
+  });
+}
+
 const useAuthStore = create(
   persist(
     (set) => ({
@@ -28,15 +37,26 @@ const useAuthStore = create(
           role,
           isAuthenticated: true,
         });
+
+        // Start automatic token refresh timer (14min intervals)
+        if (startTokenRefreshTimer) {
+          startTokenRefreshTimer();
+        }
       },
-      logout: () =>
+      logout: () => {
+        // Stop automatic token refresh
+        if (stopTokenRefreshTimer) {
+          stopTokenRefreshTimer();
+        }
+
         set({
           user: null,
           role: null,
           token: null,
           refreshToken: null,
           isAuthenticated: false,
-        }),
+        });
+      },
       setHydrated: () => set({ hydrated: true }),
       setUser: (userData) =>
         set((state) => ({

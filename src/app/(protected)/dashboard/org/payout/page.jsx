@@ -31,6 +31,7 @@ export default function PayoutPage() {
   const [hideBalances, setHideBalances] = useState(true);
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [pendingWithdrawal, setPendingWithdrawal] = useState(null);
+  const [activeTab, setActiveTab] = useState('all'); // 'all' or 'withdrawals'
   const [stats, setStats] = useState({
     available_balance: '0.00',
     pending_balance: '0.00',
@@ -41,14 +42,16 @@ export default function PayoutPage() {
     bank_account_number: '',
   });
   const [transactions, setTransactions] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
   const [withdrawAmount, setWithdrawAmount] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [balanceRes, transRes] = await Promise.all([
+      const [balanceRes, transRes, withdrawalRes] = await Promise.all([
         api.get('/wallet/balance/'),
-        api.get('/wallet/transactions/?limit=10')
+        api.get('/wallet/transactions/?limit=10'),
+        api.get('/wallet/withdrawals/?limit=20')
       ]);
       
       if (balanceRes.data) {
@@ -57,6 +60,10 @@ export default function PayoutPage() {
       
       if (transRes.data && transRes.data.transactions) {
         setTransactions(transRes.data.transactions);
+      }
+
+      if (withdrawalRes.data && withdrawalRes.data.withdrawals) {
+        setWithdrawals(withdrawalRes.data.withdrawals);
       }
     } catch (error) {
       console.error("Failed to fetch payout data", error);
@@ -237,57 +244,137 @@ export default function PayoutPage() {
           </div>
         </div>
 
-        {/* Transactions Table */}
+        {/* Transactions & Withdrawals Table */}
         <div className="lg:col-span-2">
           <div className="bg-[#0A0A0A] border border-white/5 rounded-xl shadow-xl overflow-hidden">
-            <div className="p-5 border-b border-white/5 flex items-center justify-between">
-              <h2 className="text-base font-bold flex items-center gap-2">
-                <History className="w-4 h-4 text-rose-500" />
-                Recent Transactions
-              </h2>
+            {/* Tabs Header */}
+            <div className="p-5 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                    activeTab === 'all'
+                      ? 'bg-rose-600 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <History className="w-4 h-4" />
+                  All Transactions
+                  <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px]">{transactions.length}</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('withdrawals')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                    activeTab === 'withdrawals'
+                      ? 'bg-rose-600 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  Withdrawal History
+                  <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px]">{withdrawals.length}</span>
+                </button>
+              </div>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-white/[0.02] text-gray-400 text-[10px] font-bold">
-                  <tr>
-                    <th className="px-5 py-3">Transaction</th>
-                    <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3">Amount</th>
-                    <th className="px-5 py-3">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {transactions.length > 0 ? (
-                    transactions.map((tx) => (
-                      <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-white">{tx.transaction_type_display}</span>
-                            <span className="text-xs text-gray-500 truncate max-w-[200px]">{tx.description}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-xs font-bold">
-                           <StatusBadge status={tx.status} label={tx.status_display} />
-                        </td>
-                        <td className={`px-6 py-4 font-bold ${tx.amount.startsWith('-') ? 'text-rose-500' : 'text-emerald-500'}`}>
-                          {tx.amount.startsWith('-') ? '-' : '+'}₦{Math.abs(parseFloat(tx.amount)).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-gray-500 truncate">
-                          {new Date(tx.created_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
+            {/* All Transactions Tab */}
+            {activeTab === 'all' && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-white/[0.02] text-gray-400 text-[10px] font-bold">
                     <tr>
-                       <td colSpan="4" className="px-6 py-12 text-center text-gray-500 italic">
-                         No transactions found.
-                       </td>
+                      <th className="px-5 py-3">Transaction</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3">Amount</th>
+                      <th className="px-5 py-3">Date</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {transactions.length > 0 ? (
+                      transactions.map((tx, index) => (
+                        <tr key={tx.transaction_id || tx.id || index} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-white">{tx.transaction_type_display}</span>
+                              <span className="text-xs text-gray-500 truncate max-w-[200px]">{tx.description}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs font-bold">
+                             <StatusBadge status={tx.status} label={tx.status_display} />
+                          </td>
+                          <td className={`px-6 py-4 font-bold ${tx.amount.startsWith('-') ? 'text-rose-500' : 'text-emerald-500'}`}>
+                            {tx.amount.startsWith('-') ? '-' : '+'}₦{Math.abs(parseFloat(tx.amount)).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-gray-500 truncate">
+                            {new Date(tx.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                         <td colSpan="4" className="px-6 py-12 text-center text-gray-500 italic">
+                           No transactions found.
+                         </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Withdrawal History Tab */}
+            {activeTab === 'withdrawals' && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-white/[0.02] text-gray-400 text-[10px] font-bold">
+                    <tr>
+                      <th className="px-5 py-3">Withdrawal ID</th>
+                      <th className="px-5 py-3">Bank Details</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3">Amount</th>
+                      <th className="px-5 py-3">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {withdrawals.length > 0 ? (
+                      withdrawals.map((withdrawal, index) => (
+                        <tr key={withdrawal.withdrawal_id || withdrawal.id || index} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-6 py-4">
+                            <span className="text-xs font-mono text-gray-500">{withdrawal.withdrawal_id || withdrawal.id}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-white text-xs">{withdrawal.bank_name}</span>
+                              <span className="text-xs text-gray-500">{withdrawal.account_number}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs font-bold">
+                             <StatusBadge status={withdrawal.status} label={withdrawal.status_display || withdrawal.status} />
+                          </td>
+                          <td className="px-6 py-4 font-bold text-rose-500">
+                            -₦{parseFloat(withdrawal.amount).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-gray-500 text-xs">
+                            <div className="flex flex-col">
+                              <span>{new Date(withdrawal.created_at).toLocaleDateString()}</span>
+                              {withdrawal.processed_at && (
+                                <span className="text-[10px] text-gray-600">Processed: {new Date(withdrawal.processed_at).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                         <td colSpan="5" className="px-6 py-12 text-center text-gray-500 italic">
+                           No withdrawal history found.
+                         </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>

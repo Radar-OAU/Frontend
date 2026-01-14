@@ -82,7 +82,7 @@ const LandingPage = () => {
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.1]">
               Experience Events
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-primary animate-gradient-x">
+              <span className="text-primary">
                 Like Never Before
               </span>
             </h1>
@@ -100,7 +100,7 @@ const LandingPage = () => {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/signup?tab=organizer">
                 <Button size="lg" variant="outline" className="h-14 px-10 text-lg border-border hover:bg-muted group">
                   Start Selling Tickets
                   <TrendingUp className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -368,7 +368,7 @@ const LandingPage = () => {
             <h2 className="text-5xl md:text-6xl font-black tracking-tight">
               Ready to transform your
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">
+              <span className="text-primary">
                 event experience?
               </span>
             </h2>

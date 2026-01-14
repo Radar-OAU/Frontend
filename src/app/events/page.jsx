@@ -51,6 +51,13 @@ const PublicEventsPage = () => {
       event.event_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Apply pricing filter
+    if (filter === 'paid') {
+      filtered = filtered.filter(event => event.pricing_type === 'paid');
+    } else if (filter === 'free') {
+      filtered = filtered.filter(event => event.pricing_type === 'free');
+    }
+
     if (filter === 'latest') {
        return filtered.sort((a, b) => new Date(b.event_date) - new Date(a.event_date));
     } else if (filter === 'popular') {
@@ -101,7 +108,7 @@ const PublicEventsPage = () => {
 
         {/* Filters */}
         <div className="flex gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-          {['all', 'latest', 'popular'].map((f) => (
+          {['all', 'latest', 'popular', 'paid', 'free'].map((f) => (
              <button
                key={f}
                onClick={() => {
@@ -111,7 +118,7 @@ const PublicEventsPage = () => {
                     setEvents(prev => shuffleArray([...prev]));
                  }
                }}
-               className={`px-6 py-2 rounded-full text-sm font-semibold capitalize transition-all duration-300 ${
+               className={`px-6 py-2 rounded-full text-sm font-semibold capitalize transition-all duration-300 whitespace-nowrap ${
                  filter === f 
                    ? "bg-white text-black shadow-lg shadow-white/10 scale-105" 
                    : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5"

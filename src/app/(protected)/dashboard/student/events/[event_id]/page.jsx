@@ -6,6 +6,7 @@ import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -204,39 +205,52 @@ const EventDetailsPage = () => {
                       </div>
                     )}
                     
-                    {/* Quantity Selector - RESTRICTED TO 1 */}
+                    {/* Quantity Selector */}
                     <div className="space-y-2">
                       <Label className="text-xs md:text-sm text-muted-foreground">Quantity</Label>
-                      <div className="h-9 md:h-10 w-full flex items-center px-3 border rounded-md bg-muted/50 text-muted-foreground text-sm md:text-base cursor-not-allowed">
-                        1 Ticket (Maximum per transaction)
-                      </div>
-                      <p className="text-[10px] md:text-xs text-muted-foreground/80 italic">
-                        💡 Need more tickets? You can make another booking after this one.
+                      <Select
+                        value={quantity.toString()}
+                        onValueChange={(val) => setQuantity(parseInt(val))}
+                        disabled={bookingLoading}
+                      >
+                        <SelectTrigger className="h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: event?.max_quantity_per_booking || 3 }, (_, i) => i + 1).map((num) => (
+                            <SelectItem key={num} value={num.toString()}>
+                              {num} {num === 1 ? 'Ticket' : 'Tickets'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] md:text-xs text-muted-foreground/80">
+                        Maximum {event?.max_quantity_per_booking || 3} tickets per booking. Each ticket gets a unique QR code.
                       </p>
                     </div>
 
                     {/* Category Selector */}
-                    {event.ticket_categories && event.ticket_categories.length > 0 && (
+                    {event.ticket_categories?.length > 0 && (
                       <div className="space-y-2">
                         <Label htmlFor="category" className="text-xs md:text-sm">Ticket Category</Label>
                         <Select 
                           value={selectedCategory?.name || ""} 
                           onValueChange={(val) => {
                             const cat = event.ticket_categories.find(c => c.name === val);
-                            setSelectedCategory(cat);
+                            setSelectedCategory(cat || null);
                           }}
                         >
                           <SelectTrigger id="category" className="h-9 md:h-10 text-sm md:text-base w-full">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                           <SelectContent>
-                            {event.ticket_categories.map((cat) => (
+                            {event.ticket_categories?.map((cat) => (
                               <SelectItem 
                                 key={cat.category_id} 
                                 value={cat.name}
                                 disabled={!cat.is_active || cat.is_sold_out}
                               >
-                                {cat.name} - ₦{parseFloat(cat.price).toLocaleString()} {cat.is_sold_out ? "(Sold Out)" : ""}
+                                {cat.name} - ₦{(parseFloat(cat.price) || 0).toLocaleString()} {cat.is_sold_out ? "(Sold Out)" : ""}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -249,18 +263,32 @@ const EventDetailsPage = () => {
                       </div>
                     )}
 
+                    {!event.ticket_categories?.length && event.pricing_type === 'paid' && (
+                      <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs text-center">
+                        No ticket categories available yet.
+                      </div>
+                    )}
+
                     {/* Price Summary */}
                     <div className="pt-4 border-t space-y-2">
                       <div className="flex justify-between text-xs md:text-sm">
                         <span>Price per ticket</span>
-                        <span>{event.pricing_type === 'free' ? 'Free' : `₦${event.price}`}</span>
+                        <span>
+                          {event.pricing_type === 'free' 
+                            ? 'Free' 
+                            : selectedCategory 
+                              ? `₦${(parseFloat(selectedCategory.price) || 0).toLocaleString()}` 
+                              : '₦0'}
+                        </span>
                       </div>
                       <div className="flex justify-between font-bold text-base md:text-lg">
                         <span>Total</span>
                         <span>
                           {event.pricing_type === 'free' 
                             ? 'Free' 
-                            : `₦${((selectedCategory ? parseFloat(selectedCategory.price) : event.price) * quantity).toLocaleString()}`}
+                            : selectedCategory
+                              ? `₦${((parseFloat(selectedCategory.price) || 0) * quantity).toLocaleString()}`
+                              : '₦0'}
                         </span>
                       </div>
                     </div>

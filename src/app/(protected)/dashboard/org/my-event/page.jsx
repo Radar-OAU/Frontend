@@ -46,8 +46,41 @@ const MyEvent = () => {
       else if (Array.isArray(payload?.data)) list = payload.data;
       else list = [];
       
+      // Fetch fresh ticket statistics for each event
+      const eventsWithStats = await Promise.all(
+        list.map(async (event) => {
+          const eventId = event.event_id ?? event.id;
+          try {
+            const ticketsRes = await api.get(`/tickets/organizer/${eventId}/tickets/`);
+            const stats = ticketsRes.data?.statistics || {};
+            // Override with fresh statistics - map API fields correctly
+            return {
+              ...event,
+              ticket_stats: {
+                confirmed_tickets: stats.confirmed || 0,
+                pending_tickets: stats.pending || 0,
+                total_revenue: stats.total_revenue || 0,
+                available_spots: stats.available_spots ?? "∞"
+              }
+            };
+          } catch (ticketErr) {
+            console.warn(`Could not fetch ticket stats for event ${eventId}:`, ticketErr);
+            // Keep existing ticket_stats or set defaults
+            return {
+              ...event,
+              ticket_stats: event.ticket_stats || {
+                confirmed_tickets: 0,
+                pending_tickets: 0,
+                total_revenue: 0,
+                available_spots: "∞"
+              }
+            };
+          }
+        })
+      );
+      
       // Sort events by created_at in descending order (latest created first)
-      const sortedList = [...list].sort((a, b) => {
+      const sortedList = [...eventsWithStats].sort((a, b) => {
         const dateA = new Date(a.created_at || a.date);
         const dateB = new Date(b.created_at || b.date);
         return dateB - dateA;
@@ -323,11 +356,21 @@ const MyEvent = () => {
                     </div>
                     
                     <button
-                      onClick={(e) => handleCopyLink(e, id)}
-                      className="p-2.5 bg-white/5 hover:bg-rose-500/10 border border-white/5 rounded-xl group/copy transition-all"
-                      title="Copy Link"
+                      onClick={(e) => ev.status === 'verified' ? handleCopyLink(e, id) : e.stopPropagation()}
+                      disabled={ev.status !== 'verified'}
+                      className={`flex items-center gap-1.5 px-3 py-2.5 border rounded-xl transition-all ${
+                        ev.status === 'verified'
+                          ? 'bg-white/5 hover:bg-rose-500/10 border-white/5 group/copy cursor-pointer'
+                          : 'bg-white/[0.02] border-white/5 cursor-not-allowed opacity-50'
+                      }`}
+                      title={ev.status === 'verified' ? 'Copy Event Link' : 'Event must be verified to share'}
                     >
-                      <Copy className="w-3.5 h-3.5 text-gray-500 group-hover/copy:text-rose-500 transition-colors" />
+                      <Copy className={`w-3.5 h-3.5 transition-colors ${
+                        ev.status === 'verified' ? 'text-gray-500 group-hover/copy:text-rose-500' : 'text-gray-600'
+                      }`} />
+                      <span className={`text-[10px] font-bold transition-colors uppercase tracking-wider ${
+                        ev.status === 'verified' ? 'text-gray-500 group-hover/copy:text-rose-500' : 'text-gray-600'
+                      }`}>Copy</span>
                     </button>
                   </div>
                 </div>

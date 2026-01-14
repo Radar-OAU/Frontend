@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../../components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -55,6 +55,14 @@ const SignUpContent = () => {
   };
 
   const invalidPhone = organiserPhone.length > 0 && !validatePhone(organiserPhone);
+
+  // Check URL parameter to auto-select organizer tab
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'organizer') {
+      setRole('Organizer');
+    }
+  }, [searchParams]);
 
   const isFormValid = () => {
     if (role === "Student") {

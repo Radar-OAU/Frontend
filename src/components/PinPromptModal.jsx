@@ -5,7 +5,6 @@ import { X, Lock, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
-import { verifyPinLocally, hasPinSet } from '@/lib/pinPrompt';
 import useAuthStore from '@/store/authStore';
 
 /**
@@ -84,8 +83,6 @@ export default function PinPromptModal({
 
   const email = useAuthStore((s) => s.user?.email);
 
-  const hasPin = hasPinSet();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -99,10 +96,10 @@ export default function PinPromptModal({
     setLoading(true);
 
     try {
-      // Verify PIN locally (IMPORTANT: await the async function)
-      const isValid = await verifyPinLocally(pin);
+      // Verify PIN with backend API ONLY
+      const response = await api.post('/verify-pin/', { pin });
       
-      if (isValid) {
+      if (response.data?.is_valid) {
         toast.success('PIN verified');
         onSuccess(pin);
         handleClose();
@@ -110,7 +107,12 @@ export default function PinPromptModal({
         setError('Incorrect PIN. Please try again.');
       }
     } catch (err) {
-      setError('Failed to verify PIN');
+      const errorMsg = err?.response?.data?.error || err?.response?.data?.message;
+      if (errorMsg && errorMsg.toLowerCase().includes('invalid')) {
+        setError('Incorrect PIN. Please try again.');
+      } else {
+        setError('Failed to verify PIN. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -142,63 +144,7 @@ export default function PinPromptModal({
 
   if (!isOpen) return null;
 
-  // If PIN not set and setup is required, show setup message
-  if (!hasPin && requireSetup) {
-    return (
-      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-sm bg-[#0A0A0A] border border-white/10 rounded-xl p-5 shadow-2xl"
-        >
-          <button
-            onClick={handleClose}
-            className="absolute top-3 right-3 p-1 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <X className="w-4 h-4 text-gray-400" />
-          </button>
-
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 bg-rose-500/10 rounded-lg">
-              <Lock className="w-5 h-5 text-rose-500" />
-            </div>
-            <h2 className="text-lg font-bold text-white">PIN Required</h2>
-          </div>
-
-          <div className="space-y-3">
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <p className="text-xs text-amber-200">
-                Set up a PIN to {action}. Your PIN protects sensitive actions.
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={handleClose}
-                className="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-sm font-semibold transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  handleClose();
-                  window.location.href = '/dashboard/org/settings?tab=security';
-                }}
-                className="flex-1 px-3 py-2 bg-rose-600 hover:bg-rose-700 rounded-lg text-white text-sm font-semibold transition-colors"
-              >
-                Set Up PIN
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // Normal PIN entry
+  // PIN verification modal - Backend handles all verification
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />

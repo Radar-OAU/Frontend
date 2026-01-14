@@ -291,7 +291,7 @@ export default function EditEventPage() {
                   value={form.date}
                   onChange={handleChange("date")}
                   required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500 transition-all [color-scheme:dark]"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500 transition-all [scheme:dark]"
                 />
               </div>
             </div>

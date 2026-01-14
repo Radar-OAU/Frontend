@@ -32,10 +32,27 @@ export default function AnalyticsPage() {
     setLoading(true);
     try {
       const res = await api.get(`/tickets/organizer/${id}/tickets/`);
+      console.log("Analytics data received:", res.data);
       setData(res.data);
     } catch (err) {
-      toast.error("Failed to load analytics data");
-      console.error(err);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || "Failed to load analytics data";
+      toast.error(msg);
+      console.error("Analytics error:", err);
+      // Set empty data so page still renders
+      setData({
+        event_id: id,
+        event_name: "Unknown Event",
+        tickets: [],
+        count: 0,
+        statistics: {
+          confirmed: 0,
+          pending: 0,
+          cancelled: 0,
+          used: 0,
+          total_revenue: 0,
+          available_spots: "∞"
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -51,6 +68,48 @@ export default function AnalyticsPage() {
     t.ticket_id?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
+  const exportToCSV = () => {
+    if (!data?.tickets || data.tickets.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    // Create CSV headers
+    const headers = ["Attendee Name", "Email", "Ticket ID", "Quantity", "Status", "Check-in Time", "Purchase Date"];
+    
+    // Create CSV rows
+    const rows = data.tickets.map(ticket => [
+      ticket.student_full_name || "N/A",
+      ticket.student_email || "N/A",
+      ticket.ticket_id || "N/A",
+      ticket.quantity || 0,
+      ticket.status || "N/A",
+      ticket.checked_in_at ? new Date(ticket.checked_in_at).toLocaleString() : "Not Checked In",
+      ticket.created_at ? new Date(ticket.created_at).toLocaleString() : "N/A"
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${data.event_name || 'event'}_attendees_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("CSV exported successfully");
+  };
+
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black">
       <Loading />
@@ -58,7 +117,19 @@ export default function AnalyticsPage() {
     </div>
   );
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black space-y-4">
+        <p className="text-gray-500 text-lg font-bold">No analytics data available</p>
+        <button 
+          onClick={() => router.back()}
+          className="px-6 py-3 bg-rose-600 hover:bg-rose-700 rounded-xl text-white font-bold transition-all"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
   // Calculate total tickets by summing quantities (not counting records)
   const totalTickets = data.tickets?.reduce((sum, ticket) => sum + (ticket.quantity || 0), 0) || 0;
@@ -90,7 +161,10 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-6 py-3 rounded-2xl transition-all active:scale-95 font-bold text-sm">
+        <button 
+          onClick={exportToCSV}
+          className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-6 py-3 rounded-2xl transition-all active:scale-95 font-bold text-sm"
+        >
           <Download className="w-4 h-4" /> Export CSV
         </button>
       </div>
@@ -137,11 +211,11 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="bg-[#0A0A0A] border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
+        <div className="bg-[#0A0A0A] border border-white/5 rounded-4x1 flow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/5 bg-white/[0.02]">
+                <tr className="border-b border-white/5 bg-white/2">
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-gray-500">Attendee</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-gray-500">Ticket ID</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-gray-500">Quantity</th>
@@ -151,7 +225,7 @@ export default function AnalyticsPage() {
               </thead>
               <tbody>
                 {filteredTickets.length > 0 ? filteredTickets.map((t, idx) => (
-                  <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.01] transition-colors group">
+                  <tr key={idx} className="border-b border-white/5 hover:bg-white/2group transition-color">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-linear-to-br from-rose-500/20 to-purple-500/20 flex items-center justify-center text-xs font-black text-rose-500 border border-rose-500/20 uppercase">

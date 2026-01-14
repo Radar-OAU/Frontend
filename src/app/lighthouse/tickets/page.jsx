@@ -84,7 +84,7 @@ export default function TicketsPage() {
                    <th className="p-3 font-medium whitespace-nowrap">Event</th>
                    <th className="p-3 font-medium whitespace-nowrap">Student</th>
                    <th className="p-3 font-medium whitespace-nowrap">Status</th>
-                   <th className="p-3 font-medium whitespace-nowrap">Qty / Price</th>
+                   <th className="p-3 font-medium whitespace-nowrap">Price</th>
                    <th className="p-3 font-medium whitespace-nowrap text-right">Sold At</th>
                  </tr>
                </thead>
@@ -129,8 +129,8 @@ export default function TicketsPage() {
                           </span>
                        </td>
                        <td className="p-3">
-                         <div className="font-medium">{t.quantity} x</div>
-                         <div className="text-muted-foreground">₦{Number(t.total_price).toLocaleString()}</div>
+                         <div className="font-medium text-muted-foreground">Individual</div>
+                         <div className="text-foreground font-semibold">₦{Number(t.total_price).toLocaleString()}</div>
                        </td>
                        <td className="p-3 text-right text-muted-foreground whitespace-nowrap">
                          {new Date(t.created_at).toLocaleDateString()}

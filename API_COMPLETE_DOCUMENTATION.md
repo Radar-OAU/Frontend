@@ -750,10 +750,17 @@ async function updateStudentProfile(data) {
   "Org_profile": {
     "Organization_Name": "Tech Events Inc",
     "Email": "contact@techevents.com",
-    "Phone": "+2348012345678"
+    "Phone": "+2348012345678",
+    "has_pin": true
   }
 }
 ```
+
+**Field Descriptions:**
+- `Organization_Name`: Organization name
+- `Email`: Organizer email address
+- `Phone`: Contact phone number
+- `has_pin`: Boolean indicating if a PIN is set for this organizer account (used to determine if PIN modal should be shown)
 
 ---
 
@@ -783,7 +790,8 @@ async function updateStudentProfile(data) {
   "Org_profile": {
     "Organization_Name": "Tech Events Inc",
     "Email": "contact@techevents.com",
-    "Phone": "+2348012345678"
+    "Phone": "+2348012345678",
+    "has_pin": true
   }
 }
 ```
@@ -894,66 +902,275 @@ async function updateStudentProfile(data) {
 
 ---
 
-### 15. Google Sign Up (Student)
+### 15. PIN Management (Organizer Only)
 
-**Endpoint:** `POST /student/google-signup/`
+PIN endpoints are for organizers to set and manage their PIN for secure operations.
 
-**Description:** Register/login student using Google OAuth. Accepts Google **access token** and fetches user info from Google UserInfo API.
+#### 15.1. Set/Create PIN
+
+**Endpoint:** `POST /pin/`
+
+**Description:** Set or create a PIN for an organizer account. The PIN is used for secure operations.
 
 **Authentication:** Not required
 
 **Request Body:**
 ```json
 {
-  "token": "ya29.A0ARrdaM..."
+  "Email": "contact@techevents.com",
+  "pin": "1234"
 }
 ```
 
-Or alternatively:
+**Field Requirements:**
+- `Email`: Required, organizer email address
+- `pin`: Required, PIN value (typically 4-6 digits)
+
+**Success Response (201 Created):**
 ```json
 {
-  "access_token": "ya29.A0ARrdaM..."
+  "Message": "PIN saved successfully!"
 }
 ```
 
-**Note:** The token should be the Google **access token** (starts with `ya29.`), NOT the ID token.
+**Error Response (400 Bad Request - Organizer not found):**
+```json
+{
+  "Message": "Organizer does not exist"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function setPin(email, pin) {
+  const response = await fetch('http://localhost:8000/pin/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      Email: email,
+      pin: pin
+    }),
+  });
+  
+  return await response.json();
+}
+```
+
+---
+
+#### 15.2. Forgot PIN
+
+**Endpoint:** `POST /forgot-pin/`
+
+**Description:** Request a PIN change link via email. Sends an email with a link to change the PIN.
+
+**Authentication:** Not required
+
+**Request Body:**
+```json
+{
+  "Email": "contact@techevents.com"
+}
+```
+
+**Field Requirements:**
+- `Email`: Required, organizer email address
 
 **Success Response (200 OK):**
 ```json
 {
-  "message": "Google login successful",
-  "email": "student@example.com",
-  "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "is_new_user": true
+  "message": "PIN change link sent to email.",
+  "email": "contact@techevents.com"
 }
 ```
 
-**Response Fields:**
-| Field | Type | Description |
-|-------|------|-------------|
-| `message` | string | Success message |
-| `email` | string | User's email from Google |
-| `access` | string | JWT access token for API calls |
-| `refresh` | string | JWT refresh token |
-| `is_new_user` | boolean | `true` if user needs to complete profile |
-
-**Error Responses:**
-
-*No token provided (400):*
+**Error Response (400 Bad Request - Organizer not found):**
 ```json
 {
-  "error": "No token provided"
+  "Message": "Organizer does not exist"
 }
 ```
 
-*Invalid/expired token (400):*
+**Error Response (500 Internal Server Error - Email failed):**
 ```json
 {
-  "error": "Invalid or expired token",
-  "detail": "Could not fetch user info from Google"
+  "error": "Failed to send PIN change email. Please try again."
 }
 ```
+
+**Frontend Implementation:**
+```javascript
+async function forgotPin(email) {
+  const response = await fetch('http://localhost:8000/forgot-pin/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      Email: email
+    }),
+  });
+  
+  return await response.json();
+}
+```
+
+---
+
+#### 15.3. Change PIN
+
+**Endpoint:** `POST /change-pin/`
+
+**Description:** Change an existing PIN. Requires email, new PIN, and confirmation PIN.
+
+**Authentication:** Not required
+
+**Request Body:**
+```json
+{
+  "Email": "contact@techevents.com",
+  "Pin": "5678",
+  "ConfirmPin": "5678"
+}
+```
+
+**Field Requirements:**
+- `Email`: Required, organizer email address
+- `Pin`: Required, new PIN value
+- `ConfirmPin`: Required, must match `Pin`
+
+**Success Response (201 Created):**
+```json
+{
+  "Message": "New PIN saved successfully!"
+}
+```
+
+**Error Response (400 Bad Request - Organizer not found):**
+```json
+{
+  "Message": "Organizer does not exist"
+}
+```
+
+**Error Response (400 Bad Request - PINs don't match):**
+```json
+{
+  "Message": "New PIN and Confirm PIN do not match"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function changePin(email, newPin, confirmPin) {
+  const response = await fetch('http://localhost:8000/change-pin/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      Email: email,
+      Pin: newPin,
+      ConfirmPin: confirmPin
+    }),
+  });
+  
+  return await response.json();
+}
+```
+
+**Note:** PIN endpoints are specifically for organizers. Students do not have PIN functionality.
+
+---
+
+#### 15.4. Verify PIN
+
+**Endpoint:** `POST /verify-pin/`
+
+**Description:** Verify if an entered PIN is correct for the authenticated organizer. This endpoint is used when a PIN modal is shown to the user and they enter their PIN.
+
+**Authentication:** Required (JWT token)
+
+**Request Body:**
+```json
+{
+  "pin": "1234"
+}
+```
+
+**Field Requirements:**
+- `pin`: Required, the PIN value to verify
+
+**Success Response (200 OK - PIN is correct):**
+```json
+{
+  "message": "PIN verified successfully",
+  "is_valid": true
+}
+```
+
+**Error Response (400 Bad Request - PIN is incorrect):**
+```json
+{
+  "error": "Invalid PIN",
+  "is_valid": false
+}
+```
+
+**Error Response (404 Not Found - PIN not set):**
+```json
+{
+  "error": "PIN not set for this account",
+  "is_valid": false
+}
+```
+
+**Error Response (404 Not Found - Organizer not found):**
+```json
+{
+  "error": "Organizer not found"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function verifyPin(enteredPin) {
+  const token = localStorage.getItem('access_token');
+  const response = await fetch('http://localhost:8000/verify-pin/', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      pin: enteredPin
+    }),
+  });
+  
+  const data = await response.json();
+  
+  if (data.is_valid) {
+    // PIN is correct - proceed with action
+    console.log('PIN verified!');
+    return true;
+  } else {
+    // PIN is incorrect - show error
+    alert(data.error || 'Invalid PIN');
+    return false;
+  }
+}
+```
+
+**Usage Flow:**
+1. Check organizer profile to see if `has_pin: true`
+2. If true, show PIN modal when user needs to perform secure action
+3. When user enters PIN, call `/verify-pin/` endpoint
+4. If `is_valid: true`, proceed with the action
+5. If `is_valid: false`, show error message
+
+**Note:** PINs are hashed in the database for security. The actual PIN value is never returned in API responses.
 
 ---
 
@@ -1093,7 +1310,8 @@ const eventTypes = config.event_types; // Array of {value, label}
 ---
 
 ### 2. List All Events
-**Endpoint:** `GET /create-event/`
+
+**Endpoint:** `GET /event/`
 
 **Description:** Get all events with preference-based prioritization. Events matching user preferences appear more frequently.
 
@@ -1135,7 +1353,7 @@ async function getAllEvents() {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch('http://localhost:8000/create-event/', {
+  const response = await fetch('http://localhost:8000/event/', {
     method: 'GET',
     headers,
   });
@@ -1168,9 +1386,8 @@ async function getAllEvents() {
   "date": "2024-12-15T10:00:00Z",
   "capacity": 100,
   "price": 5000.00,
+  "max_quantity_per_booking": 3,
   "image": "/media/event/images/tech.jpg",
-  "allows_seat_selection": true,
-  "available_seats": ["1", "3", "5", "7", "10", "12"],
   "ticket_categories": [
     {
       "category_id": "category:ABC12-XYZ34",
@@ -1178,7 +1395,6 @@ async function getAllEvents() {
       "price": "4000.00",
       "description": "Limited early bird tickets",
       "is_active": true,
-      "max_quantity_per_booking": 2,
       "max_tickets": 50,
       "tickets_sold": 30,
       "available_tickets": 20,
@@ -1190,7 +1406,6 @@ async function getAllEvents() {
       "price": "15000.00",
       "description": "VIP access with premium benefits",
       "is_active": true,
-      "max_quantity_per_booking": null,
       "max_tickets": 20,
       "tickets_sold": 15,
       "available_tickets": 5,
@@ -1207,7 +1422,7 @@ async function getAllEvents() {
 }
 ```
 
-**Frontend Implementation:**
+**Frontend Implementation (without authentication):**
 ```javascript
 async function getEventDetails(eventId) {
   const response = await fetch(
@@ -1223,11 +1438,39 @@ async function getEventDetails(eventId) {
 }
 ```
 
+**Frontend Implementation (with optional authentication):**
+```javascript
+async function getEventDetails(eventId) {
+  const token = localStorage.getItem('access_token');
+  
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const response = await fetch(
+    `http://localhost:8000/events/${eventId}/details/`,
+    {
+      headers
+    }
+  );
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Event not found');
+  }
+  
+  return await response.json();
+}
+```
+
+**Note:** This endpoint works with or without authentication. If you provide a valid token, it will be accepted but not required. Invalid tokens are ignored, and the request will still succeed.
+
 ---
 
 ### 4. Create Event
 
-**Endpoint:** `POST /create-event/`
+**Endpoint:** `POST /event/`
 
 **Description:** Create a new event. Only organizers can create events.
 
@@ -1260,8 +1503,8 @@ When using FormData, append each field with the correct type:
 | `date` | string | Yes | `"2024-12-15T10:00:00Z"` | ISO 8601 datetime format |
 | `capacity` | integer/string | No | `100` or `"100"` | Can be null/empty |
 | `price` | number/string | Yes | `5000.00` or `"5000.00"` | Decimal, 0.00 for free events |
+| `max_quantity_per_booking` | integer/string | No | `5` or `"5"` | Maximum tickets per booking. Defaults to 3 if not set |
 | `image` | File | No | File object | Must be actual File, not dict/object |
-| `allows_seat_selection` | boolean/string | No | `true` or `"true"` | Defaults to `false` |
 
 **Event Type Values:**
 `academic`, `tech`, `crypto`, `cultural`, `sports`, `music`, `career`, `religious`, `social`, `entrepreneurship`, `health`, `arts`, `debate`, `gaming`, `fashion`, `film`, `food`, `charity`, `political`, `science`, `workshop`, `seminar`, `conference`, `hackathon`, `networking`, `other`
@@ -1280,7 +1523,7 @@ formData.append('location', 'OAU Campus');
 formData.append('date', '2024-12-15T10:00:00Z'); // ISO 8601 format
 formData.append('capacity', '100'); // Can be number or string
 formData.append('price', '5000.00'); // Must be number or numeric string
-formData.append('allows_seat_selection', 'true'); // Can be boolean or string
+formData.append('max_quantity_per_booking', '5'); // Optional, defaults to 3 if not set
 
 // Add image file (if provided)
 if (imageFile) {
@@ -1288,7 +1531,7 @@ if (imageFile) {
 }
 
 // Send request
-const response = await fetch('http://localhost:8000/create-event/', {
+const response = await fetch('http://localhost:8000/event/', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${token}`,
@@ -1311,7 +1554,7 @@ formData.append('capacity', '50');
 formData.append('price', '0.00'); // Must be 0.00 for free events
 // image field omitted or set to null
 
-const response = await fetch('http://localhost:8000/create-event/', {
+const response = await fetch('http://localhost:8000/event/', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${token}`,
@@ -1331,9 +1574,8 @@ const response = await fetch('http://localhost:8000/create-event/', {
   "date": "2024-12-15T10:00:00Z",
   "capacity": 100,
   "price": "5000.00",
-  "image": "https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/radar/events/tech.jpg",
-  "allows_seat_selection": true,
-  "available_seats": []
+  "max_quantity_per_booking": 3,
+  "image": "https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/radar/events/tech.jpg"
 }
 ```
 
@@ -1382,8 +1624,8 @@ const response = await fetch('http://localhost:8000/create-event/', {
  * @param {Date|string} eventData.date - Event date (Date object or ISO string)
  * @param {number} eventData.capacity - Event capacity (optional)
  * @param {number} eventData.price - Event price (required, 0.00 for free)
+ * @param {number} eventData.max_quantity_per_booking - Maximum tickets per booking (optional, defaults to 3)
  * @param {File|null} eventData.image - Image file (optional)
- * @param {boolean} eventData.allows_seat_selection - Enable seat selection (optional)
  * @returns {Promise<Object>} Created event data
  */
 async function createEvent(eventData) {
@@ -1414,6 +1656,10 @@ async function createEvent(eventData) {
     formData.append('capacity', String(eventData.capacity));
   }
   
+  if (eventData.max_quantity_per_booking !== undefined && eventData.max_quantity_per_booking !== null) {
+    formData.append('max_quantity_per_booking', String(eventData.max_quantity_per_booking));
+  }
+  
   // Price must be a number or numeric string, NOT an object
   const priceValue = typeof eventData.price === 'number' 
     ? eventData.price.toString() 
@@ -1426,13 +1672,8 @@ async function createEvent(eventData) {
   }
   // If image is null/undefined, don't append it (backend will use null)
   
-  // Add boolean field
-  if (eventData.allows_seat_selection !== undefined) {
-    formData.append('allows_seat_selection', String(eventData.allows_seat_selection));
-  }
-  
   try {
-  const response = await fetch('http://localhost:8000/create-event/', {
+  const response = await fetch('http://localhost:8000/event/', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -1467,7 +1708,7 @@ const eventData = {
   date: new Date('2024-12-15T10:00:00Z'), // Date object or ISO string
   capacity: 100,
   price: 5000.00, // Number, NOT {value: 5000} or {amount: 5000}
-  allows_seat_selection: true,
+  max_quantity_per_booking: 5, // Optional, defaults to 3 if not set
   image: imageFile // File object, NOT {data: "...", type: "..."}
 };
 
@@ -1499,7 +1740,7 @@ await createEvent(freeEventData);
 1. ❌ **Sending JSON instead of FormData:**
    ```javascript
    // WRONG - Don't send JSON when you have an image
-   fetch('/create-event/', {
+   fetch('/event/', {
      method: 'POST',
      headers: {
        'Content-Type': 'application/json', // ❌ Wrong
@@ -1573,7 +1814,6 @@ await createEvent(freeEventData);
       "capacity": 100,
       "price": 5000.00,
       "image": "/media/event/images/tech.jpg",
-      "allows_seat_selection": true,
       "ticket_stats": {
         "total_tickets": 50,
         "confirmed_tickets": 45,
@@ -1605,57 +1845,6 @@ async function getOrganizerEvents() {
 
 ---
 
-### 6. Get Organizer Analytics
-
-**Endpoint:** `GET /organizer/analytics/`
-
-**Description:** Get analytics for the authenticated organizer.
-
-**Authentication:** Required (JWT token, Organizer only)
-
-**Success Response (200 OK):**
-```json
-{
-  "total_events": 5,
-  "total_tickets_sold": 150,
-  "total_tickets_pending": 10,
-  "total_revenue": 750000.00,
-  "revenue_by_event": [
-    {
-      "event_id": "event:TE-12345",
-      "event_name": "Tech Conference 2024",
-      "tickets_sold": 45,
-      "revenue": 225000.00
-    },
-    {
-      "event_id": "event:CD-67890",
-      "event_name": "Cultural Day",
-      "tickets_sold": 30,
-      "revenue": 150000.00
-    }
-  ],
-  "average_revenue_per_event": 150000.00
-}
-```
-
-**Frontend Implementation:**
-```javascript
-async function getOrganizerAnalytics() {
-  const token = localStorage.getItem('access_token');
-  
-  const response = await fetch('http://localhost:8000/organizer/analytics/', {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-  
-  return await response.json();
-}
-```
-
----
-
 ## Ticket App Endpoints
 
 ### Ticket Response Fields
@@ -1672,11 +1861,11 @@ All ticket responses include the following fields:
 | `student_email` | string | Student's email address |
 | `student_full_name` | string | Student's full name (Firstname + Lastname) |
 | `status` | string | Ticket status: `pending`, `confirmed`, `cancelled`, or `used` |
-| `quantity` | integer | Number of tickets |
-| `total_price` | string | Total price paid (as string, e.g., "5000.00") |
-| `qr_code` | string | QR code for check-in (e.g., "QR-ticket:TC-12345") |
-| `seat_number` | string/null | Seat number (if event allows seat selection) |
+| `quantity` | integer | Number of tickets (always 1 for individual tickets) |
+| `total_price` | string | Price per ticket (as string, e.g., "5000.00") |
+| `qr_code` | string | QR code for check-in (e.g., "QR-ticket:TC-12345") - unique per ticket |
 | `checked_in_at` | datetime/null | Check-in timestamp (null if not checked in) |
+| `booking_id` | string | Groups tickets from the same purchase (present in booking responses) |
 | `created_at` | datetime | Ticket creation timestamp |
 | `updated_at` | datetime | Last update timestamp |
 
@@ -1688,6 +1877,16 @@ All ticket responses include the following fields:
 
 **Description:** Book tickets for an event. For paid events, initiates Paystack payment. Can optionally select a ticket category (e.g., "Early Bird", "VIP") for custom pricing.
 
+**Important:** 
+- When booking multiple tickets (quantity > 1), the system creates **individual ticket records** - one for each person. Each ticket has its own `ticket_id` and `qr_code` for individual check-in. All tickets from the same purchase are grouped by a `booking_id`.
+- The maximum number of tickets per booking is controlled by the event's `max_quantity_per_booking` field (defaults to 3 if not set by the organizer).
+
+**Platform Fee (Paid Events Only):**
+- Customer pays: `ticket_price + ₦80` (₦80 is an additional charge)
+- Platform fee: `(ticket_price × 6%) + ₦80` (default, can be customized per event)
+- Organizer receives: `ticket_price × 94%` (6% deducted from base price)
+- Free events have no platform fees
+
 **Authentication:** Required (JWT token, Student only)
 
 **Request Body:**
@@ -1695,42 +1894,61 @@ All ticket responses include the following fields:
 {
   "event_id": "event:TE-12345",
   "category_name": "Early Bird",
-  "quantity": 2,
-  "seat_number": "A12"
+  "quantity": 2
 }
 ```
 
 **Field Requirements:**
 - `event_id`: Required, valid event ID
 - `category_name`: Optional, ticket category name (e.g., "Early Bird", "VIP", "Group of 4"). If not provided, uses event default price.
-- `quantity`: Required, integer, min 1
-- `seat_number`: Optional, required if event allows seat selection
+- `quantity`: Required, integer, min 1. Number of individual tickets to create (each person gets their own ticket).
 
 **Note:** To see available ticket categories for an event, use `GET /tickets/categories/?event_id=<event_id>` or check the `ticket_categories` field in event details.
 
 **Success Response - Free Event (201 Created):**
 ```json
 {
-  "message": "Ticket booked successfully",
-  "ticket": {
-    "ticket_id": "ticket:TC-12345",
-    "event_id": "event:TE-12345",
-    "event_name": "Tech Conference 2024",
-    "event_date": "2024-12-15T10:00:00Z",
-    "event_location": "OAU Campus",
-    "student_email": "john.doe@student.oauife.edu.ng",
-    "student_full_name": "John Doe",
-    "status": "confirmed",
-    "quantity": 2,
-    "total_price": "0.00",
-    "category_name": "Early Bird",
-    "category_price": "5000.00",
-    "qr_code": "QR-ticket:TC-12345",
-    "seat_number": "A12",
-    "checked_in_at": null,
-    "created_at": "2024-12-10T10:00:00Z",
-    "updated_at": "2024-12-10T10:00:00Z"
-  }
+  "message": "2 ticket(s) booked successfully",
+  "tickets": [
+    {
+      "ticket_id": "ticket:TC-12345",
+      "event_id": "event:TE-12345",
+      "event_name": "Tech Conference 2024",
+      "event_date": "2024-12-15T10:00:00Z",
+      "event_location": "OAU Campus",
+      "student_email": "john.doe@student.oauife.edu.ng",
+      "student_full_name": "John Doe",
+      "status": "confirmed",
+      "quantity": 1,
+      "total_price": "0.00",
+      "category_name": "Early Bird",
+      "category_price": "5000.00",
+      "qr_code": "QR-ticket:TC-12345",
+      "checked_in_at": null,
+      "created_at": "2024-12-10T10:00:00Z",
+      "updated_at": "2024-12-10T10:00:00Z"
+    },
+    {
+      "ticket_id": "ticket:TC-12346",
+      "event_id": "event:TE-12345",
+      "event_name": "Tech Conference 2024",
+      "event_date": "2024-12-15T10:00:00Z",
+      "event_location": "OAU Campus",
+      "student_email": "john.doe@student.oauife.edu.ng",
+      "student_full_name": "John Doe",
+      "status": "confirmed",
+      "quantity": 1,
+      "total_price": "0.00",
+      "category_name": "Early Bird",
+      "category_price": "5000.00",
+      "qr_code": "QR-ticket:TC-12346",
+      "checked_in_at": null,
+      "created_at": "2024-12-10T10:00:00Z",
+      "updated_at": "2024-12-10T10:00:00Z"
+    }
+  ],
+  "booking_id": "booking:ABC-12345",
+  "ticket_count": 2
 }
 ```
 
@@ -1738,29 +1956,66 @@ All ticket responses include the following fields:
 ```json
 {
   "message": "Payment initialized",
-  "ticket": {
-    "ticket_id": "ticket:TC-12345",
-    "event_id": "event:TE-12345",
-    "event_name": "Tech Conference 2024",
-    "event_date": "2024-12-15T10:00:00Z",
-    "event_location": "OAU Campus",
-    "student_email": "john.doe@student.oauife.edu.ng",
-    "student_full_name": "John Doe",
-    "status": "pending",
-    "quantity": 2,
-    "total_price": "10000.00",
-    "category_name": "Early Bird",
-    "category_price": "5000.00",
-    "qr_code": "QR-ticket:TC-12345",
-    "seat_number": "A12",
-    "checked_in_at": null,
-    "created_at": "2024-12-10T10:00:00Z",
-    "updated_at": "2024-12-10T10:00:00Z"
-  },
+  "tickets": [
+    {
+      "ticket_id": "ticket:TC-12345",
+      "event_id": "event:TE-12345",
+      "event_name": "Tech Conference 2024",
+      "event_date": "2024-12-15T10:00:00Z",
+      "event_location": "OAU Campus",
+      "student_email": "john.doe@student.oauife.edu.ng",
+      "student_full_name": "John Doe",
+      "status": "pending",
+      "quantity": 1,
+      "total_price": "5000.00",
+      "category_name": "Early Bird",
+      "category_price": "5000.00",
+      "qr_code": "QR-ticket:TC-12345",
+      "checked_in_at": null,
+      "created_at": "2024-12-10T10:00:00Z",
+      "updated_at": "2024-12-10T10:00:00Z"
+    },
+    {
+      "ticket_id": "ticket:TC-12346",
+      "event_id": "event:TE-12345",
+      "event_name": "Tech Conference 2024",
+      "event_date": "2024-12-15T10:00:00Z",
+      "event_location": "OAU Campus",
+      "student_email": "john.doe@student.oauife.edu.ng",
+      "student_full_name": "John Doe",
+      "status": "pending",
+      "quantity": 1,
+      "total_price": "5000.00",
+      "category_name": "Early Bird",
+      "category_price": "5000.00",
+      "qr_code": "QR-ticket:TC-12346",
+      "checked_in_at": null,
+      "created_at": "2024-12-10T10:00:00Z",
+      "updated_at": "2024-12-10T10:00:00Z"
+    }
+  ],
+  "booking_id": "booking:ABC-12345",
+  "ticket_count": 2,
   "payment_url": "https://paystack.com/pay/xxxxx",
-  "payment_reference": "ticket:TC-12345"
+  "payment_reference": "bookingABC-12345"
 }
 ```
+
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `tickets` | array | Array of ticket objects (one for each ticket booked) |
+| `booking_id` | string | Unique ID that groups all tickets from this purchase (e.g., "booking:ABC-12345") |
+| `ticket_count` | integer | Number of tickets in this booking |
+| `payment_url` | string | Paystack payment URL (paid events only) |
+| `payment_reference` | string | Payment reference (sanitized booking_id, paid events only) |
+
+**Note:** 
+- Each ticket in the `tickets` array has `quantity: 1` (each ticket is for one person)
+- Each ticket has its own unique `ticket_id` and `qr_code` for individual check-in
+- All tickets share the same `booking_id` to group them together
+- For paid events, the `total_price` shown is per ticket. The customer will be charged `(total_price × quantity) + ₦80` (platform fee) when redirected to Paystack
+- The `payment_reference` uses the sanitized `booking_id` (special characters removed) for Paystack compatibility
 
 **Error Response (400 Bad Request - Invalid Category):**
 ```json
@@ -1786,20 +2041,15 @@ All ticket responses include the following fields:
 **Error Response (400 Bad Request - Max Quantity Exceeded):**
 ```json
 {
-  "error": "Maximum 2 tickets allowed per booking for category 'Early Bird'"
+  "error": "Maximum 3 tickets allowed per booking for this event"
 }
 ```
 
-**Error Response (400 Bad Request - Seat Already Booked):**
-```json
-{
-  "seat_number": ["Seat A12 is already booked"]
-}
-```
+**Note:** The maximum tickets per booking is set at the event level (via `max_quantity_per_booking` field). If not set when creating the event, it defaults to 3 tickets per booking.
 
 **Frontend Implementation:**
 ```javascript
-async function bookTicket(eventId, quantity, seatNumber = null) {
+async function bookTicket(eventId, quantity, categoryName = null) {
   const token = localStorage.getItem('access_token');
   
   const response = await fetch('http://localhost:8000/tickets/book/', {
@@ -1812,11 +2062,24 @@ async function bookTicket(eventId, quantity, seatNumber = null) {
       event_id: eventId,
       category_name: categoryName,  // Optional: e.g., "Early Bird", "VIP"
       quantity,
-      seat_number: seatNumber,
     }),
   });
   
   const result = await response.json();
+  
+  // Store booking info for later reference
+  if (result.booking_id) {
+    localStorage.setItem('last_booking_id', result.booking_id);
+    localStorage.setItem('last_ticket_count', result.ticket_count);
+  }
+  
+  // Store all ticket IDs and QR codes for individual check-in
+  if (result.tickets && Array.isArray(result.tickets)) {
+    result.tickets.forEach((ticket, index) => {
+      localStorage.setItem(`ticket_${index}_id`, ticket.ticket_id);
+      localStorage.setItem(`ticket_${index}_qr`, ticket.qr_code);
+    });
+  }
   
   // If paid event, redirect to payment URL
   if (result.payment_url) {
@@ -1860,38 +2123,63 @@ async function bookTicket(eventId, quantity, seatNumber = null) {
 
 **Endpoint:** `POST /tickets/verify-payment/`
 
-**Description:** Manually verify Paystack payment. Usually handled automatically by webhook, but can be used as a fallback.
+**Description:** Manually verify Paystack payment. Usually handled automatically by webhook, but can be used as a fallback. When multiple tickets were booked together, this endpoint verifies and confirms all tickets in the booking.
 
 **Authentication:** Not required
 
 **Request Body:**
 ```json
 {
-  "reference": "ticket:TC-12345"
+  "reference": "bookingABC-12345"
 }
 ```
+
+**Note:** The `reference` should be the payment reference returned from Paystack (sanitized booking_id). For backward compatibility, you can also use a ticket_id.
 
 **Success Response (200 OK):**
 ```json
 {
-  "message": "Payment verified successfully",
-  "ticket": {
-    "ticket_id": "ticket:TC-12345",
-    "event_id": "event:TE-12345",
-    "event_name": "Tech Conference 2024",
-    "event_date": "2024-12-15T10:00:00Z",
-    "event_location": "OAU Campus",
-    "student_email": "john.doe@student.oauife.edu.ng",
-    "student_full_name": "John Doe",
-    "status": "confirmed",
-    "quantity": 2,
-    "total_price": "10000.00",
-    "qr_code": "QR-ticket:TC-12345",
-    "seat_number": "A12",
-    "checked_in_at": null,
-    "created_at": "2024-12-10T10:00:00Z",
-    "updated_at": "2024-12-10T10:00:00Z"
-  }
+  "message": "Payment verified successfully. 2 ticket(s) confirmed.",
+  "tickets": [
+    {
+      "ticket_id": "ticket:TC-12345",
+      "event_id": "event:TE-12345",
+      "event_name": "Tech Conference 2024",
+      "event_date": "2024-12-15T10:00:00Z",
+      "event_location": "OAU Campus",
+      "student_email": "john.doe@student.oauife.edu.ng",
+      "student_full_name": "John Doe",
+      "status": "confirmed",
+      "quantity": 1,
+      "total_price": "5000.00",
+      "category_name": "Early Bird",
+      "category_price": "5000.00",
+      "qr_code": "QR-ticket:TC-12345",
+      "checked_in_at": null,
+      "created_at": "2024-12-10T10:00:00Z",
+      "updated_at": "2024-12-10T10:00:00Z"
+    },
+    {
+      "ticket_id": "ticket:TC-12346",
+      "event_id": "event:TE-12345",
+      "event_name": "Tech Conference 2024",
+      "event_date": "2024-12-15T10:00:00Z",
+      "event_location": "OAU Campus",
+      "student_email": "john.doe@student.oauife.edu.ng",
+      "student_full_name": "John Doe",
+      "status": "confirmed",
+      "quantity": 1,
+      "total_price": "5000.00",
+      "category_name": "Early Bird",
+      "category_price": "5000.00",
+      "qr_code": "QR-ticket:TC-12346",
+      "checked_in_at": null,
+      "created_at": "2024-12-10T10:00:00Z",
+      "updated_at": "2024-12-10T10:00:00Z"
+    }
+  ],
+  "booking_id": "booking:ABC-12345",
+  "ticket_count": 2
 }
 ```
 
@@ -1928,7 +2216,6 @@ async function bookTicket(eventId, quantity, seatNumber = null) {
       "quantity": 2,
       "total_price": "10000.00",
       "qr_code": "QR-ticket:TC-12345",
-      "seat_number": "A12",
       "checked_in_at": null,
       "created_at": "2024-12-10T10:00:00Z",
       "updated_at": "2024-12-10T10:00:00Z"
@@ -1983,7 +2270,6 @@ async function getMyTickets() {
       "quantity": 2,
       "total_price": "10000.00",
       "qr_code": "QR-ticket:TC-12345",
-      "seat_number": "A12",
       "checked_in_at": null,
       "created_at": "2024-12-10T10:00:00Z",
       "updated_at": "2024-12-10T10:00:00Z"
@@ -2055,7 +2341,6 @@ async function getOrganizerTickets(status = null) {
       "quantity": 2,
       "total_price": "10000.00",
       "qr_code": "QR-ticket:TC-12345",
-      "seat_number": "A12",
       "checked_in_at": null,
       "created_at": "2024-12-10T10:00:00Z",
       "updated_at": "2024-12-10T10:00:00Z"
@@ -2119,7 +2404,6 @@ async function getEventTickets(eventId, status = null) {
       "price": "5000.00",
       "description": "Limited early bird tickets at discounted price",
       "is_active": true,
-      "max_quantity_per_booking": 2,
       "max_tickets": 50,
       "tickets_sold": 30,
       "available_tickets": 20,
@@ -2135,7 +2419,6 @@ async function getEventTickets(eventId, status = null) {
       "price": "15000.00",
       "description": "VIP access with premium benefits",
       "is_active": true,
-      "max_quantity_per_booking": null,
       "max_tickets": 20,
       "tickets_sold": 20,
       "available_tickets": 0,
@@ -2151,11 +2434,12 @@ async function getEventTickets(eventId, status = null) {
 **Response Fields:**
 - `name`: Category name (e.g., "Early Bird", "VIP")
 - `price`: Price per ticket in this category
-- `max_tickets`: Maximum total tickets available (null = unlimited)
+- `max_tickets`: Maximum total tickets available for this category (null = unlimited)
 - `tickets_sold`: Number of tickets already sold
 - `available_tickets`: Number of tickets still available (null = unlimited)
 - `is_sold_out`: Whether category is sold out
-- `max_quantity_per_booking`: Maximum tickets per booking (null = unlimited)
+
+**Note:** Maximum tickets per booking is controlled at the event level via `max_quantity_per_booking` field (defaults to 3 if not set).
 
 **Frontend Implementation:**
 ```javascript
@@ -2196,7 +2480,6 @@ async function getTicketCategories(eventId) {
   "price": 5000.00,
   "description": "Limited early bird tickets at discounted price",
   "is_active": true,
-  "max_quantity_per_booking": 2,
   "max_tickets": 50
 }
 ```
@@ -2207,8 +2490,9 @@ async function getTicketCategories(eventId) {
 - `price`: Required, price per ticket (must be >= 0)
 - `description`: Optional, description of the category
 - `is_active`: Optional, whether category is active (default: true)
-- `max_quantity_per_booking`: Optional, maximum tickets per booking (null = unlimited)
-- `max_tickets`: Optional, maximum total tickets available (null = unlimited)
+- `max_tickets`: Optional, maximum total tickets available for this category (null = unlimited)
+
+**Note:** Maximum tickets per booking is controlled at the event level via `max_quantity_per_booking` field (defaults to 3 if not set).
 
 **Success Response (201 Created):**
 ```json
@@ -2222,7 +2506,6 @@ async function getTicketCategories(eventId) {
     "price": "5000.00",
     "description": "Limited early bird tickets at discounted price",
     "is_active": true,
-    "max_quantity_per_booking": 2,
     "max_tickets": 50,
     "tickets_sold": 0,
     "available_tickets": 50,
@@ -2264,7 +2547,6 @@ async function getTicketCategories(eventId) {
   "price": 4500.00,
   "description": "Updated description",
   "is_active": true,
-  "max_quantity_per_booking": 3,
   "max_tickets": 60
 }
 ```
@@ -2347,13 +2629,13 @@ async function getTicketCategories(eventId) {
     "status": "used",
     "quantity": 1,
     "total_price": "5000.00",
+    "category_name": "Early Bird",
+    "category_price": "5000.00",
     "qr_code": "QR-ticket:TC-12345",
-    "seat_number": "A12",
     "checked_in_at": "2024-12-15T10:30:00Z",
     "created_at": "2024-12-10T10:00:00Z",
     "updated_at": "2024-12-15T10:30:00Z"
-  },
-  "checked_in_at": "2024-12-15T10:30:00Z"
+  }
 }
 ```
 
@@ -2365,13 +2647,20 @@ async function getTicketCategories(eventId) {
     "ticket_id": "ticket:TC-12345",
     "event_id": "event:TE-12345",
     "event_name": "Tech Conference 2024",
+    "event_date": "2024-12-15T10:00:00Z",
+    "event_location": "OAU Campus",
     "student_email": "john.doe@student.oauife.edu.ng",
     "student_full_name": "John Doe",
     "status": "used",
+    "quantity": 1,
+    "total_price": "5000.00",
+    "category_name": "Early Bird",
+    "category_price": "5000.00",
+    "qr_code": "QR-ticket:TC-12345",
     "checked_in_at": "2024-12-15T09:00:00Z",
-    ...
-  },
-  "checked_in_at": "2024-12-15T09:00:00Z"
+    "created_at": "2024-12-10T10:00:00Z",
+    "updated_at": "2024-12-15T09:00:00Z"
+  }
 }
 ```
 
@@ -2513,7 +2802,7 @@ class ApiClient {
 
   // Event methods
   async getEvents() {
-    return this.request('/create-event/');
+    return this.request('/event/');
   }
 
   async getEventDetails(eventId) {
@@ -2592,8 +2881,6 @@ export interface Event {
   event_image: string | null; // Cloudinary CDN URL
   event_type: string;
   pricing_type: 'free' | 'paid';
-  allows_seat_selection?: boolean;
-  available_seats?: string[];
 }
 
 export interface Ticket {
@@ -2608,7 +2895,6 @@ export interface Ticket {
   quantity: number;
   total_price: number;
   qr_code: string;
-  seat_number: string | null;
   checked_in_at: string | null;
   created_at: string;
   updated_at: string;
@@ -2617,14 +2903,15 @@ export interface Ticket {
 export interface BookingRequest {
   event_id: string;
   quantity: number;
-  seat_number?: string | null;
 }
 
 export interface BookingResponse {
   message: string;
-  ticket?: Ticket;
-  payment_url?: string;
-  payment_reference?: string;
+  tickets: Ticket[];  // Array of tickets (one for each ticket booked)
+  booking_id?: string;  // Groups all tickets from the same purchase
+  ticket_count?: number;  // Number of tickets in the booking
+  payment_url?: string;  // Paystack payment URL (paid events only)
+  payment_reference?: string;  // Payment reference (sanitized booking_id)
 }
 ```
 
@@ -2686,13 +2973,13 @@ async function handleApiCall(apiFunction) {
 ### Complete Booking Flow
 
 ```javascript
-async function completeBookingFlow(eventId, quantity, seatNumber) {
+async function completeBookingFlow(eventId, quantity, categoryName = null) {
   try {
     // 1. Book ticket
     const bookingResult = await apiClient.bookTicket({
       event_id: eventId,
       quantity,
-      seat_number: seatNumber,
+      category_name: categoryName,
     });
 
     // 2. If paid event, redirect to payment
@@ -2702,9 +2989,13 @@ async function completeBookingFlow(eventId, quantity, seatNumber) {
     }
 
     // 3. If free event, show success
-    if (bookingResult.ticket) {
-      alert('Ticket booked successfully!');
-      return bookingResult.ticket;
+    if (bookingResult.tickets && bookingResult.tickets.length > 0) {
+      alert(`${bookingResult.ticket_count || bookingResult.tickets.length} ticket(s) booked successfully!`);
+      // Store booking info
+      if (bookingResult.booking_id) {
+        localStorage.setItem('last_booking_id', bookingResult.booking_id);
+      }
+      return bookingResult.tickets;  // Return array of tickets
     }
   } catch (error) {
     console.error('Booking failed:', error);
@@ -2811,9 +3102,10 @@ Configure webhook URL in Paystack Dashboard:
 
 **Wallet Integration:**
 - When payment succeeds, organizer wallet is automatically credited
-- Platform fee (5% default) is deducted
+- Platform fee (6% + ₦80 default) is calculated and deducted
 - Earnings go to `pending_balance` (7-day holding period)
 - After holding period, moves to `available_balance` for withdrawal
+- **Fee Structure:** Customer pays `ticket_price + ₦80`, organizer gets `ticket_price × 94%`
 
 ---
 
@@ -2918,11 +3210,11 @@ async function getWalletBalance() {
       "transaction_id": "transaction:ABC12-XYZ34",
       "transaction_type": "ticket_sale",
       "transaction_type_display": "Ticket Sale",
-      "amount": "1000.00",
+      "amount": "1080.00",
       "status": "completed",
       "status_display": "Completed",
-      "platform_fee": "50.00",
-      "organizer_earnings": "950.00",
+      "platform_fee": "140.00",
+      "organizer_earnings": "940.00",
       "ticket_id": "ticket:TC-12345",
       "event_name": "Tech Conference",
       "paystack_reference": "ref_123456",
@@ -3285,11 +3577,19 @@ async function getWithdrawalHistory(limit = 50, offset = 0) {
 
 ### Wallet System Details
 
-#### Platform Fee
+#### Platform Fee (Paid Events Only)
 
-- **Default Fee:** 5% of ticket price
-- **Configurable:** Set via `PLATFORM_FEE_PERCENTAGE` in settings
-- **Example:** ₦1,000 ticket → ₦50 platform fee → ₦950 to organizer
+- **Default Fee Structure:** 6% of ticket price + ₦80 per ticket
+- **Configurable:** Can be customized per event via admin panel
+- **Fee Breakdown:**
+  - **Customer pays:** `ticket_price + ₦80` (₦80 is an additional charge)
+  - **Platform gets:** `(ticket_price × 6%) + ₦80`
+  - **Organizer gets:** `ticket_price × 94%` (6% deducted from base price)
+- **Example:** ₦1,000 ticket
+  - Customer pays: ₦1,000 + ₦80 = **₦1,080**
+  - Platform fee: (₦1,000 × 6%) + ₦80 = ₦60 + ₦80 = **₦140**
+  - Organizer earnings: ₦1,000 × 94% = **₦940**
+- **Note:** Free events have no platform fees
 
 #### Holding Period
 
@@ -3340,6 +3640,226 @@ console.log('Latest withdrawal:', withdrawals.withdrawals[0]);
 const transactions = await getTransactionHistory();
 console.log('Total transactions:', transactions.count);
 ```
+
+---
+
+## Analytics Endpoints ✨ NEW
+
+Analytics endpoints for organizers to view statistics and reports about their events and tickets.
+
+### Base URL
+
+```
+/analytics/
+```
+
+### Authentication
+
+All analytics endpoints require:
+1. **JWT Token** in `Authorization: Bearer <token>` header
+2. **Organizer Permission** - User must be an organizer
+
+---
+
+### 1. Global Analytics
+
+**Endpoint:** `GET /analytics/global/`
+
+**Description:** Get global analytics for the authenticated organizer across all events. Shows statistics like total revenue, tickets sold, events created, etc.
+
+**Authentication:** Required (JWT token, Organizer only)
+
+**Success Response (200 OK):**
+```json
+{
+  "analytics": {
+    "total_revenue": 150000.00,
+    "total_tickets_sold": 150,
+    "total_pending_tickets": 10,
+    "total_cancelled_tickets": 5,
+    "total_used_tickets": 120,
+    "total_events_created": 12,
+    "pending_events": 2,
+    "verified_events": 8,
+    "denied_events": 2
+  },
+  "message": "Global analytics retrieved successfully"
+}
+```
+
+**Response Fields:**
+- `total_revenue`: Total revenue from all confirmed tickets (float)
+- `total_tickets_sold`: Total confirmed tickets across all events (integer)
+- `total_pending_tickets`: Tickets with pending payment status (integer)
+- `total_cancelled_tickets`: Cancelled tickets count (integer)
+- `total_used_tickets`: Tickets that have been checked in (integer)
+- `total_events_created`: Total events created by organizer (integer)
+- `pending_events`: Events awaiting verification (integer)
+- `verified_events`: Verified events count (integer)
+- `denied_events`: Denied events count (integer)
+
+**Frontend Implementation:**
+```javascript
+async function getGlobalAnalytics() {
+  const token = localStorage.getItem('access_token');
+  
+  const response = await fetch('http://localhost:8000/analytics/global/', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  const data = await response.json();
+  return data.analytics;
+}
+```
+
+---
+
+### 2. Event Analytics
+
+**Endpoint:** `GET /analytics/event/<event_id>/`
+
+**Description:** Get detailed analytics for a specific event. Includes event information, statistics, and a detailed list of all tickets.
+
+**Authentication:** Required (JWT token, Organizer only)
+
+**URL Parameters:**
+- `event_id`: Event ID (e.g., `event:TE-12345`)
+
+**Success Response (200 OK):**
+```json
+{
+  "analytics": {
+    "event_info": {
+      "event_id": "event:TE-12345",
+      "name": "Tech Conference 2024",
+      "location": "OAU Campus",
+      "date": "2024-12-15T10:00:00Z",
+      "pricing_type": "paid",
+      "price": 5000.00,
+      "capacity": 100,
+      "status": "verified"
+    },
+    "statistics": {
+      "total_tickets_sold": 75,
+      "pending_tickets": 5,
+      "cancelled_tickets": 2,
+      "used_tickets": 60,
+      "total_revenue": 375000.00,
+      "available_spots": 25
+    },
+    "tickets_list": [
+      {
+        "ticket_id": "ticket:TC-12345",
+        "student_email": "john.doe@student.oauife.edu.ng",
+        "student_full_name": "John Doe",
+        "status": "confirmed",
+        "quantity": 1,
+        "total_price": "5000.00",
+        "created_at": "2024-12-10T10:00:00Z",
+        "checked_in_at": null
+      }
+    ]
+  },
+  "message": "Event analytics retrieved successfully"
+}
+```
+
+**Response Structure:**
+- `event_info`: Basic event information
+- `statistics`: Event statistics (tickets sold, revenue, etc.)
+- `tickets_list`: Detailed list of all tickets for this event
+
+**Frontend Implementation:**
+```javascript
+async function getEventAnalytics(eventId) {
+  const token = localStorage.getItem('access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/analytics/event/${eventId}/`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  const data = await response.json();
+  return data.analytics;
+}
+```
+
+---
+
+### 3. Events Summary
+
+**Endpoint:** `GET /analytics/events-summary/`
+
+**Description:** Get summary of all events with basic statistics. Useful for dashboard overview showing all events at a glance.
+
+**Authentication:** Required (JWT token, Organizer only)
+
+**Success Response (200 OK):**
+```json
+{
+  "events": [
+    {
+      "event_id": "event:TE-12345",
+      "name": "Tech Conference 2024",
+      "date": "2024-12-15T10:00:00Z",
+      "status": "verified",
+      "total_tickets_sold": 75,
+      "total_revenue": 375000.00,
+      "pending_tickets": 5
+    },
+    {
+      "event_id": "event:CD-67890",
+      "name": "Cultural Day",
+      "date": "2024-12-20T14:00:00Z",
+      "status": "pending",
+      "total_tickets_sold": 0,
+      "total_revenue": 0.00,
+      "pending_tickets": 0
+    }
+  ],
+  "count": 2,
+  "message": "Events summary retrieved successfully"
+}
+```
+
+**Response Fields (per event):**
+- `event_id`: Event ID
+- `name`: Event name
+- `date`: Event date/time
+- `status`: Event status (pending, verified, denied)
+- `total_tickets_sold`: Number of confirmed tickets sold
+- `total_revenue`: Total revenue from confirmed tickets
+- `pending_tickets`: Number of tickets with pending payment
+
+**Frontend Implementation:**
+```javascript
+async function getEventsSummary() {
+  const token = localStorage.getItem('access_token');
+  
+  const response = await fetch('http://localhost:8000/analytics/events-summary/', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  const data = await response.json();
+  return data.events;
+}
+```
+
+**Note:** Analytics endpoints are for organizers only. They provide insights into event performance, ticket sales, and revenue across all events or for specific events.
 
 ---
 
@@ -3944,6 +4464,1169 @@ function UsersTable() {
 
 ---
 
+### 8. Get User Details
+
+**Endpoint:** `GET /api/admin/users/<user_id>/`
+
+**Description:** Get detailed information about a specific user (student or organizer).
+
+**Authentication:** Required (JWT token, Admin only)
+
+**URL Parameters:**
+- `user_id`: User ID (e.g., `organiser:ABC12-XYZ34` for organizers, or numeric ID for students)
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | string | Yes | User role: `student` or `organizer` |
+
+**Example Requests:**
+```
+GET /api/admin/users/organiser:ABC12-XYZ34/?role=organizer
+GET /api/admin/users/123/?role=student
+```
+
+**Success Response (200 OK) - Organizer:**
+```json
+{
+  "user": {
+    "id": "organiser:ABC12-XYZ34",
+    "email": "organizer@techorg.com",
+    "role": "organizer",
+    "name": "Tech Org",
+    "phone": "+2348012345678",
+    "created_at": "2024-11-01T10:00:00Z",
+    "total_events": 5,
+    "is_active": true,
+    "is_verified": true,
+    "events": [
+      {
+        "event_id": "event:TE-12345",
+        "event_name": "Tech Conference 2024",
+        "status": "verified",
+        "date": "2024-12-15T10:00:00Z"
+      }
+    ]
+  },
+  "message": "User details retrieved successfully"
+}
+```
+
+**Success Response (200 OK) - Student:**
+```json
+{
+  "user": {
+    "id": "123",
+    "email": "john.doe@student.edu",
+    "role": "student",
+    "name": "John Doe",
+    "created_at": "2024-11-02T14:30:00Z",
+    "is_active": true,
+    "event_preferences": ["tech", "music", "career"],
+    "tickets_count": 10
+  },
+  "message": "User details retrieved successfully"
+}
+```
+
+**Error Responses:**
+
+*Missing role parameter (400 Bad Request):*
+```json
+{
+  "error": "Role parameter is required. Must be 'student' or 'organizer'."
+}
+```
+
+*User not found (404 Not Found):*
+```json
+{
+  "error": "User not found"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function getUserDetails(userId, role) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/users/${userId}/?role=${role}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  const data = await response.json();
+  return data;
+}
+```
+
+---
+
+### 9. Enable/Disable User
+
+**Endpoint:** `PATCH /api/admin/users/<user_id>/status/`
+
+**Description:** Enable or disable a user account. Disabled users cannot log in or perform actions.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**URL Parameters:**
+- `user_id`: User ID
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | string | Yes | User role: `student` or `organizer` |
+
+**Request Body:**
+```json
+{
+  "is_active": false
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "message": "User disabled successfully",
+  "user_id": "organiser:ABC12-XYZ34",
+  "is_active": false
+}
+```
+
+**Error Responses:**
+
+*Missing is_active field (400 Bad Request):*
+```json
+{
+  "error": "is_active field is required"
+}
+```
+
+*User not found (404 Not Found):*
+```json
+{
+  "error": "User not found"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function toggleUserStatus(userId, role, isActive) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/users/${userId}/status/?role=${role}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        is_active: isActive,
+      }),
+    }
+  );
+  
+  return await response.json();
+}
+
+// Disable a user
+await toggleUserStatus('organiser:ABC12-XYZ34', 'organizer', false);
+
+// Enable a user
+await toggleUserStatus('organiser:ABC12-XYZ34', 'organizer', true);
+```
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | string | Yes | User role: `student` or `organizer` |
+
+### 10. Verify/Unverify Organizer
+
+**Endpoint:** `PATCH /api/admin/users/<organiser_id>/verify/`
+
+**Description:** Mark an organizer as verified (trusted) or unverified. Verified organizers display a verification badge.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**URL Parameters:**
+- `organiser_id`: Organizer ID (e.g., `organiser:ABC12-XYZ34`)
+
+**Request Body:**
+```json
+{
+  "is_verified": true
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "message": "Organizer verified successfully",
+  "organiser_id": "organiser:ABC12-XYZ34",
+  "is_verified": true
+}
+```
+
+**Error Responses:**
+
+*Missing is_verified field (400 Bad Request):*
+```json
+{
+  "error": "is_verified field is required"
+}
+```
+
+*Organizer not found (404 Not Found):*
+```json
+{
+  "error": "Organizer not found"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function toggleOrganizerVerification(organiserId, isVerified) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/users/${organiserId}/verify/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        is_verified: isVerified,
+      }),
+    }
+  );
+  
+  return await response.json();
+}
+
+// Verify an organizer
+await toggleOrganizerVerification('organiser:ABC12-XYZ34', true);
+```
+
+**Description:** Mark an organizer as verified (trusted) or unverified. Verified organizers display a verification badge.
+
+### 11. Delete User
+
+**Endpoint:** `DELETE /api/admin/users/<user_id>/delete/`
+
+**Description:** Permanently delete a user account. This action cannot be undone.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**URL Parameters:**
+- `user_id`: User ID
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | string | Yes | User role: `student` or `organizer` |
+
+**Example Request:**
+```
+DELETE /api/admin/users/organiser:ABC12-XYZ34/delete/?role=organizer
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "message": "User deleted successfully",
+  "user_id": "organiser:ABC12-XYZ34"
+}
+```
+
+**Error Responses:**
+
+*User not found (404 Not Found):*
+```json
+{
+  "error": "User not found"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function deleteUser(userId, role) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/users/${userId}/delete/?role=${role}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  return await response.json();
+}
+
+// Usage with confirmation
+if (confirm('Are you sure you want to delete this user?')) {
+  await deleteUser('organiser:ABC12-XYZ34', 'organizer');
+}
+```
+
+---
+
+### 12. Feature/Unfeature Event
+
+**Endpoint:** `PATCH /api/admin/events/<event_id>/featured/`
+
+**Description:** Mark an event as featured (for homepage promotion) or remove from featured.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**URL Parameters:**
+- `event_id`: Event ID (e.g., `event:TE-12345`)
+
+**Request Body:**
+```json
+{
+  "is_featured": true
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "message": "Event featured successfully",
+  "event_id": "event:TE-12345",
+  "is_featured": true
+}
+```
+
+**Error Responses:**
+
+*Missing is_featured field (400 Bad Request):*
+```json
+{
+  "error": "is_featured field is required"
+}
+```
+
+*Event not found (404 Not Found):*
+```json
+{
+  "error": "Event not found"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function toggleEventFeatured(eventId, isFeatured) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/events/${eventId}/featured/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        is_featured: isFeatured,
+      }),
+    }
+  );
+  
+  return await response.json();
+}
+
+// Feature an event
+await toggleEventFeatured('event:TE-12345', true);
+
+// Unfeature an event
+await toggleEventFeatured('event:TE-12345', false);
+```
+
+---
+
+### 13. Delete Event
+
+**Endpoint:** `DELETE /api/admin/events/<event_id>/delete/`
+
+**Description:** Permanently delete an event. This action cannot be undone.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**URL Parameters:**
+- `event_id`: Event ID (e.g., `event:TE-12345`)
+
+**Success Response (200 OK):**
+```json
+{
+  "message": "Event deleted successfully",
+  "event_id": "event:TE-12345"
+}
+```
+
+**Error Responses:**
+
+*Event not found (404 Not Found):*
+```json
+{
+  "error": "Event not found"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function deleteEvent(eventId) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/events/${eventId}/delete/`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  return await response.json();
+}
+
+// Usage with confirmation
+if (confirm('Are you sure you want to delete this event?')) {
+  await deleteEvent('event:TE-12345');
+}
+```
+
+---
+
+### 14. Get/Update Event Platform Fee
+
+**Endpoint:** `GET /api/admin/events/<event_id>/platform-fee/`  
+**Endpoint:** `PATCH /api/admin/events/<event_id>/platform-fee/`
+
+**Description:** Get or update platform fee settings for a specific event. Platform fees are only applicable for paid events. Free events have no platform fees.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**URL Parameters:**
+- `event_id`: Event ID (e.g., `event:TE-12345`)
+
+**Request Body (PATCH - all fields optional):**
+```json
+{
+  "platform_fee_percentage": 0.08,
+  "platform_fee_fixed": 100.00
+}
+```
+
+**Field Descriptions:**
+- `platform_fee_percentage`: Custom fee percentage (0.08 = 8%). Set to `null` to use system default (6%).
+- `platform_fee_fixed`: Custom fixed fee in Naira. Set to `null` to use system default (₦80).
+
+**Success Response - GET (200 OK):**
+```json
+{
+  "platform_fee": {
+    "event_id": "event:TE-12345",
+    "event_name": "Tech Conference 2024",
+    "pricing_type": "paid",
+    "platform_fee_percentage": null,
+    "platform_fee_fixed": null,
+    "effective_fee_percentage": 0.06,
+    "effective_fee_fixed": 80.00,
+    "using_system_default": true,
+    "system_default_percentage": 0.06,
+    "system_default_fixed": 80.00
+  },
+  "message": "Event platform fee retrieved successfully"
+}
+```
+
+**Success Response - PATCH (200 OK):**
+```json
+{
+  "platform_fee": {
+    "event_id": "event:TE-12345",
+    "event_name": "Tech Conference 2024",
+    "pricing_type": "paid",
+    "platform_fee_percentage": 0.08,
+    "platform_fee_fixed": 100.00,
+    "effective_fee_percentage": 0.08,
+    "effective_fee_fixed": 100.00,
+    "using_system_default": false
+  },
+  "message": "Event platform fee updated successfully"
+}
+```
+
+**Success Response - Free Event (200 OK):**
+```json
+{
+  "platform_fee": {
+    "event_id": "event:TE-12345",
+    "event_name": "Free Workshop",
+    "pricing_type": "free",
+    "platform_fee_percentage": null,
+    "platform_fee_fixed": null,
+    "effective_fee_percentage": 0,
+    "effective_fee_fixed": 0,
+    "message": "Free events have no platform fees"
+  },
+  "message": "Event platform fee retrieved successfully"
+}
+```
+
+**Error Responses:**
+
+*Free event (400 Bad Request):*
+```json
+{
+  "error": "Platform fees are only applicable for paid events"
+}
+```
+
+*Event not found (404 Not Found):*
+```json
+{
+  "error": "Event with ID event:TE-12345 not found"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+// Get event platform fee
+async function getEventPlatformFee(eventId) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/events/${eventId}/platform-fee/`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  return await response.json();
+}
+
+// Update event platform fee
+async function updateEventPlatformFee(eventId, feeData) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/events/${eventId}/platform-fee/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(feeData),
+    }
+  );
+  
+  return await response.json();
+}
+
+// Example: Set custom fee (8% + ₦100)
+await updateEventPlatformFee('event:TE-12345', {
+  platform_fee_percentage: 0.08,
+  platform_fee_fixed: 100.00
+});
+
+// Example: Reset to system default
+await updateEventPlatformFee('event:TE-12345', {
+  platform_fee_percentage: null,
+  platform_fee_fixed: null
+});
+
+// Example: Only change percentage, keep fixed fee at system default
+await updateEventPlatformFee('event:TE-12345', {
+  platform_fee_percentage: 0.10,
+  platform_fee_fixed: null
+});
+```
+
+**Platform Fee Calculation:**
+- **Customer pays:** `ticket_price + fixed_fee` (e.g., ₦1,000 + ₦80 = ₦1,080)
+- **Platform gets:** `(ticket_price × percentage) + fixed_fee` (e.g., (₦1,000 × 6%) + ₦80 = ₦140)
+- **Organizer gets:** `ticket_price × (1 - percentage)` (e.g., ₦1,000 × 94% = ₦940)
+
+---
+
+### 15. Get All Tickets (with Filtering & Pagination)
+
+**Endpoint:** `GET /api/admin/tickets/`
+
+**Description:** Get all tickets in the system with server-side filtering and pagination.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Page number (1-indexed) |
+| `page_size` | integer | 20 | Items per page (max: 100) |
+| `status` | string | null | Filter by status: `pending`, `confirmed`, `cancelled` |
+| `event_id` | string | null | Filter by event ID |
+
+**Example Requests:**
+```
+GET /api/admin/tickets/                                    # All tickets
+GET /api/admin/tickets/?status=confirmed                   # Confirmed tickets only
+GET /api/admin/tickets/?event_id=event:TE-12345            # Tickets for specific event
+GET /api/admin/tickets/?status=pending&page=2&page_size=10 # Pending tickets, page 2
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "tickets": [
+    {
+      "ticket_id": "TKT-ABC123",
+      "event_id": "event:TE-12345",
+      "event_name": "Tech Conference 2024",
+      "student_email": "john.doe@student.edu",
+      "student_name": "John Doe",
+      "category": "VIP",
+      "price": 5000.00,
+      "status": "confirmed",
+      "payment_reference": "PAY-XYZ789",
+      "created_at": "2024-12-10T10:00:00Z"
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 10,
+    "total_count": 195,
+    "page_size": 20,
+    "has_next": true,
+    "has_previous": false
+  },
+  "filters": {
+    "status": null,
+    "event_id": null
+  },
+  "message": "Tickets retrieved successfully"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function getTickets({ page = 1, pageSize = 20, status = null, eventId = null } = {}) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const params = new URLSearchParams();
+  params.append('page', page);
+  params.append('page_size', pageSize);
+  if (status) params.append('status', status);
+  if (eventId) params.append('event_id', eventId);
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/tickets/?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  return await response.json();
+}
+
+// Get all confirmed tickets
+const confirmedTickets = await getTickets({ status: 'confirmed' });
+
+// Get tickets for a specific event
+const eventTickets = await getTickets({ eventId: 'event:TE-12345' });
+```
+
+---
+
+### 16. Get All Withdrawals (with Filtering & Pagination)
+
+**Endpoint:** `GET /api/admin/withdrawals/`
+
+**Description:** Get all withdrawal requests with server-side filtering and pagination.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Page number (1-indexed) |
+| `page_size` | integer | 20 | Items per page (max: 100) |
+| `status` | string | null | Filter by status: `pending`, `completed`, `failed` |
+
+**Example Requests:**
+```
+GET /api/admin/withdrawals/                    # All withdrawals
+GET /api/admin/withdrawals/?status=pending     # Pending withdrawals only
+GET /api/admin/withdrawals/?status=completed&page=2
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "withdrawals": [
+    {
+      "transaction_id": "WDR-ABC123",
+      "organiser_id": "organiser:ABC12-XYZ34",
+      "organiser_name": "Tech Org",
+      "organiser_email": "organizer@techorg.com",
+      "amount": 50000.00,
+      "bank_name": "First Bank",
+      "account_number": "1234567890",
+      "account_name": "Tech Org Ltd",
+      "status": "pending",
+      "requested_at": "2024-12-10T10:00:00Z",
+      "processed_at": null
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 3,
+    "total_count": 45,
+    "page_size": 20,
+    "has_next": true,
+    "has_previous": false
+  },
+  "filters": {
+    "status": null
+  },
+  "message": "Withdrawals retrieved successfully"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function getWithdrawals({ page = 1, pageSize = 20, status = null } = {}) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const params = new URLSearchParams();
+  params.append('page', page);
+  params.append('page_size', pageSize);
+  if (status) params.append('status', status);
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/withdrawals/?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  return await response.json();
+}
+
+// Get pending withdrawals
+const pendingWithdrawals = await getWithdrawals({ status: 'pending' });
+```
+
+---
+
+### 16. Approve/Reject Withdrawal
+
+**Endpoint:** `PATCH /api/admin/withdrawals/<transaction_id>/status/`
+
+**Description:** Approve or reject a withdrawal request.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**URL Parameters:**
+- `transaction_id`: Withdrawal transaction ID (e.g., `WDR-ABC123`)
+
+**Request Body:**
+```json
+{
+  "status": "completed",
+  "admin_note": "Approved and processed"
+}
+```
+
+**Valid Status Values:**
+- `completed` - Approve and mark as completed
+- `failed` - Reject the withdrawal
+
+**Success Response (200 OK):**
+```json
+{
+  "message": "Withdrawal approved successfully",
+  "transaction_id": "WDR-ABC123",
+  "status": "completed",
+  "processed_at": "2024-12-11T15:30:00Z"
+}
+```
+
+**Error Responses:**
+
+*Invalid status (400 Bad Request):*
+```json
+{
+  "error": "Invalid status. Must be 'completed' or 'failed'."
+}
+```
+
+*Withdrawal not found (404 Not Found):*
+```json
+{
+  "error": "Withdrawal not found"
+}
+```
+
+*Already processed (400 Bad Request):*
+```json
+{
+  "error": "Withdrawal has already been processed"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function processWithdrawal(transactionId, status, adminNote = '') {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/withdrawals/${transactionId}/status/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: status,
+        admin_note: adminNote,
+      }),
+    }
+  );
+  
+  return await response.json();
+}
+
+// Approve a withdrawal
+await processWithdrawal('WDR-ABC123', 'completed', 'Verified and approved');
+
+// Reject a withdrawal
+await processWithdrawal('WDR-ABC123', 'failed', 'Invalid bank details');
+```
+
+---
+
+### 17. Get System Settings
+
+**Endpoint:** `GET /api/admin/settings/`
+
+**Description:** Get current system-wide settings including platform fees, maintenance mode, registration settings, etc.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**Success Response (200 OK):**
+```json
+{
+  "settings": {
+    "platform_fee_percentage": "0.0600",
+    "platform_fee_fixed": "80.00",
+    "maintenance_mode": false,
+    "maintenance_message": "We're currently performing maintenance. Please check back soon.",
+    "allow_student_registration": true,
+    "allow_organizer_registration": true,
+    "require_event_approval": true,
+    "max_events_per_organizer": 50,
+    "min_withdrawal_amount": "1000.00",
+    "max_withdrawal_amount": "1000000.00",
+    "support_email": "support@radar.app",
+    "updated_at": "2024-12-15T10:00:00Z",
+    "updated_by": "admin@example.com"
+  },
+  "message": "System settings retrieved successfully"
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `platform_fee_percentage` | decimal | Default platform fee percentage as decimal (0.06 = 6%) |
+| `platform_fee_fixed` | decimal | Default fixed platform fee in Naira (added per ticket, e.g., 80.00) |
+| `maintenance_mode` | boolean | When true, only admins can access the platform |
+| `maintenance_message` | string | Message shown during maintenance |
+| `allow_student_registration` | boolean | Allow new student sign-ups |
+| `allow_organizer_registration` | boolean | Allow new organizer sign-ups |
+| `require_event_approval` | boolean | Require admin approval for new events |
+| `max_events_per_organizer` | integer | Maximum events per organizer |
+| `min_withdrawal_amount` | decimal | Minimum withdrawal amount (Naira) |
+| `max_withdrawal_amount` | decimal | Maximum withdrawal amount (Naira) |
+| `support_email` | email | Support contact email |
+| `updated_at` | datetime | Last update timestamp |
+| `updated_by` | string | Email of admin who last updated |
+
+**Frontend Implementation:**
+```javascript
+async function getSystemSettings() {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch('http://localhost:8000/api/admin/settings/', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  const data = await response.json();
+  return data.settings;
+}
+```
+
+---
+
+### 18. Update System Settings
+
+**Endpoint:** `PATCH /api/admin/settings/`
+
+**Description:** Update system settings. Only provided fields will be updated.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**Request Body (all fields optional):**
+```json
+{
+  "platform_fee_percentage": 0.06,
+  "platform_fee_fixed": 80.00,
+  "maintenance_mode": false,
+  "maintenance_message": "We'll be back soon!",
+  "allow_student_registration": true,
+  "allow_organizer_registration": true,
+  "require_event_approval": true,
+  "max_events_per_organizer": 50,
+  "min_withdrawal_amount": 1000.00,
+  "max_withdrawal_amount": 1000000.00,
+  "support_email": "support@radar.app"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "settings": {
+    "platform_fee_percentage": "0.0600",
+    "platform_fee_fixed": "80.00",
+    "maintenance_mode": false,
+    "maintenance_message": "We'll be back soon!",
+    "allow_student_registration": true,
+    "allow_organizer_registration": true,
+    "require_event_approval": true,
+    "max_events_per_organizer": 50,
+    "min_withdrawal_amount": "1000.00",
+    "max_withdrawal_amount": "1000000.00",
+    "support_email": "support@radar.app",
+    "updated_at": "2024-12-15T11:00:00Z",
+    "updated_by": "admin@example.com"
+  },
+  "message": "System settings updated successfully"
+}
+```
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "platform_fee_percentage": ["Ensure this value is less than or equal to 1."]
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function updateSystemSettings(settingsData) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const response = await fetch('http://localhost:8000/api/admin/settings/', {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(settingsData),
+  });
+  
+  return await response.json();
+}
+
+// Example: Update platform fee to 7% + ₦100
+await updateSystemSettings({ 
+  platform_fee_percentage: 0.07,
+  platform_fee_fixed: 100.00
+});
+
+// Example: Enable maintenance mode
+await updateSystemSettings({
+  maintenance_mode: true,
+  maintenance_message: "Scheduled maintenance in progress. Back at 3 PM."
+});
+
+// Example: Disable new registrations
+await updateSystemSettings({
+  allow_student_registration: false,
+  allow_organizer_registration: false
+});
+```
+
+---
+
+### 19. Get Audit Logs
+
+**Endpoint:** `GET /api/admin/audit-logs/`
+
+**Description:** Get audit logs of admin actions for tracking and accountability.
+
+**Authentication:** Required (JWT token, Admin only)
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Page number (1-indexed) |
+| `page_size` | integer | 20 | Items per page (max: 100) |
+| `action` | string | null | Filter by action type |
+| `admin_email` | string | null | Filter by admin email |
+
+**Valid Action Types:**
+- `settings_update` - Settings Updated
+- `user_disable` - User Disabled
+- `user_enable` - User Enabled
+- `user_delete` - User Deleted
+- `organizer_verify` - Organizer Verified
+- `organizer_unverify` - Organizer Unverified
+- `event_approve` - Event Approved
+- `event_deny` - Event Denied
+- `event_feature` - Event Featured
+- `event_unfeature` - Event Unfeatured
+- `event_delete` - Event Deleted
+- `withdrawal_approve` - Withdrawal Approved
+- `withdrawal_reject` - Withdrawal Rejected
+
+**Example Requests:**
+```
+GET /api/admin/audit-logs/                              # All logs
+GET /api/admin/audit-logs/?action=settings_update       # Settings changes only
+GET /api/admin/audit-logs/?admin_email=admin@example.com # Specific admin's actions
+GET /api/admin/audit-logs/?page=2&page_size=50          # Paginated
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "logs": [
+    {
+      "id": 1,
+      "admin_email": "admin@example.com",
+      "action": "settings_update",
+      "target_type": "settings",
+      "target_id": "system_settings",
+      "details": {
+        "changes": {
+          "platform_fee_percentage": {
+            "old": "0.0600",
+            "new": "0.0700"
+          },
+          "platform_fee_fixed": {
+            "old": "80.00",
+            "new": "100.00"
+          }
+        }
+      },
+      "ip_address": "192.168.1.1",
+      "created_at": "2024-12-15T11:00:00Z"
+    },
+    {
+      "id": 2,
+      "admin_email": "admin@example.com",
+      "action": "user_disable",
+      "target_type": "user",
+      "target_id": "organiser:ABC12-XYZ34",
+      "details": {
+        "reason": "Terms violation"
+      },
+      "ip_address": "192.168.1.1",
+      "created_at": "2024-12-15T10:30:00Z"
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 5,
+    "total_count": 95,
+    "page_size": 20,
+    "has_next": true,
+    "has_previous": false
+  },
+  "filters": {
+    "action": null,
+    "admin_email": null
+  },
+  "message": "Audit logs retrieved successfully"
+}
+```
+
+**Frontend Implementation:**
+```javascript
+async function getAuditLogs({ page = 1, pageSize = 20, action = null, adminEmail = null } = {}) {
+  const token = localStorage.getItem('admin_access_token');
+  
+  const params = new URLSearchParams();
+  params.append('page', page);
+  params.append('page_size', pageSize);
+  if (action) params.append('action', action);
+  if (adminEmail) params.append('admin_email', adminEmail);
+  
+  const response = await fetch(
+    `http://localhost:8000/api/admin/audit-logs/?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  
+  return await response.json();
+}
+
+// Get all logs
+const allLogs = await getAuditLogs();
+
+// Get settings changes only
+const settingsLogs = await getAuditLogs({ action: 'settings_update' });
+
+// Get specific admin's actions
+const adminLogs = await getAuditLogs({ adminEmail: 'admin@example.com' });
+```
+
+---
+
 ### Admin Dashboard Flow Example
 
 ```javascript
@@ -3994,7 +5677,6 @@ const organizers = await getUsers({ role: 'organizer' });
 | POST | `/token/refresh/` | No | Refresh access token |
 | POST | `/change-password/` | Yes | Change password |
 | POST | `/organizer/google-signup/` | No | Google sign up (organizer) |
-| POST | `/student/google-signup/` | No | Google sign up (student) |
 | **Password Reset** |
 | POST | `/password-reset/request/` | No | Request password reset OTP |
 | POST | `/password-reset/verify/` | No | Verify password reset OTP |
@@ -4007,19 +5689,38 @@ const organizers = await getUsers({ role: 'organizer' });
 | POST | `/organizer/profile/` | Optional | Update organizer profile |
 | **Events** |
 | GET | `/config/` | No | Get configuration (event types, etc.) |
-| GET | `/create-event/` | Optional | List all events |
-| POST | `/create-event/` | Yes (Org) | Create event |
+| GET | `/event/` | Optional | List all events |
+| POST | `/event/` | Yes (Org) | Create event |
 | GET | `/events/<event_id>/details/` | Optional | Get event details |
 | GET | `/organizer/events/` | Yes (Org) | Get organizer events |
-| GET | `/organizer/analytics/` | Yes (Org) | Get organizer analytics |
-| **Admin** |
+| **Admin - Authentication** |
 | POST | `/api/admin/auth/login/` | No | Admin login |
 | POST | `/api/admin/auth/logout/` | Yes (Admin) | Admin logout |
+| **Admin - Dashboard** |
 | GET | `/api/admin/dashboard/analytics/` | Yes (Admin) | Dashboard analytics |
 | GET | `/api/admin/dashboard/recent-events/` | Yes (Admin) | Recent events |
+| **Admin - User Management** |
+| GET | `/api/admin/users/` | Yes (Admin) | Get all users (filtering & pagination) |
+| GET | `/api/admin/users/<user_id>/` | Yes (Admin) | Get user details |
+| PATCH | `/api/admin/users/<user_id>/status/` | Yes (Admin) | Enable/disable user |
+| PATCH | `/api/admin/users/<organiser_id>/verify/` | Yes (Admin) | Verify/unverify organizer |
+| DELETE | `/api/admin/users/<user_id>/delete/` | Yes (Admin) | Delete user account |
+| **Admin - Event Management** |
 | GET | `/api/admin/events/` | Yes (Admin) | Get all events |
 | PATCH | `/api/admin/events/<event_id>/status/` | Yes (Admin) | Update event status |
-| GET | `/api/admin/users/` | Yes (Admin) | Get all users (with filtering & pagination) |
+| PATCH | `/api/admin/events/<event_id>/featured/` | Yes (Admin) | Feature/unfeature event |
+| GET | `/api/admin/events/<event_id>/platform-fee/` | Yes (Admin) | Get event platform fee |
+| PATCH | `/api/admin/events/<event_id>/platform-fee/` | Yes (Admin) | Update event platform fee |
+| DELETE | `/api/admin/events/<event_id>/delete/` | Yes (Admin) | Delete event |
+| **Admin - Ticket Management** |
+| GET | `/api/admin/tickets/` | Yes (Admin) | Get all tickets (filtering & pagination) |
+| **Admin - Withdrawal Management** |
+| GET | `/api/admin/withdrawals/` | Yes (Admin) | Get all withdrawals (filtering & pagination) |
+| PATCH | `/api/admin/withdrawals/<transaction_id>/status/` | Yes (Admin) | Approve/reject withdrawal |
+| **Admin - System Settings** |
+| GET | `/api/admin/settings/` | Yes (Admin) | Get system settings |
+| PATCH | `/api/admin/settings/` | Yes (Admin) | Update system settings |
+| GET | `/api/admin/audit-logs/` | Yes (Admin) | Get audit logs |
 | **Tickets** |
 | POST | `/tickets/book/` | Yes (Student) | Book ticket |
 | POST | `/tickets/verify-payment/` | No | Verify payment |
@@ -4038,14 +5739,69 @@ const organizers = await getUsers({ role: 'organizer' });
 | POST | `/wallet/bank-account/` | Yes (Org) | Add/update bank account |
 | POST | `/wallet/withdraw/` | Yes (Org) | Request withdrawal |
 | GET | `/wallet/withdrawals/` | Yes (Org) | Get withdrawal history |
+| **PIN Management** |
+| POST | `/pin/` | No | Set/create PIN (organizer) |
+| POST | `/forgot-pin/` | No | Request PIN change link |
+| POST | `/change-pin/` | No | Change PIN (organizer) |
+| POST | `/verify-pin/` | Yes | Verify PIN (organizer) |
 | **Analytics** |
-| GET | `/analytics/global/` | Yes (Admin) | Global analytics |
-| GET | `/analytics/event/<event_id>/` | Yes (Org/Admin) | Event analytics |
-| GET | `/analytics/events-summary/` | Yes (Admin) | Events summary |
+| GET | `/analytics/global/` | Yes (Org) | Global analytics |
+| GET | `/analytics/event/<event_id>/` | Yes (Org) | Event analytics |
+| GET | `/analytics/events-summary/` | Yes (Org) | Events summary |
 
 ---
 
 ## Recent Updates
+
+### Event-Level Maximum Tickets Per Booking
+
+**Updated:** Maximum tickets per booking is now controlled at the event level only.
+
+**Changes:**
+- ✅ Removed `max_quantity_per_booking` from ticket categories
+- ✅ Added `max_quantity_per_booking` field to Event model
+- ✅ Defaults to 3 tickets per booking if not set by organizer
+- ✅ Applies to all ticket categories for the event
+
+**Usage:**
+- When creating an event, organizers can optionally set `max_quantity_per_booking`
+- If not set, defaults to 3 tickets per booking
+- This limit applies to all bookings regardless of ticket category
+
+**Example:**
+```json
+{
+  "name": "Tech Conference",
+  "max_quantity_per_booking": 5,  // Custom limit
+  // If not set, defaults to 3
+}
+```
+
+### PIN Management - Profile Integration and Verification
+
+**Updated:** PIN functionality has been enhanced with profile integration and verification endpoint.
+
+**New Features:**
+- ✅ Organizer profile now includes `has_pin` field to check if PIN is set
+- ✅ New `/verify-pin/` endpoint for PIN verification in modals
+- ✅ Profile cache automatically invalidates when PIN is created/changed
+
+**Usage:**
+1. Check `has_pin` in organizer profile to determine if PIN modal should be shown
+2. Use `/verify-pin/` endpoint when user enters PIN in modal
+3. PINs are securely hashed - actual PIN value is never returned
+
+**Example:**
+```json
+{
+  "Org_profile": {
+    "Organization_Name": "...",
+    "Email": "...",
+    "Phone": "...",
+    "has_pin": true  // ← New field
+  }
+}
+```
 
 ### Ticket Responses - Student Name Field
 
@@ -4094,7 +5850,10 @@ const organizers = await getUsers({ role: 'organizer' });
 
 ---
 
----
+#### 5. **Serializer Architecture**
+- Serializers only validate data format
+- No business logic in serializers
+- Clean separation of concerns
 
 ## Architecture Notes ✨ NEW
 
@@ -4146,7 +5905,7 @@ The API follows professional Django/DRF best practices:
 
 **Added:** Complete wallet system for organizer earnings management:
 - Automatic wallet crediting when tickets are sold
-- Platform fee calculation (5% default)
+- Platform fee calculation (6% + ₦80 default, customizable per event)
 - Transaction history tracking
 - Bank account management
 - Withdrawal system via Paystack Transfer
@@ -4160,7 +5919,7 @@ The API follows professional Django/DRF best practices:
 
 **Features:**
 - ✅ Automatic wallet creation for organizers
-- ✅ Platform fee calculation (configurable)
+- ✅ Platform fee calculation (6% + ₦80 default, configurable per event)
 - ✅ 7-day holding period for refund protection
 - ✅ Paystack Transfer integration for withdrawals
 - ✅ Complete transaction audit trail
@@ -4228,1071 +5987,3 @@ The API follows professional Django/DRF best practices:
 ---
 
 This documentation covers all endpoints with request/response examples and frontend implementation guides. Use this as your reference for frontend development! 🚀
-
-
-# Radar Admin Module Documentation
-
-## Overview
-
-The Admin Module provides a comprehensive set of endpoints for platform administrators to manage users, events, tickets, withdrawals, and system settings. All admin endpoints require authentication with a staff/superuser account.
-
-**Base URL:** `/api/admin/`
-
----
-
-## Table of Contents
-
-1. [Authentication](#1-authentication)
-2. [Dashboard](#2-dashboard)
-3. [User Management](#3-user-management)
-4. [Event Management](#4-event-management)
-5. [Ticket Management](#5-ticket-management)
-6. [Withdrawal Management](#6-withdrawal-management)
-7. [System Settings](#7-system-settings)
-8. [Audit Logs](#8-audit-logs)
-9. [Models](#9-models)
-10. [Error Handling](#10-error-handling)
-
----
-
-## 1. Authentication
-
-### 1.1 Admin Login
-
-Authenticate as an admin user and receive JWT tokens.
-
-**Endpoint:** `POST /api/admin/auth/login/`
-
-**Authentication Required:** No
-
-**Request Body:**
-```json
-{
-  "email": "admin@example.com",
-  "password": "your_password"
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "message": "Login successful",
-  "email": "admin@example.com",
-  "is_staff": true,
-  "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-}
-```
-
-**Error Response (401):**
-```json
-{
-  "error": "Invalid credentials or insufficient permissions"
-}
-```
-
-**Notes:**
-- The user must have `is_staff=True` to log in
-- The `username` field in Django User must match the email
-- Use the `access` token in the `Authorization` header for subsequent requests
-
----
-
-### 1.2 Admin Logout
-
-Logout the admin user.
-
-**Endpoint:** `POST /api/admin/auth/logout/`
-
-**Authentication Required:** Yes (Admin)
-
-**Headers:**
-```
-Authorization: Bearer <access_token>
-```
-
-**Success Response (200):**
-```json
-{
-  "message": "Logout successful"
-}
-```
-
----
-
-## 2. Dashboard
-
-### 2.1 Dashboard Analytics
-
-Get comprehensive platform statistics.
-
-**Endpoint:** `GET /api/admin/dashboard/analytics/`
-
-**Authentication Required:** Yes (Admin)
-
-**Success Response (200):**
-```json
-{
-  "analytics": {
-    "total_users": 150,
-    "total_students": 120,
-    "total_organisers": 30,
-    "total_events": 45,
-    "total_revenue": 125000.00
-  },
-  "message": "Dashboard analytics retrieved successfully"
-}
-```
-
-**Field Descriptions:**
-| Field | Type | Description |
-|-------|------|-------------|
-| `total_users` | Integer | Total Django User accounts |
-| `total_students` | Integer | Total StudentRegistration records |
-| `total_organisers` | Integer | Total OrganizerRegistration records |
-| `total_events` | Integer | Total Event records |
-| `total_revenue` | Decimal | Platform revenue (5% of confirmed ticket sales) |
-
-**Caching:** Results are cached for 2 minutes.
-
----
-
-### 2.2 Recent Events
-
-Get recently created events.
-
-**Endpoint:** `GET /api/admin/dashboard/recent-events/`
-
-**Authentication Required:** Yes (Admin)
-
-**Query Parameters:**
-| Parameter | Type | Default | Max | Description |
-|-----------|------|---------|-----|-------------|
-| `limit` | Integer | 10 | 100 | Number of events to return |
-
-**Example Request:**
-```
-GET /api/admin/dashboard/recent-events/?limit=5
-```
-
-**Success Response (200):**
-```json
-{
-  "events": [
-    {
-      "event_id": "evt_abc123",
-      "event_name": "Tech Conference 2026",
-      "organisation_name": "TechOrg Ltd",
-      "date": "2026-03-15T09:00:00Z",
-      "status": "verified",
-      "event_type": "conference",
-      "location": "Lagos, Nigeria",
-      "pricing_type": "paid",
-      "price": 5000.00,
-      "created_at": "2026-01-10T14:30:00Z"
-    }
-  ],
-  "count": 5,
-  "message": "Recent events retrieved successfully"
-}
-```
-
-**Caching:** Results are cached for 3 minutes.
-
----
-
-## 3. User Management
-
-### 3.1 List All Users
-
-Get all users with server-side filtering and pagination.
-
-**Endpoint:** `GET /api/admin/users/`
-
-**Authentication Required:** Yes (Admin)
-
-**Query Parameters:**
-| Parameter | Type | Default | Max | Description |
-|-----------|------|---------|-----|-------------|
-| `page` | Integer | 1 | - | Page number (1-indexed) |
-| `page_size` | Integer | 20 | 100 | Items per page |
-| `role` | String | null | - | Filter by role: `student`, `organizer`, or omit for all |
-
-**Example Requests:**
-```
-GET /api/admin/users/
-GET /api/admin/users/?role=student&page=1&page_size=20
-GET /api/admin/users/?role=organizer&page=2
-```
-
-**Success Response (200):**
-```json
-{
-  "users": [
-    {
-      "id": "org_abc123",
-      "email": "organizer@example.com",
-      "role": "organizer",
-      "name": "TechOrg Ltd",
-      "phone": "+2348012345678",
-      "created_at": "2026-01-05T10:00:00Z",
-      "total_events": 5,
-      "event_preferences": null
-    },
-    {
-      "id": "1",
-      "email": "student@example.com",
-      "role": "student",
-      "name": "John Doe",
-      "phone": null,
-      "created_at": "2026-01-08T15:30:00Z",
-      "total_events": null,
-      "event_preferences": ["music", "tech"]
-    }
-  ],
-  "pagination": {
-    "current_page": 1,
-    "total_pages": 5,
-    "total_count": 100,
-    "page_size": 20,
-    "has_next": true,
-    "has_previous": false
-  },
-  "filters": {
-    "role": null
-  },
-  "message": "Users retrieved successfully"
-}
-```
-
-**Caching:** Results are cached for 2 minutes.
-
----
-
-### 3.2 Get User Details
-
-Get detailed information about a specific user.
-
-**Endpoint:** `GET /api/admin/users/<user_id>/?role=<role>`
-
-**Authentication Required:** Yes (Admin)
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `user_id` | String | User ID (student id or organiser_id) |
-
-**Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `role` | String | Yes | `student` or `organizer` |
-
-**Example Request:**
-```
-GET /api/admin/users/org_abc123/?role=organizer
-```
-
-**Success Response for Student (200):**
-```json
-{
-  "user": {
-    "id": "1",
-    "email": "student@example.com",
-    "role": "student",
-    "name": "John Doe",
-    "firstname": "John",
-    "lastname": "Doe",
-    "preferred_name": "Johnny",
-    "date_of_birth": "2000-05-15",
-    "phone": null,
-    "is_active": true,
-    "created_at": "2026-01-08T15:30:00Z",
-    "event_preferences": ["music", "tech"],
-    "ticket_count": 12
-  },
-  "message": "User details retrieved successfully"
-}
-```
-
-**Success Response for Organizer (200):**
-```json
-{
-  "user": {
-    "id": "org_abc123",
-    "email": "organizer@example.com",
-    "role": "organizer",
-    "name": "TechOrg Ltd",
-    "phone": "+2348012345678",
-    "is_active": true,
-    "is_verified": true,
-    "created_at": "2026-01-05T10:00:00Z",
-    "total_events": 5,
-    "wallet_balance": 150000.00,
-    "total_earnings": 500000.00
-  },
-  "message": "User details retrieved successfully"
-}
-```
-
----
-
-### 3.3 Toggle User Status (Enable/Disable)
-
-Enable or disable a user account.
-
-**Endpoint:** `PATCH /api/admin/users/<user_id>/status/?role=<role>`
-
-**Authentication Required:** Yes (Admin)
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `user_id` | String | User ID |
-
-**Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `role` | String | Yes | `student` or `organizer` |
-
-**Request Body:**
-```json
-{
-  "is_active": false
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "message": "User disabled successfully",
-  "id": "org_abc123",
-  "email": "organizer@example.com",
-  "is_active": false
-}
-```
-
-**Notes:**
-- Disabling a user prevents them from logging in
-- Also updates the associated Django User's `is_active` field
-
----
-
-### 3.4 Verify/Unverify Organizer
-
-Toggle organizer verification status.
-
-**Endpoint:** `PATCH /api/admin/users/<organiser_id>/verify/`
-
-**Authentication Required:** Yes (Admin)
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `organiser_id` | String | Organizer ID |
-
-**Request Body:**
-```json
-{
-  "is_verified": true
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "message": "Organizer verified successfully",
-  "id": "org_abc123",
-  "email": "organizer@example.com",
-  "is_verified": true
-}
-```
-
-**Notes:**
-- Verified organizers may have additional privileges
-- This is separate from account activation status
-
----
-
-### 3.5 Delete User
-
-Permanently delete a user account and all associated data.
-
-**Endpoint:** `DELETE /api/admin/users/<user_id>/delete/?role=<role>`
-
-**Authentication Required:** Yes (Admin)
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `user_id` | String | User ID |
-
-**Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `role` | String | Yes | `student` or `organizer` |
-
-**Success Response (200):**
-```json
-{
-  "message": "User deleted successfully",
-  "id": "org_abc123",
-  "email": "organizer@example.com",
-  "role": "organizer",
-  "deleted": true
-}
-```
-
-**⚠️ Warning:**
-- This action is **irreversible**
-- Deletes the Django User account
-- For organizers: cascades to profile, events, wallet, transactions
-- For students: cascades to profile and ticket records
-
----
-
-## 4. Event Management
-
-### 4.1 List All Events
-
-Get all events in the system.
-
-**Endpoint:** `GET /api/admin/events/`
-
-**Authentication Required:** Yes (Admin)
-
-**Success Response (200):**
-```json
-{
-  "events": [
-    {
-      "event_id": "evt_abc123",
-      "event_name": "Tech Conference 2026",
-      "organisation_name": "TechOrg Ltd",
-      "date": "2026-03-15T09:00:00Z",
-      "status": "verified",
-      "event_type": "conference",
-      "location": "Lagos, Nigeria",
-      "pricing_type": "paid",
-      "price": 5000.00,
-      "capacity": 500,
-      "created_at": "2026-01-10T14:30:00Z"
-    }
-  ],
-  "count": 45,
-  "message": "All events retrieved successfully"
-}
-```
-
-**Caching:** Results are cached for 5 minutes.
-
----
-
-### 4.2 Update Event Status
-
-Approve, verify, or deny an event.
-
-**Endpoint:** `PATCH /api/admin/events/<event_id>/status/`
-
-**Authentication Required:** Yes (Admin)
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `event_id` | String | Event ID |
-
-**Request Body:**
-```json
-{
-  "status": "verified"
-}
-```
-
-**Valid Status Values:**
-- `pending` - Awaiting review
-- `verified` - Approved and visible to users
-- `denied` - Rejected by admin
-
-**Success Response (200):**
-```json
-{
-  "message": "Event status updated to verified",
-  "event_id": "evt_abc123",
-  "event_name": "Tech Conference 2026",
-  "status": "verified"
-}
-```
-
----
-
-### 4.3 Feature/Unfeature Event
-
-Toggle event featured status for homepage display.
-
-**Endpoint:** `PATCH /api/admin/events/<event_id>/featured/`
-
-**Authentication Required:** Yes (Admin)
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `event_id` | String | Event ID |
-
-**Request Body:**
-```json
-{
-  "is_featured": true
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "message": "Event featured successfully",
-  "event_id": "evt_abc123",
-  "event_name": "Tech Conference 2026",
-  "is_featured": true
-}
-```
-
----
-
-### 4.4 Delete Event
-
-Permanently delete an event and all associated tickets.
-
-**Endpoint:** `DELETE /api/admin/events/<event_id>/delete/`
-
-**Authentication Required:** Yes (Admin)
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `event_id` | String | Event ID |
-
-**Success Response (200):**
-```json
-{
-  "message": "Event deleted successfully",
-  "event_id": "evt_abc123",
-  "event_name": "Tech Conference 2026",
-  "deleted": true
-}
-```
-
-**⚠️ Warning:**
-- This action is **irreversible**
-- All associated tickets will be deleted
-- Consider denying events instead of deleting
-
----
-
-## 5. Ticket Management
-
-### 5.1 List All Tickets
-
-Get all tickets with pagination and filtering.
-
-**Endpoint:** `GET /api/admin/tickets/`
-
-**Authentication Required:** Yes (Admin)
-
-**Query Parameters:**
-| Parameter | Type | Default | Max | Description |
-|-----------|------|---------|-----|-------------|
-| `page` | Integer | 1 | - | Page number |
-| `page_size` | Integer | 20 | 100 | Items per page |
-| `status` | String | null | - | Filter by status |
-| `event_id` | String | null | - | Filter by event ID |
-
-**Valid Status Values:**
-- `pending`
-- `confirmed`
-- `cancelled`
-- `checked_in`
-
-**Example Request:**
-```
-GET /api/admin/tickets/?status=confirmed&page=1&page_size=20
-GET /api/admin/tickets/?event_id=evt_abc123
-```
-
-**Success Response (200):**
-```json
-{
-  "tickets": [
-    {
-      "ticket_id": "tkt_xyz789",
-      "event_id": "evt_abc123",
-      "event_name": "Tech Conference 2026",
-      "student_email": "student@example.com",
-      "student_name": "John Doe",
-      "quantity": 2,
-      "total_price": 10000.00,
-      "status": "confirmed",
-      "seat_number": "A1, A2",
-      "created_at": "2026-01-12T09:00:00Z"
-    }
-  ],
-  "pagination": {
-    "current_page": 1,
-    "total_pages": 10,
-    "total_count": 200,
-    "page_size": 20,
-    "has_next": true,
-    "has_previous": false
-  },
-  "filters": {
-    "status": "confirmed",
-    "event_id": null
-  },
-  "message": "Tickets retrieved successfully"
-}
-```
-
----
-
-## 6. Withdrawal Management
-
-### 6.1 List All Withdrawals
-
-Get all withdrawal requests with pagination.
-
-**Endpoint:** `GET /api/admin/withdrawals/`
-
-**Authentication Required:** Yes (Admin)
-
-**Query Parameters:**
-| Parameter | Type | Default | Max | Description |
-|-----------|------|---------|-----|-------------|
-| `page` | Integer | 1 | - | Page number |
-| `page_size` | Integer | 20 | 100 | Items per page |
-| `status` | String | null | - | Filter by status |
-
-**Valid Status Values:**
-- `pending` - Awaiting admin action
-- `completed` - Successfully processed
-- `failed` - Rejected or failed
-
-**Example Request:**
-```
-GET /api/admin/withdrawals/?status=pending
-```
-
-**Success Response (200):**
-```json
-{
-  "withdrawals": [
-    {
-      "transaction_id": "txn_abc123",
-      "organizer_email": "organizer@example.com",
-      "organizer_name": "TechOrg Ltd",
-      "amount": 50000.00,
-      "status": "pending",
-      "bank_name": "GTBank",
-      "account_name": "TechOrg Limited",
-      "transfer_reference": null,
-      "created_at": "2026-01-10T11:00:00Z",
-      "completed_at": null
-    }
-  ],
-  "pagination": {
-    "current_page": 1,
-    "total_pages": 3,
-    "total_count": 45,
-    "page_size": 20,
-    "has_next": true,
-    "has_previous": false
-  },
-  "filters": {
-    "status": "pending"
-  },
-  "message": "Withdrawals retrieved successfully"
-}
-```
-
----
-
-### 6.2 Approve/Reject Withdrawal
-
-Update the status of a withdrawal request.
-
-**Endpoint:** `PATCH /api/admin/withdrawals/<transaction_id>/status/`
-
-**Authentication Required:** Yes (Admin)
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `transaction_id` | String | Transaction ID |
-
-**Request Body:**
-```json
-{
-  "status": "completed"
-}
-```
-
-**Valid Status Values:**
-- `completed` - Approve the withdrawal
-- `failed` - Reject the withdrawal
-
-**Success Response (200):**
-```json
-{
-  "message": "Withdrawal approved successfully",
-  "transaction_id": "txn_abc123",
-  "status": "completed",
-  "amount": 50000.00
-}
-```
-
-**Notes:**
-- Only `pending` withdrawals can be updated
-- Rejecting a withdrawal (`failed`) automatically refunds the amount to the organizer's wallet
-
----
-
-## 7. System Settings
-
-### 7.1 Get System Settings
-
-Retrieve current platform-wide settings.
-
-**Endpoint:** `GET /api/admin/settings/`
-
-**Authentication Required:** Yes (Admin)
-
-**Success Response (200):**
-```json
-{
-  "settings": {
-    "platform_fee_percentage": 0.05,
-    "maintenance_mode": false,
-    "maintenance_message": "We're currently performing maintenance. Please check back soon.",
-    "allow_student_registration": true,
-    "allow_organizer_registration": true,
-    "require_event_approval": true,
-    "max_events_per_organizer": 50,
-    "min_withdrawal_amount": 1000.00,
-    "max_withdrawal_amount": 1000000.00,
-    "support_email": "support@radar.app",
-    "updated_at": "2026-01-10T15:00:00Z",
-    "updated_by": "admin@radar.app"
-  },
-  "message": "System settings retrieved successfully"
-}
-```
-
----
-
-### 7.2 Update System Settings
-
-Update one or more platform settings.
-
-**Endpoint:** `PATCH /api/admin/settings/`
-
-**Authentication Required:** Yes (Admin)
-
-**Request Body (all fields optional):**
-```json
-{
-  "platform_fee_percentage": 0.07,
-  "maintenance_mode": true,
-  "maintenance_message": "Scheduled maintenance until 6 PM",
-  "allow_student_registration": true,
-  "allow_organizer_registration": false,
-  "require_event_approval": true,
-  "max_events_per_organizer": 100,
-  "min_withdrawal_amount": 2000.00,
-  "max_withdrawal_amount": 500000.00,
-  "support_email": "help@radar.app"
-}
-```
-
-**Setting Descriptions:**
-
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `platform_fee_percentage` | Decimal | 0.05 | Platform fee (0.05 = 5%) |
-| `maintenance_mode` | Boolean | false | Enable maintenance mode |
-| `maintenance_message` | String | - | Message shown during maintenance |
-| `allow_student_registration` | Boolean | true | Allow new student signups |
-| `allow_organizer_registration` | Boolean | true | Allow new organizer signups |
-| `require_event_approval` | Boolean | true | Require admin approval for events |
-| `max_events_per_organizer` | Integer | 50 | Max events per organizer |
-| `min_withdrawal_amount` | Decimal | 1000.00 | Minimum withdrawal (Naira) |
-| `max_withdrawal_amount` | Decimal | 1000000.00 | Maximum withdrawal (Naira) |
-| `support_email` | Email | support@radar.app | Support email address |
-
-**Success Response (200):**
-```json
-{
-  "settings": {
-    "platform_fee_percentage": 0.07,
-    "maintenance_mode": true,
-    "maintenance_message": "Scheduled maintenance until 6 PM",
-    "allow_student_registration": true,
-    "allow_organizer_registration": false,
-    "require_event_approval": true,
-    "max_events_per_organizer": 100,
-    "min_withdrawal_amount": 2000.00,
-    "max_withdrawal_amount": 500000.00,
-    "support_email": "help@radar.app",
-    "updated_at": "2026-01-10T16:30:00Z",
-    "updated_by": "admin@radar.app"
-  },
-  "message": "System settings updated successfully"
-}
-```
-
-**Notes:**
-- Only include fields you want to update
-- Changes are logged in the audit log
-- Cache is invalidated on update
-
----
-
-## 8. Audit Logs
-
-### 8.1 Get Audit Logs
-
-Retrieve admin action history.
-
-**Endpoint:** `GET /api/admin/audit-logs/`
-
-**Authentication Required:** Yes (Admin)
-
-**Query Parameters:**
-| Parameter | Type | Default | Max | Description |
-|-----------|------|---------|-----|-------------|
-| `page` | Integer | 1 | - | Page number |
-| `page_size` | Integer | 20 | 100 | Items per page |
-| `action` | String | null | - | Filter by action type |
-| `admin_email` | String | null | - | Filter by admin email |
-
-**Valid Action Types:**
-| Action | Description |
-|--------|-------------|
-| `settings_update` | System settings changed |
-| `user_disable` | User account disabled |
-| `user_enable` | User account enabled |
-| `user_delete` | User account deleted |
-| `organizer_verify` | Organizer verified |
-| `organizer_unverify` | Organizer unverified |
-| `event_approve` | Event approved |
-| `event_deny` | Event denied |
-| `event_feature` | Event featured |
-| `event_unfeature` | Event unfeatured |
-| `event_delete` | Event deleted |
-| `withdrawal_approve` | Withdrawal approved |
-| `withdrawal_reject` | Withdrawal rejected |
-
-**Example Request:**
-```
-GET /api/admin/audit-logs/?action=settings_update&page=1
-```
-
-**Success Response (200):**
-```json
-{
-  "logs": [
-    {
-      "id": 1,
-      "admin_email": "admin@radar.app",
-      "action": "settings_update",
-      "target_type": "settings",
-      "target_id": "system_settings",
-      "details": {
-        "changes": {
-          "platform_fee_percentage": {
-            "old": "0.05",
-            "new": "0.07"
-          }
-        }
-      },
-      "ip_address": "192.168.1.1",
-      "created_at": "2026-01-10T16:30:00Z"
-    }
-  ],
-  "pagination": {
-    "current_page": 1,
-    "total_pages": 5,
-    "total_count": 100,
-    "page_size": 20,
-    "has_next": true,
-    "has_previous": false
-  },
-  "filters": {
-    "action": "settings_update",
-    "admin_email": null
-  },
-  "message": "Audit logs retrieved successfully"
-}
-```
-
----
-
-## 9. Models
-
-### 9.1 SystemSettings Model
-
-Singleton model for platform-wide configuration.
-
-```python
-class SystemSettings(models.Model):
-    # Platform Fee
-    platform_fee_percentage = DecimalField(default=0.05)  # 5%
-    
-    # Maintenance
-    maintenance_mode = BooleanField(default=False)
-    maintenance_message = TextField(default="...")
-    
-    # Registration
-    allow_student_registration = BooleanField(default=True)
-    allow_organizer_registration = BooleanField(default=True)
-    
-    # Events
-    require_event_approval = BooleanField(default=True)
-    max_events_per_organizer = IntegerField(default=50)
-    
-    # Withdrawals
-    min_withdrawal_amount = DecimalField(default=1000.00)
-    max_withdrawal_amount = DecimalField(default=1000000.00)
-    
-    # Email
-    support_email = EmailField(default="support@radar.app")
-    
-    # Metadata
-    updated_at = DateTimeField(auto_now=True)
-    updated_by = CharField(max_length=255)
-```
-
-**Usage:**
-```python
-from radar.admin.models import SystemSettings
-
-# Get settings (creates if not exists)
-settings = SystemSettings.get_settings()
-
-# Access values
-fee = settings.platform_fee_percentage
-```
-
----
-
-### 9.2 AuditLog Model
-
-Track all admin actions for accountability.
-
-```python
-class AuditLog(models.Model):
-    admin_email = EmailField()
-    action = CharField(max_length=50, choices=ACTION_CHOICES)
-    target_type = CharField(max_length=50)
-    target_id = CharField(max_length=255)
-    details = JSONField(default=dict)
-    ip_address = GenericIPAddressField(null=True)
-    created_at = DateTimeField(auto_now_add=True)
-```
-
----
-
-## 10. Error Handling
-
-### Standard Error Responses
-
-**400 Bad Request:**
-```json
-{
-  "error": "Invalid role. Must be 'student', 'organizer', or omit for all."
-}
-```
-
-**401 Unauthorized:**
-```json
-{
-  "detail": "Authentication credentials were not provided."
-}
-```
-
-**403 Forbidden:**
-```json
-{
-  "detail": "You do not have permission to perform this action."
-}
-```
-
-**404 Not Found:**
-```json
-{
-  "error": "User with ID xyz not found"
-}
-```
-
-**500 Internal Server Error:**
-```json
-{
-  "error": "Failed to retrieve users"
-}
-```
-
----
-
-## Quick Reference: All Admin Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| **Authentication** | | |
-| POST | `/api/admin/auth/login/` | Admin login |
-| POST | `/api/admin/auth/logout/` | Admin logout |
-| **Dashboard** | | |
-| GET | `/api/admin/dashboard/analytics/` | Get platform statistics |
-| GET | `/api/admin/dashboard/recent-events/` | Get recent events |
-| **Users** | | |
-| GET | `/api/admin/users/` | List all users (paginated) |
-| GET | `/api/admin/users/<id>/?role=` | Get user details |
-| PATCH | `/api/admin/users/<id>/status/?role=` | Enable/disable user |
-| PATCH | `/api/admin/users/<id>/verify/` | Verify organizer |
-| DELETE | `/api/admin/users/<id>/delete/?role=` | Delete user |
-| **Events** | | |
-| GET | `/api/admin/events/` | List all events |
-| PATCH | `/api/admin/events/<id>/status/` | Update event status |
-| PATCH | `/api/admin/events/<id>/featured/` | Feature/unfeature event |
-| DELETE | `/api/admin/events/<id>/delete/` | Delete event |
-| **Tickets** | | |
-| GET | `/api/admin/tickets/` | List all tickets (paginated) |
-| **Withdrawals** | | |
-| GET | `/api/admin/withdrawals/` | List all withdrawals (paginated) |
-| PATCH | `/api/admin/withdrawals/<id>/status/` | Approve/reject withdrawal |
-| **Settings** | | |
-| GET | `/api/admin/settings/` | Get system settings |
-| PATCH | `/api/admin/settings/` | Update system settings |
-| **Audit** | | |
-| GET | `/api/admin/audit-logs/` | Get audit logs (paginated) |
-
----
-
-## Authorization Header Format
-
-For all authenticated endpoints, include the JWT access token:
-
-```
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
-```
-
----
-
-## Caching Strategy
-
-| Endpoint | Cache Duration |
-|----------|----------------|
-| Dashboard Analytics | 2 minutes |
-| Recent Events | 3 minutes |
-| All Events | 5 minutes |
-| Users List | 2 minutes |
-
-Caches are automatically invalidated when relevant data is modified.
-
----
-
-*Last Updated: January 10, 2026*

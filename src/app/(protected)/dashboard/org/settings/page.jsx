@@ -15,7 +15,7 @@ import {
   User, 
   Lock, 
   CreditCard, 
-  Loader2, 
+  Loader2,
   Save,
   Building2,
   Mail,
@@ -43,7 +43,6 @@ export default function Settings() {
   const [pendingAction, setPendingAction] = useState(null); // 'password' or 'bank'
 
   const [setPinValue, setSetPinValue] = useState('');
-  const [changePin, setChangePin] = useState({ Pin: '', ConfirmPin: '' });
 
   // Password State
   const [passwords, setPasswords] = useState({
@@ -193,35 +192,6 @@ export default function Settings() {
       toast.success('PIN set successfully');
     } catch (error) {
       toast.error(error.response?.data?.Message || error.response?.data?.error || 'Failed to set PIN');
-    } finally {
-      setPinLoading(false);
-    }
-  };
-
-  const handleChangePin = async (e) => {
-    e.preventDefault();
-    if (!email) {
-      toast.error('Unable to detect your email. Please re-login.');
-      return;
-    }
-    if (!changePin.Pin || changePin.Pin.trim().length !== 4) {
-      toast.error('New PIN must be exactly 4 digits');
-      return;
-    }
-    if (changePin.Pin !== changePin.ConfirmPin) {
-      toast.error('New PIN and Confirm PIN do not match');
-      return;
-    }
-
-    setPinLoading(true);
-    try {
-      await api.post('/change-pin/', { Email: email, Pin: changePin.Pin, ConfirmPin: changePin.ConfirmPin });
-      await updateLocalPin(changePin.Pin);
-      setHasPin(true);
-      setChangePin({ Pin: '', ConfirmPin: '' });
-      toast.success('PIN changed successfully');
-    } catch (error) {
-      toast.error(error.response?.data?.Message || error.response?.data?.error || 'Failed to change PIN');
     } finally {
       setPinLoading(false);
     }
@@ -445,28 +415,6 @@ export default function Settings() {
                       <span className="text-[10px] font-black text-emerald-500">PIN SET</span>
                     </div>
                   )}
-
-                  {/* Change PIN */}
-                  <form onSubmit={handleChangePin} className="space-y-4">
-                    <p className="text-sm font-bold text-white">Change PIN</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <OtpPinInput
-                        label="New PIN"
-                        value={changePin.Pin}
-                        onChange={(val) => setChangePin((prev) => ({ ...prev, Pin: val }))}
-                        disabled={pinLoading}
-                      />
-                      <OtpPinInput
-                        label="Confirm PIN"
-                        value={changePin.ConfirmPin}
-                        onChange={(val) => setChangePin((prev) => ({ ...prev, ConfirmPin: val }))}
-                        disabled={pinLoading}
-                      />
-                    </div>
-                    <div className="flex justify-end">
-                      <Button loading={pinLoading} icon={<Save className="w-3.5 h-3.5" />}>Change PIN</Button>
-                    </div>
-                  </form>
 
                   {/* Forgot PIN */}
                   <div className="flex items-center justify-between">

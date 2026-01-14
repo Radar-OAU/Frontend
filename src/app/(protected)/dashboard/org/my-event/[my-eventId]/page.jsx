@@ -66,35 +66,45 @@ export default function EventDetailsPage() {
     }
     setLoading(true);
     try {
-      // First, try to get event from organizer endpoint (has ticket_stats)
+      // First, try to get event from organizer endpoint
       const orgRes = await api.get("/organizer/events/");
       const list = Array.isArray(orgRes.data) ? orgRes.data : (orgRes.data?.events ?? []);
       const found = list.find((e) => String(e.event_id ?? e.id) === String(id));
       
-      if (found) {
-        // Found in organizer events with ticket_stats
-        if (isMountedRef.current) setEvent(found);
-      } else {
+      let eventData = found;
+      
+      if (!found) {
         // Not in organizer events, try public endpoint
         const publicRes = await api.get(`/events/${id}/details/`);
-        const eventData = publicRes?.data;
-        
-        if (eventData) {
-          // Fetch ticket stats separately for this event
-          try {
-            const ticketsRes = await api.get(`/tickets/organizer/${id}/tickets/`);
+        eventData = publicRes?.data;
+      }
+      
+      // Always fetch fresh ticket statistics for this event
+      if (eventData) {
+        try {
+          const ticketsRes = await api.get(`/tickets/organizer/${id}/tickets/`);
+          const stats = ticketsRes.data?.statistics || {};
+          // Override with fresh statistics - map API fields correctly
+          eventData.ticket_stats = {
+            confirmed_tickets: stats.confirmed || 0,
+            pending_tickets: stats.pending || 0,
+            total_revenue: stats.total_revenue || 0,
+            available_spots: stats.available_spots ?? "∞"
+          };
+        } catch (ticketErr) {
+          console.warn("Could not fetch ticket stats:", ticketErr);
+          // Keep existing ticket_stats if available
+          if (!eventData.ticket_stats) {
             eventData.ticket_stats = {
-              confirmed_tickets: ticketsRes.data.statistics?.confirmed || 0,
-              pending_tickets: ticketsRes.data.statistics?.pending || 0,
-              total_revenue: ticketsRes.data.statistics?.total_revenue || 0,
-              available_spots: ticketsRes.data.statistics?.available_spots || "∞"
+              confirmed_tickets: 0,
+              pending_tickets: 0,
+              total_revenue: 0,
+              available_spots: "∞"
             };
-          } catch (ticketErr) {
-            console.warn("Could not fetch ticket stats:", ticketErr);
           }
-          
-          if (isMountedRef.current) setEvent(eventData);
         }
+        
+        if (isMountedRef.current) setEvent(eventData);
       }
     } catch (err) {
       console.error("Error fetching event:", err);
@@ -205,11 +215,16 @@ export default function EventDetailsPage() {
             <Edit className="w-4 h-4" /> Edit Event
           </button> */}
           <button
-            onClick={handleCopyLink}
-            className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all active:scale-95"
-            title="Share Link"
+            onClick={event.status === 'verified' ? handleCopyLink : null}
+            disabled={event.status !== 'verified'}
+            className={`flex items-center gap-2 px-4 py-3.5 rounded-2xl border font-bold text-sm transition-all ${
+              event.status === 'verified'
+                ? 'bg-white/5 border-white/10 text-white hover:bg-white/10 active:scale-95 cursor-pointer'
+                : 'bg-white/2border-white/5 text-gray-600 cursor-not-allowed opacity-50'
+            }`}
+            title={event.status === 'verified' ? 'Copy Event Link' : 'Event must be verified to share link'}
           >
-            <Share2 className="w-5 h-5" />
+            <Copy className="w-4 h-4" /> {event.status === 'verified' ? 'Copy Link' : 'Not Available'}
           </button>
         </div>
       </div>
