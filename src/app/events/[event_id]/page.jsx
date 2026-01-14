@@ -87,7 +87,8 @@ const EventDetailsPage = () => {
   const handleBookTicket = async () => {
     if (!token) {
       toast.error("Please login to book tickets");
-      const callbackUrl = encodeURIComponent(`/events/${eventId}`);
+      const currentPath = window.location.pathname;
+      const callbackUrl = encodeURIComponent(currentPath);
       setTimeout(() => {
         router.push(`/login?callbackUrl=${callbackUrl}`);
       }, 1500);
@@ -274,29 +275,10 @@ const EventDetailsPage = () => {
                     )}
 
                     {/* Category Selector */}
-                    {(categories.length > 0 || event.pricing_type === 'paid') && (
+                    {categories.length > 0 && (
                       <div className="space-y-3">
                         <Label className="text-xs md:text-sm">Ticket Category</Label>
                         <div className="grid grid-cols-1 gap-2">
-                          {/* Regular/Base Price Option */}
-                          {event.pricing_type === 'paid' && (
-                            <button
-                              onClick={() => setSelectedCategory(null)}
-                              className={`flex flex-col p-3 rounded-xl border text-left transition-all ${!selectedCategory
-                                  ? "border-rose-600 bg-rose-600/5 ring-1 ring-rose-600"
-                                  : "border-gray-600 bg-gray-600/5 hover:border-gray-500"
-                                }`}
-                            >
-                              <div className="flex justify-between items-center mb-1">
-                                <span className={`text-sm font-bold ${!selectedCategory ? "text-rose-500" : "text-white"}`}>
-                                  Regular
-                                </span>
-                                <span className="text-xs font-bold text-white">₦{(parseFloat(event.price) || 0).toLocaleString()}</span>
-                              </div>
-                              <p className="text-[10px] text-gray-500 line-clamp-1">Standard ticket</p>
-                            </button>
-                          )}
-                          
                           {categories.map((cat) => (
                             <button
                               key={cat.category_id}
@@ -318,6 +300,12 @@ const EventDetailsPage = () => {
                             </button>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {categories.length === 0 && event.pricing_type === 'paid' && (
+                      <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm text-center">
+                        No ticket categories available yet. Please check back later.
                       </div>
                     )}
 
@@ -349,17 +337,21 @@ const EventDetailsPage = () => {
                       <div className="flex justify-between text-xs md:text-sm text-gray-400">
                         <span>Price per ticket</span>
                         <span className="text-white">
-                          {selectedCategory
-                            ? `₦${(parseFloat(selectedCategory.price) || 0).toLocaleString()}`
-                            : (event.pricing_type === 'free' ? 'Free' : `₦${(parseFloat(event.price) || 0).toLocaleString()}`)}
+                          {event.pricing_type === 'free' 
+                            ? 'Free' 
+                            : selectedCategory 
+                              ? `₦${(parseFloat(selectedCategory.price) || 0).toLocaleString()}` 
+                              : '₦0'}
                         </span>
                       </div>
                       <div className="flex justify-between font-bold text-base md:text-lg">
                         <span>Total</span>
                         <span className="text-rose-500">
-                          {event.pricing_type === 'free' && !selectedCategory
+                          {event.pricing_type === 'free'
                             ? 'Free'
-                            : `₦${(((selectedCategory ? (parseFloat(selectedCategory.price) || 0) : (parseFloat(event.price) || 0)) * quantity)).toLocaleString()}`}
+                            : selectedCategory
+                              ? `₦${((parseFloat(selectedCategory.price) || 0) * quantity).toLocaleString()}`
+                              : '₦0'}
                         </span>
                       </div>
                     </div>

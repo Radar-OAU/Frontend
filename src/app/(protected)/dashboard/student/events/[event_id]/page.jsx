@@ -230,31 +230,20 @@ const EventDetailsPage = () => {
                     </div>
 
                     {/* Category Selector */}
-                    {(event.ticket_categories?.length > 0 || event.pricing_type === 'paid') && (
+                    {event.ticket_categories?.length > 0 && (
                       <div className="space-y-2">
                         <Label htmlFor="category" className="text-xs md:text-sm">Ticket Category</Label>
                         <Select 
-                          value={selectedCategory?.name || "regular"} 
+                          value={selectedCategory?.name || ""} 
                           onValueChange={(val) => {
-                            if (val === "regular") {
-                              setSelectedCategory(null);
-                            } else {
-                              const cat = event.ticket_categories.find(c => c.name === val);
-                              setSelectedCategory(cat);
-                            }
+                            const cat = event.ticket_categories.find(c => c.name === val);
+                            setSelectedCategory(cat || null);
                           }}
                         >
                           <SelectTrigger id="category" className="h-9 md:h-10 text-sm md:text-base w-full">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                           <SelectContent>
-                            {/* Regular/Base Price Option */}
-                            {event.pricing_type === 'paid' && (
-                              <SelectItem value="regular">
-                                Regular - ₦{(parseFloat(event.price) || 0).toLocaleString()}
-                              </SelectItem>
-                            )}
-                            
                             {event.ticket_categories?.map((cat) => (
                               <SelectItem 
                                 key={cat.category_id} 
@@ -271,11 +260,12 @@ const EventDetailsPage = () => {
                             {selectedCategory.description}
                           </p>
                         )}
-                        {!selectedCategory && event.pricing_type === 'paid' && (
-                          <p className="text-[10px] md:text-xs text-muted-foreground italic">
-                            Standard ticket
-                          </p>
-                        )}
+                      </div>
+                    )}
+
+                    {!event.ticket_categories?.length && event.pricing_type === 'paid' && (
+                      <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs text-center">
+                        No ticket categories available yet.
                       </div>
                     )}
 
@@ -283,14 +273,22 @@ const EventDetailsPage = () => {
                     <div className="pt-4 border-t space-y-2">
                       <div className="flex justify-between text-xs md:text-sm">
                         <span>Price per ticket</span>
-                        <span>{event.pricing_type === 'free' ? 'Free' : `₦${(parseFloat(event.price) || 0).toLocaleString()}`}</span>
+                        <span>
+                          {event.pricing_type === 'free' 
+                            ? 'Free' 
+                            : selectedCategory 
+                              ? `₦${(parseFloat(selectedCategory.price) || 0).toLocaleString()}` 
+                              : '₦0'}
+                        </span>
                       </div>
                       <div className="flex justify-between font-bold text-base md:text-lg">
                         <span>Total</span>
                         <span>
                           {event.pricing_type === 'free' 
                             ? 'Free' 
-                            : `₦${((selectedCategory ? (parseFloat(selectedCategory.price) || 0) : (parseFloat(event.price) || 0)) * quantity).toLocaleString()}`}
+                            : selectedCategory
+                              ? `₦${((parseFloat(selectedCategory.price) || 0) * quantity).toLocaleString()}`
+                              : '₦0'}
                         </span>
                       </div>
                     </div>
