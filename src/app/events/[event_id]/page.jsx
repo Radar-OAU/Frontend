@@ -291,7 +291,7 @@ const EventDetailsPage = () => {
                                 <span className={`text-sm font-bold ${!selectedCategory ? "text-rose-500" : "text-white"}`}>
                                   Regular
                                 </span>
-                                <span className="text-xs font-bold text-white">₦{parseFloat(event.price).toLocaleString()}</span>
+                                <span className="text-xs font-bold text-white">₦{(parseFloat(event.price) || 0).toLocaleString()}</span>
                               </div>
                               <p className="text-[10px] text-gray-500 line-clamp-1">Standard ticket</p>
                             </button>
@@ -311,7 +311,7 @@ const EventDetailsPage = () => {
                                 <span className={`text-sm font-bold ${selectedCategory?.category_id === cat.category_id ? "text-rose-500" : "text-white"}`}>
                                   {cat.name}
                                 </span>
-                                <span className="text-xs font-bold text-white">₦{parseFloat(cat.price).toLocaleString()}</span>
+                                <span className="text-xs font-bold text-white">₦{(parseFloat(cat.price) || 0).toLocaleString()}</span>
                               </div>
                               {cat.description && <p className="text-[10px] text-gray-500 line-clamp-1">{cat.description}</p>}
                               {cat.is_sold_out && <span className="text-[10px] text-rose-500 font-bold uppercase mt-1">Sold Out</span>}
@@ -350,8 +350,8 @@ const EventDetailsPage = () => {
                         <span>Price per ticket</span>
                         <span className="text-white">
                           {selectedCategory
-                            ? `₦${parseFloat(selectedCategory.price).toLocaleString()}`
-                            : (event.pricing_type === 'free' ? 'Free' : `₦${parseFloat(event.price).toLocaleString()}`)}
+                            ? `₦${(parseFloat(selectedCategory.price) || 0).toLocaleString()}`
+                            : (event.pricing_type === 'free' ? 'Free' : `₦${(parseFloat(event.price) || 0).toLocaleString()}`)}
                         </span>
                       </div>
                       <div className="flex justify-between font-bold text-base md:text-lg">
@@ -359,7 +359,7 @@ const EventDetailsPage = () => {
                         <span className="text-rose-500">
                           {event.pricing_type === 'free' && !selectedCategory
                             ? 'Free'
-                            : `₦${(((selectedCategory ? parseFloat(selectedCategory.price) : parseFloat(event.price)) * quantity)).toLocaleString()}`}
+                            : `₦${(((selectedCategory ? (parseFloat(selectedCategory.price) || 0) : (parseFloat(event.price) || 0)) * quantity)).toLocaleString()}`}
                         </span>
                       </div>
                     </div>

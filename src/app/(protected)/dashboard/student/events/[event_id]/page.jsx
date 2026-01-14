@@ -251,7 +251,7 @@ const EventDetailsPage = () => {
                             {/* Regular/Base Price Option */}
                             {event.pricing_type === 'paid' && (
                               <SelectItem value="regular">
-                                Regular - ₦{parseFloat(event.price).toLocaleString()}
+                                Regular - ₦{(parseFloat(event.price) || 0).toLocaleString()}
                               </SelectItem>
                             )}
                             
@@ -261,7 +261,7 @@ const EventDetailsPage = () => {
                                 value={cat.name}
                                 disabled={!cat.is_active || cat.is_sold_out}
                               >
-                                {cat.name} - ₦{parseFloat(cat.price).toLocaleString()} {cat.is_sold_out ? "(Sold Out)" : ""}
+                                {cat.name} - ₦{(parseFloat(cat.price) || 0).toLocaleString()} {cat.is_sold_out ? "(Sold Out)" : ""}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -283,14 +283,14 @@ const EventDetailsPage = () => {
                     <div className="pt-4 border-t space-y-2">
                       <div className="flex justify-between text-xs md:text-sm">
                         <span>Price per ticket</span>
-                        <span>{event.pricing_type === 'free' ? 'Free' : `₦${parseFloat(event.price).toLocaleString()}`}</span>
+                        <span>{event.pricing_type === 'free' ? 'Free' : `₦${(parseFloat(event.price) || 0).toLocaleString()}`}</span>
                       </div>
                       <div className="flex justify-between font-bold text-base md:text-lg">
                         <span>Total</span>
                         <span>
                           {event.pricing_type === 'free' 
                             ? 'Free' 
-                            : `₦${((selectedCategory ? parseFloat(selectedCategory.price) : parseFloat(event.price)) * quantity).toLocaleString()}`}
+                            : `₦${((selectedCategory ? (parseFloat(selectedCategory.price) || 0) : (parseFloat(event.price) || 0)) * quantity).toLocaleString()}`}
                         </span>
                       </div>
                     </div>
