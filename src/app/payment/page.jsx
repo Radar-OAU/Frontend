@@ -87,7 +87,8 @@ function PaymentCallbackContent() {
       } catch (error) {
         console.error("Payment verification error:", error);
         
-        const errorMessage = error.response?.data?.error || error.response?.data?.message || "";
+        const errorData = error.response?.data;
+        const errorMessage = errorData?.error || errorData?.message || "";
         
         // Handle specific case where payment was verified but tickets already processed (webhook already handled it)
         if (errorMessage.includes("no pending tickets") || errorMessage.includes("already confirmed")) {
@@ -95,10 +96,21 @@ function PaymentCallbackContent() {
           setMessage("Payment successful! Your tickets have been confirmed. Check your email or dashboard for details.");
         } else {
           setStatus("failed");
-          setMessage(
-            errorMessage || 
-            "Failed to verify payment. Please contact support with your payment reference."
-          );
+          
+          // Provide friendly error messages
+          let friendlyMessage = "We couldn't verify your payment at this time.";
+          
+          if (error.response?.status === 404) {
+            friendlyMessage = "Payment record not found. If you were charged, please contact support with your payment reference.";
+          } else if (error.response?.status === 500) {
+            friendlyMessage = "Our payment system is experiencing issues. Please try again in a few minutes or contact support.";
+          } else if (errorMessage) {
+            friendlyMessage = errorMessage;
+          } else if (!error.response) {
+            friendlyMessage = "Network error. Please check your connection and try again.";
+          }
+          
+          setMessage(friendlyMessage);
         }
       }
     };
