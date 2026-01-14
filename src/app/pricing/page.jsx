@@ -160,43 +160,43 @@ export default function PricingPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">
+              <h3 className="font-semibold mb-2 text-white">
                 When do I get paid?
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-400">
                 Funds from ticket sales are held for 7 days, then become available for withdrawal. You can request a withdrawal anytime after that, with a minimum of ₦1,000. Withdrawals typically arrive within 1 to 3 business days.
               </p>
             </div>
 
-            <Separator />
+            <Separator className="bg-gray-700" />
 
             <div>
-              <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">
+              <h3 className="font-semibold mb-2 text-white">
                 Can the platform fee be customized?
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-400">
                 The default fee is 6% plus ₦80 per ticket. Custom fee structures may be available for high volume organizers. Contact support for details.
               </p>
             </div>
 
-            <Separator />
+            <Separator className="bg-gray-700" />
 
             <div>
-              <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">
+              <h3 className="font-semibold mb-2 text-white">
                 What if I need to refund a ticket?
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-400">
                 If you issue a refund, the platform fee is also refunded to you. The customer receives their full payment back.
               </p>
             </div>
 
-            <Separator />
+            <Separator className="bg-gray-700" />
 
             <div>
-              <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">
+              <h3 className="font-semibold mb-2 text-white">
                 Do students pay any fees?
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-400">
                 For paid events, students pay the ticket price plus ₦80. This covers payment processing. For free events, students pay nothing at all.
               </p>
             </div>
