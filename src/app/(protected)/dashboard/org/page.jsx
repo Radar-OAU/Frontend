@@ -10,7 +10,7 @@ import useOrganizerStore from "../../../../store/orgStore";
 import Loading from "@/components/ui/Loading";
 import OtpPinInput from "@/components/OtpPinInput";
 import { getImageUrl } from "../../../../lib/utils";
-import { hasPinSet, storePinLocally } from "@/lib/pinPrompt";
+import { hasPinSet } from "@/lib/pinPrompt";
 import { AnimatePresence,motion } from "framer-motion";
 
 
@@ -48,12 +48,10 @@ export default function Overview() {
 
         const [
           analyticsRes,
-          summaryRes,
           eventsRes,
           orgRes,
         ] = await Promise.allSettled([
-          api.get("/organizer/analytics/"),
-          api.get("/analytics/events-summary/"),
+          api.get("/analytics/global/"),
           api.get("/organizer/events/"),
           api.get("/organizer/profile/"),
         ]);
@@ -94,19 +92,25 @@ export default function Overview() {
           console.log("Total tickets calculated from events:", totalTicketsFromEvents);
         }
 
-        // Set analytics with corrected ticket count
+        // Set analytics with corrected ticket count and total events
         if (analyticsRes.status === "fulfilled") {
-          const analyticsData = analyticsRes.value.data;
+          const analyticsData = analyticsRes.value.data.analytics || analyticsRes.value.data;
           console.log("Analytics API Response:", analyticsData);
           
-          // Use calculated total from events instead of potentially incorrect API value
+          const eventsData = eventsRes.status === "fulfilled" ? (eventsRes.value.data.events || []) : [];
+          
+          // Use calculated values from events data instead of potentially incorrect API values
           const correctedAnalytics = {
             ...analyticsData,
-            total_tickets_sold: totalTicketsFromEvents
+            total_tickets_sold: totalTicketsFromEvents,
+            total_events: eventsData.length
           };
           
           if (analyticsData.total_tickets_sold !== totalTicketsFromEvents) {
             console.warn(`Analytics endpoint returned ${analyticsData.total_tickets_sold} tickets, corrected to ${totalTicketsFromEvents} from events data`);
+          }
+          if (analyticsData.total_events !== eventsData.length) {
+            console.warn(`Analytics endpoint returned ${analyticsData.total_events} events, corrected to ${eventsData.length} from events data`);
           }
           
           setAnalytics(correctedAnalytics);
@@ -134,10 +138,6 @@ export default function Overview() {
           }
         }
 
-        if (summaryRes.status === "fulfilled") {
-          setEventsSummary(summaryRes.value.data);
-        }
-
         if (orgRes.status === "fulfilled") {
           setOrganization(orgRes.value.data.Org_profile || orgRes.value.data);
         }
@@ -160,20 +160,34 @@ export default function Overview() {
 
   // Removed first-welcome logic (no longer needed)
   
-  // Check if PIN reminder should be shown
+  // Check if PIN reminder should be shown - ONLY uses has_pin from database
   useEffect(() => {
-    const hasPin = hasPinSet();
-    if (!hasPin) {
-      const dismissed = localStorage.getItem('radar_pin_reminder_dismissed');
-      const dismissedDate = dismissed ? new Date(dismissed) : null;
-      const now = new Date();
-      
-      // Show reminder if never dismissed or dismissed more than 1 day ago
-      if (!dismissedDate || (now - dismissedDate) > 24 * 60 * 60 * 1000) {
-        setShowPinReminder(true);
-      }
+    // Only check after organization data is loaded
+    if (!organization) return;
+    
+    // Check if user has set a PIN from backend profile (ONLY source of truth)
+    const hasPin = organization.has_pin === true;
+    
+    // If user has PIN, NEVER show reminder
+    if (hasPin) {
+      setShowPinReminder(false);
+      // Clear any dismiss flag since user has PIN now
+      localStorage.removeItem('radar_pin_reminder_dismissed');
+      return;
     }
-  }, []);
+    
+    // User doesn't have PIN - check if they dismissed the reminder
+    const dismissed = localStorage.getItem('radar_pin_reminder_dismissed');
+    const dismissedDate = dismissed ? new Date(dismissed) : null;
+    const now = new Date();
+    
+    // Show reminder if never dismissed or dismissed more than 1 day ago
+    if (!dismissedDate || (now - dismissedDate) > 24 * 60 * 60 * 1000) {
+      setShowPinReminder(true);
+    } else {
+      setShowPinReminder(false);
+    }
+  }, [organization]);
 
   const handleDismissReminder = () => {
     localStorage.setItem('radar_pin_reminder_dismissed', new Date().toISOString());
@@ -199,29 +213,49 @@ export default function Overview() {
       const email = user?.email;
       if (!email) {
         setPinError('Unable to detect your email. Please re-login.');
+        setPinLoading(false);
         return;
       }
 
       // Backend expects: { Email, pin }
+      let pinAlreadyExists = false;
       try {
         await api.post('/pin/', { Email: email, pin: pinValue });
+        toast.success('PIN set successfully!');
       } catch (apiErr) {
         const emailErr = apiErr?.response?.data?.Email?.[0];
         const alreadyExists =
           typeof emailErr === 'string' && emailErr.toLowerCase().includes('already exists');
 
-        if (!alreadyExists) throw apiErr;
-        // PIN already exists server-side; allow user to proceed with local PIN gate.
-        toast.success('PIN already exists for this account');
+        if (alreadyExists) {
+          // PIN already exists - this is actually an error state
+          toast.error('You have already set a PIN for this account');
+          pinAlreadyExists = true;
+        } else {
+          throw apiErr;
+        }
       }
-
-      // Keep local PIN gate working (client-side hashed storage)
-      await storePinLocally(pinValue);
-      toast.success('PIN set successfully!');
+      
+      // Refetch organization profile to update has_pin status from database
+      try {
+        const orgRes = await api.get("/organizer/profile/");
+        if (orgRes.data) {
+          const orgData = orgRes.data.Org_profile || orgRes.data;
+          setOrganization(orgData);
+          
+          // Clear PIN reminder dismiss flag from localStorage
+          localStorage.removeItem('radar_pin_reminder_dismissed');
+        }
+      } catch (profileErr) {
+        console.error("Failed to refetch organization profile:", profileErr);
+      }
+      
+      // Close modal and hide reminder
       setShowSetPinModal(false);
       setShowPinReminder(false);
       setPinValue('');
       setConfirmPinValue('');
+      
     } catch (err) {
       const msg =
         err?.response?.data?.Message ||
@@ -239,26 +273,27 @@ export default function Overview() {
   useEffect(() => {
     async function refetchData() {
       try {
-        const [analyticsRes, summaryRes, eventsRes] = await Promise.allSettled([
-          api.get("/organizer/analytics/"),
-          api.get("/analytics/events-summary/"),
+        const [analyticsRes, eventsRes] = await Promise.allSettled([
+          api.get("/analytics/global/"),
           api.get("/organizer/events/")
         ]);
 
         // Calculate correct ticket count from events
         let totalTicketsFromEvents = 0;
+        let eventsData = [];
         if (eventsRes.status === 'fulfilled') {
-          const eventsData = eventsRes.value.data.events || [];
+          eventsData = eventsRes.value.data.events || [];
           totalTicketsFromEvents = eventsData.reduce((total, event) => {
             return total + (event.ticket_stats?.confirmed_tickets || 0);
           }, 0);
         }
 
         if (analyticsRes.status === 'fulfilled') {
-          const analyticsData = analyticsRes.value.data;
+          const analyticsData = analyticsRes.value.data.analytics || analyticsRes.value.data;
           setAnalytics({
             ...analyticsData,
-            total_tickets_sold: totalTicketsFromEvents
+            total_tickets_sold: totalTicketsFromEvents,
+            total_events: eventsData.length
           });
         } else if (eventsRes.status === 'fulfilled') {
           // Fallback if analytics endpoint fails
@@ -276,10 +311,6 @@ export default function Overview() {
             total_tickets_pending: totalPendingTickets,
             total_revenue: totalRevenue
           });
-        }
-
-        if (summaryRes.status === 'fulfilled') {
-          setEventsSummary(summaryRes.value.data);
         }
       } catch (err) {
         console.error("Failed to refetch data:", err);
@@ -375,7 +406,7 @@ export default function Overview() {
       </AnimatePresence>
 
       {/* Set PIN Modal */}
-      {showSetPinModal && (
+      {showSetPinModal && !organization?.has_pin && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSetPinModal(false)} />
           <motion.div

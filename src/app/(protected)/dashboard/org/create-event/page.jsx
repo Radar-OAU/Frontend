@@ -1,13 +1,13 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import api from "../../../../../lib/axios";
 import toast from "react-hot-toast";
 import useOrganizerStore from "../../../../../store/orgStore";
 import CustomDropdown from "@/components/ui/CustomDropdown";
 import Loading from "@/components/ui/Loading";
 import PinPromptModal from "@/components/PinPromptModal";
-import { hasPinSet } from "@/lib/pinPrompt";
 import {
   MapPin,
   Calendar,
@@ -37,7 +37,7 @@ const FALLBACK_EVENT_TYPES = [
 export default function CreateEvent() {
   const router = useRouter();
   // const { triggerRefetch } = useOrganizerStore(); // triggerRefetch is not in the store definition
-  const { addEvent } = useOrganizerStore();
+  const { addEvent, organization } = useOrganizerStore();
 
   const [configLoading, setConfigLoading] = useState(true);
   const [eventTypes, setEventTypes] = useState(FALLBACK_EVENT_TYPES);
@@ -135,8 +135,7 @@ export default function CreateEvent() {
   }, [imageFile]);
 
   const handleChange = (key) => (e) => {
-    const value =
-      e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     setForm((s) => ({ ...s, [key]: value }));
     setErrors((p) => ({ ...p, [key]: undefined }));
   };
@@ -258,6 +257,8 @@ export default function CreateEvent() {
     setCategories([]);
   };
 
+
+
   const submit = async (ev) => {
     ev.preventDefault();
     if (!validate()) {
@@ -265,10 +266,9 @@ export default function CreateEvent() {
       return;
     }
 
-    // Check if PIN is set and require verification before creating event
-    if (!hasPinSet()) {
-      setPendingSubmit(true);
-      setShowPinPrompt(true);
+    // Check if PIN is set from database
+    if (!organization?.has_pin) {
+      toast.error('Please set up your PIN first from the dashboard');
       return;
     }
 
@@ -375,6 +375,7 @@ export default function CreateEvent() {
 
         setCreatedEventId(newId);
         setShowSuccessModal(true);
+        
         // resetForm();
       } else {
         toast.error(`Unexpected server response: ${res?.status}`);
@@ -537,7 +538,7 @@ export default function CreateEvent() {
                   type="datetime-local"
                   value={form.date}
                   onChange={handleChange("date")}
-                  className={`w-full bg-white/5 border ${errors.date ? "border-rose-500/50 focus:border-rose-500" : "border-white/10 focus:border-rose-500"} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all [color-scheme:dark]`}
+                  className={`w-full bg-white/5 border ${errors.date ? "border-rose-500/50 focus:border-rose-500" : "border-white/10 focus:border-rose-500"} rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all [scheme:dark]`}
                 />
                 {errors.date && (
                   <p className="text-[10px] text-rose-500 font-bold">
@@ -553,8 +554,8 @@ export default function CreateEvent() {
                   Capacity
                 </label>
                 <input
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
                   value={form.capacity}
                   onChange={handleChange("capacity")}
                   placeholder="Unlimited"
@@ -574,9 +575,8 @@ export default function CreateEvent() {
                     ₦
                   </span>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={form.price}
                     onChange={handleChange("price")}
                     placeholder="0.00"

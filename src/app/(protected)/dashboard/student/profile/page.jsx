@@ -69,7 +69,7 @@ const StudentProfile = () => {
         <p className="text-muted-foreground">Manage your personal information and account details.</p>
       </div>
 
-      <Card>
+      <Card className="border-white/10">
         <CardHeader>
           <CardTitle>Personal Information</CardTitle>
           <CardDescription>

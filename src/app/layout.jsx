@@ -2,10 +2,9 @@ import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
 import { Toaster } from "react-hot-toast";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { Suspense } from "react";
+import { AdminAwareLayout } from "@/components/AdminAwareLayout";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -88,11 +87,9 @@ export default function RootLayout({ children }) {
               <NavigationProgressBar />
             </Suspense>
             <Toaster position="top-center" />
-            <Header />
-            <main className="grow">
+            <AdminAwareLayout>
               {children}
-            </main>
-            <Footer />
+            </AdminAwareLayout>
           </ThemeProvider>
         </GoogleAuthProvider>
       </body>

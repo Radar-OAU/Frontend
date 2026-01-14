@@ -12,6 +12,73 @@ const api = axios.create({
 });
 
 // --------------------
+// Automatic Token Refresh (Proactive)
+// --------------------
+let refreshInterval = null;
+
+function startTokenRefreshTimer() {
+  // Clear any existing interval
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+
+  // Refresh token every 14 minutes (before 15min expiration)
+  const REFRESH_INTERVAL = 14 * 60 * 1000; // 14 minutes in milliseconds
+
+  refreshInterval = setInterval(async () => {
+    const refreshToken = getRefreshToken();
+    const token = getToken();
+
+    // Only refresh if user is logged in
+    if (!refreshToken || !token) {
+      clearInterval(refreshInterval);
+      return;
+    }
+
+    try {
+      const refreshUrl = `${api.defaults.baseURL?.replace(/\/$/, "")}/token/refresh/`;
+      const res = await axios.post(refreshUrl, { refresh: refreshToken });
+      const newAccess = res?.data?.access;
+
+      if (newAccess) {
+        // Update token in localStorage
+        const raw = localStorage.getItem("auth-storage");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          parsed.state.token = newAccess;
+          localStorage.setItem("auth-storage", JSON.stringify(parsed));
+        }
+
+        // Update default header
+        api.defaults.headers.common.Authorization = `Bearer ${newAccess}`;
+        
+        console.log("✅ Token auto-refreshed successfully");
+      }
+    } catch (err) {
+      console.error("❌ Auto-refresh failed:", err);
+      // If refresh fails, user will get logged out on next API call
+      clearInterval(refreshInterval);
+    }
+  }, REFRESH_INTERVAL);
+}
+
+function stopTokenRefreshTimer() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+}
+
+// Start timer when module loads (if user is already logged in)
+if (typeof window !== "undefined") {
+  const token = getToken();
+  const refreshToken = getRefreshToken();
+  if (token && refreshToken) {
+    startTokenRefreshTimer();
+  }
+}
+
+// --------------------
 // Helper functions
 // --------------------
 function getToken() {
@@ -119,35 +186,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // Check if the error is specifically about the token being invalid
-      const isTokenInvalid = isTokenNotValidResponse(error.response);
-
-      // If token is explicitly invalid, logout and redirect
-      if (isTokenInvalid) {
-        useAuthStore.getState().logout();
-        localStorage.removeItem("auth-storage");
-
-        // Define public paths that shouldn't force a redirect to login
-        const publicPaths = [
-          "/",
-          "/events",
-          "/login",
-          "/signup",
-          "/verify-otp",
-        ];
-        const currentPath =
-          typeof window !== "undefined" ? window.location.pathname : "";
-        const isPublicPath =
-          publicPaths.includes(currentPath) ||
-          currentPath.startsWith("/events/");
-
-        if (typeof window !== "undefined" && !isPublicPath) {
-          window.location.href = "/login";
-        }
-        return Promise.reject(error);
-      }
-
-      // Otherwise, try to refresh the token
+      // Try to refresh the token FIRST (don't immediately logout on token_not_valid)
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -203,11 +242,28 @@ api.interceptors.response.use(
           .catch((err) => {
             processQueue(err, null);
 
-            // If refresh fails due to an invalid refresh token, logout.
-            // Otherwise, do NOT force logout/redirect here (prevents surprise logout on transient failures).
+            // ONLY logout if refresh token itself is invalid
             if (isTokenNotValidResponse(err?.response)) {
               useAuthStore.getState().logout();
               localStorage.removeItem("auth-storage");
+
+              // Define public paths that shouldn't force a redirect to login
+              const publicPaths = [
+                "/",
+                "/events",
+                "/login",
+                "/signup",
+                "/verify-otp",
+              ];
+              const currentPath =
+                typeof window !== "undefined" ? window.location.pathname : "";
+              const isPublicPath =
+                publicPaths.includes(currentPath) ||
+                currentPath.startsWith("/events/");
+
+              if (typeof window !== "undefined" && !isPublicPath) {
+                window.location.href = "/login";
+              }
             }
 
             reject(err);
@@ -222,4 +278,6 @@ api.interceptors.response.use(
   }
 );
 
+// Export functions to control token refresh timer
+export { startTokenRefreshTimer, stopTokenRefreshTimer };
 export default api;

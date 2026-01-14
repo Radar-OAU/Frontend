@@ -99,7 +99,7 @@ const LandingPage = () => {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/signup?tab=organizer">
                 <Button size="lg" variant="outline" className="h-14 px-10 text-lg border-border hover:bg-muted group">
                   Start Selling Tickets
                   <TrendingUp className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />

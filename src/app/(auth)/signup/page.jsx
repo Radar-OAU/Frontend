@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../../components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -16,6 +16,7 @@ import axios from 'axios';
 
 const SignUp = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const loginUser = useAuthStore((state) => state.login);
 
   const [role, setRole] = useState("Student");
@@ -52,6 +53,14 @@ const SignUp = () => {
   };
 
   const invalidPhone = organiserPhone.length > 0 && !validatePhone(organiserPhone);
+
+  // Check URL parameter to auto-select organizer tab
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'organizer') {
+      setRole('Organizer');
+    }
+  }, [searchParams]);
 
   const isFormValid = () => {
     if (role === "Student") {
