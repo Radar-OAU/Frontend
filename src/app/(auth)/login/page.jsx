@@ -87,9 +87,12 @@ const LoginContent = () => {
         
         login({ user_id, email, ...res.data }, access, refresh, userRole);
 
-        toast.success(is_new_user ? "Account created successfully!" : "Login successful!", { id: toastId });
+        const userRole = actualRole || expectedRole;
+        login({ user_id, email }, access, refresh, userRole);
+
+        toast.success("Login successful!");
         
-        // Redirect based on role and callback URL
+        // Use callbackUrl if provided, otherwise redirect to dashboard
         if (callbackUrl) {
           const decodedUrl = decodeURIComponent(callbackUrl);
           router.replace(decodedUrl);

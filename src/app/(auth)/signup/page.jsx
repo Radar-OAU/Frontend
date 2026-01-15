@@ -181,20 +181,12 @@ const SignUpContent = () => {
           toast.success('Login Successful', { id: toastId });
         }
         
-        // Redirect based on role and callback URL
+        // Use callbackUrl if provided, otherwise redirect to dashboard
         if (callbackUrl) {
           const decodedUrl = decodeURIComponent(callbackUrl);
-          router.push(decodedUrl);
+          router.replace(decodedUrl);
         } else {
-          // Redirect to appropriate dashboard based on role
-          const normalizedRole = userRole.toLowerCase().trim();
-          if (normalizedRole === "organizer" || normalizedRole === "org") {
-            router.push('/dashboard/org');
-          } else if (normalizedRole === "student") {
-            router.push('/dashboard/student');
-          } else {
-            router.push('/dashboard');
-          }
+          router.replace("/dashboard/org");
         }
       } catch (err) {
         console.error('Google signup error object:', err);
