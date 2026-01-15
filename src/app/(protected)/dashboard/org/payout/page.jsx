@@ -281,7 +281,7 @@ export default function PayoutPage() {
             {activeTab === 'all' && (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-white/[0.02] text-gray-400 text-[10px] font-bold">
+                  <thead className="bg-white/2 text-gray-400 text-[10px] font-bold">
                     <tr>
                       <th className="px-5 py-3">Transaction</th>
                       <th className="px-5 py-3">Status</th>
@@ -292,7 +292,7 @@ export default function PayoutPage() {
                   <tbody className="divide-y divide-white/5">
                     {transactions.length > 0 ? (
                       transactions.map((tx, index) => (
-                        <tr key={tx.transaction_id || tx.id || index} className="hover:bg-white/[0.02] transition-colors">
+                        <tr key={tx.transaction_id || tx.id || index} className="hover:bg-white/2 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span className="font-medium text-white">{tx.transaction_type_display}</span>

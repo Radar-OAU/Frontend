@@ -415,7 +415,7 @@ export default function Overview() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="bg-gradient-to-r from-amber-500/10 to-rose-500/10 border border-amber-500/30 rounded-2xl p-5 md:p-6 relative overflow-hidden"
+            className="bg-linear-to-r from-amber-500/10 to-rose-500/10 border border-amber-500/30 rounded-2xl p-5 md:p-6 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl" />
             <button
@@ -456,7 +456,7 @@ export default function Overview() {
 
       {/* Set PIN Modal */}
       {showSetPinModal && !organization?.has_pin && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSetPinModal(false)} />
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}

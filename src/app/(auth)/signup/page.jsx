@@ -111,15 +111,6 @@ const SignUpContent = () => {
         endpoint = "/organizer/register/";
       }
 
-      // write a toast if the student put in a non .oauife.edu.ng email
-      if (role === "Student" && !email.endsWith("@student.oauife.edu.ng")) {
-        toast.error("Please use your valid student email address.", { id: toastId });
-        setLoading(false);
-        return;
-      } else {
-        toast.dismiss(toastId);
-      }
-
       console.log("Submitting to", endpoint, "with payload", payload);
       const res = await api.post(endpoint, payload);
 
@@ -307,7 +298,7 @@ const SignUpContent = () => {
                   {/* EMAIL */}
                   <div>
                     <label className="block text-white/80 text-[10px] md:text-xs font-semibold uppercase tracking-wide mb-1 md:mb-2">
-                      Student Email
+                      Email Address
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 h-4 w-4 md:h-5 md:w-5" />
@@ -315,7 +306,7 @@ const SignUpContent = () => {
                         type="email"
                           id="email"
                         name="email"
-                        placeholder="your.name@student.oauife.edu.ng"
+                        placeholder="your.email@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-xl py-3 md:py-3.5 pl-10 md:pl-12 pr-4 text-sm md:text-base text-white hover:border-rose-500/60 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 dark:placeholder:text-gray-600"
@@ -323,7 +314,7 @@ const SignUpContent = () => {
                     </div>
                     {invalidEmail && (
                       <p className="text-red-500 text-[10px] md:text-xs mt-1">
-                        Please enter a valid student email address.
+                        Please enter a valid email address.
                       </p>
                     )}
                   </div>

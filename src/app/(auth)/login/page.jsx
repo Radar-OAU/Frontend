@@ -59,24 +59,32 @@ const LoginContent = () => {
     onSuccess: async (tokenResponse) => {
       setLoading(true);
       try {
+        const expectedRole = role.toLowerCase(); // "student" or "organizer"
         const endpoint = role === "Student" ? "/student/google-signup/" : "/organizer/google-signup/";
         const res = await api.post(endpoint, {
           token: tokenResponse.access_token,
+          role: expectedRole
         });
-        const { user_id, email, access, refresh, is_new_user } = res.data;
-        // Construct role based on the endpoint we just hit if not returned (though login usually returns it)
-        // But api docs say success response checks 'is_new_user', let's check what login() needs.
-        // The store expects (user, access, refresh, role).
-        // Let's use the role state we used to make the request, as Google signup implies that role.
-        login({ user_id, email }, access, refresh, role);
+        const { user_id, email, access, refresh, role: responseRole } = res.data;
+        
+        // Verify the returned role matches what the user selected
+        const actualRole = responseRole?.toLowerCase();
+        if (actualRole && actualRole !== expectedRole) {
+          const correctRoleDisplay = actualRole === 'student' ? 'Student' : 'Organizer';
+          throw new Error(`This account is registered as ${correctRoleDisplay}. Please select "${correctRoleDisplay}" to login.`);
+        }
 
-        // Show one-time "Welcome {name}" after first signup/verification.
-        // first-welcome logic removed
+        const userRole = actualRole || expectedRole;
+        login({ user_id, email }, access, refresh, userRole);
+
         toast.success("Login successful!");
         router.push("/dashboard");
       } catch (err) {
         console.error("Google login error:", err);
-        toast.error(err.response?.data?.error || "Google login failed");
+        const message = err.message?.includes('registered as') 
+          ? err.message 
+          : (err.response?.data?.error || "Google login failed");
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -94,31 +102,24 @@ const LoginContent = () => {
     const toastId = toast.loading('Logging in...')
 
     try {
-      const response = await api.post('/login/', formData)
+      // Send role with login request for backend validation
+      const expectedRole = role.toLowerCase(); // "student" or "organizer"
+      const response = await api.post('/login/', {
+        ...formData,
+        role: expectedRole
+      })
       const { user_id, email, access, refresh, role: responseRole } = response.data
       
-      let userRole = responseRole;
-      if (!userRole && access) {
-        const decoded = parseJwt(access);
-        // Check for common role claims
-        userRole = decoded?.role || decoded?.user_type;
-        
-        // If still not found, check specific boolean flags if they exist
-        if (!userRole && decoded?.is_organizer) {
-            userRole = 'organizer';
-        }
+      // Verify the returned role matches what the user selected
+      const actualRole = responseRole?.toLowerCase();
+      if (actualRole && actualRole !== expectedRole) {
+        // Role mismatch - user is trying to login with wrong role
+        const correctRoleDisplay = actualRole === 'student' ? 'Student' : 'Organizer';
+        throw new Error(`This account is registered as ${correctRoleDisplay}. Please select "${correctRoleDisplay}" to login.`);
       }
 
-      // Fallback: Check email domain if role is still not determined
-      if (!userRole) {
-          if (email.endsWith('@student.oauife.edu.ng')) {
-              userRole = 'student';
-          } else {
-              // Default to organizer if not a student email 
-              // (since organizers can have generic emails like Gmail, Yahoo, etc.)
-              userRole = 'organizer';
-          }
-      }
+      // Use the response role if available, otherwise use selected role
+      const userRole = actualRole || expectedRole;
 
       login({ ...response.data }, access, refresh, userRole)
       toast.success('Login successful! Redirecting...', { id: toastId })
@@ -133,7 +134,10 @@ const LoginContent = () => {
       }
     } catch (err) {
       console.error("Login error:", err);
-      const message = err.response?.data?.error || "Invalid email or password";
+      // Handle custom error messages (role mismatch)
+      const message = err.message?.includes('registered as') 
+        ? err.message 
+        : (err.response?.data?.error || "Invalid email or password");
       setError(message);
       toast.error(message, { id: toastId });
     } finally {

@@ -1,8 +1,30 @@
+"use client";
+
 import Sidebar from '@/components/studentDashboardComponents/Sidebar'
+import { useRoleAuth } from '@/hooks/useRoleAuth'
+import { Loader2 } from 'lucide-react'
 import React from 'react'
 import Logo from '@/components/Logo'
 
 const StudentDashboardLayout = ({children}) => {
+  const { loading, authorized } = useRoleAuth('student');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <Loader2 className="h-10 w-10 animate-spin text-rose-500" />
+      </div>
+    );
+  }
+
+  if (!authorized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <Loader2 className="h-10 w-10 animate-spin text-rose-500" />
+      </div>
+    );
+  }
+
   return (
    <>
     <section className='flex flex-col md:flex-row min-h-screen'>

@@ -77,6 +77,12 @@ const EventDetailsPage = () => {
       return;
     }
 
+    // Migration: category_name is REQUIRED for booking
+    if (!selectedCategory?.name) {
+      toast.error("Please select a ticket category");
+      return;
+    }
+
     setBookingLoading(true);
     const toastId = toast.loading("Processing booking...");
 
@@ -135,6 +141,18 @@ const EventDetailsPage = () => {
   const eventDate = new Date(event.date);
   const isSoldOut = selectedCategory?.is_sold_out;
 
+  const activeCategories = Array.isArray(event.ticket_categories)
+    ? event.ticket_categories.filter((c) => c?.is_active !== false)
+    : [];
+  const categoryPrices = activeCategories
+    .map((c) => parseFloat(String(c?.price ?? "0")))
+    .filter((n) => Number.isFinite(n) && n >= 0);
+  const minCategoryPrice = categoryPrices.length ? Math.min(...categoryPrices) : 0;
+  const displayEventPrice =
+    typeof event?.event_price !== "undefined" && event?.event_price !== null
+      ? Number(event.event_price)
+      : minCategoryPrice;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 md:space-y-8 pb-20">
       {/* Hero Section */}
@@ -156,7 +174,7 @@ const EventDetailsPage = () => {
               ? 'bg-green-500 text-white' 
               : 'bg-primary text-primary-foreground'
           }`}>
-            {event.pricing_type === 'free' ? 'Free' : `₦${event.price}`}
+            {event.pricing_type === 'free' ? 'Free' : `From ₦${displayEventPrice.toLocaleString()}`}
           </span>
         </div>
       </div>
@@ -270,32 +288,30 @@ const EventDetailsPage = () => {
                     )}
 
                     {/* Price Summary */}
-                    <div className="pt-4 border-t space-y-2">
-                      <div className="flex justify-between text-xs md:text-sm">
+                    <div className="pt-4 border-t border-gray-600 space-y-2">
+                      <div className="flex justify-between text-xs md:text-sm text-gray-400">
                         <span>Price per ticket</span>
-                        <span>
-                          {event.pricing_type === 'free' 
-                            ? 'Free' 
-                            : selectedCategory 
-                              ? `₦${(parseFloat(selectedCategory.price) || 0).toLocaleString()}` 
-                              : '₦0'}
+                        <span className="text-gray-200">
+                          {event.pricing_type === 'free'
+                            ? 'Free'
+                            : selectedCategory
+                              ? `₦${Number(selectedCategory.price).toLocaleString()}`
+                              : `From ₦${displayEventPrice.toLocaleString()}`}
                         </span>
                       </div>
-                      <div className="flex justify-between font-bold text-base md:text-lg">
+                      <div className="flex justify-between font-bold text-base md:text-lg text-white">
                         <span>Total</span>
-                        <span>
+                        <span className="text-rose-500">
                           {event.pricing_type === 'free' 
                             ? 'Free' 
-                            : selectedCategory
-                              ? `₦${((parseFloat(selectedCategory.price) || 0) * quantity).toLocaleString()}`
-                              : '₦0'}
+                            : `₦${(parseFloat(String(selectedCategory?.price ?? displayEventPrice)) * quantity).toLocaleString()}`}
                         </span>
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="p-4 md:p-6 pt-0 md:pt-0">
+                  <CardFooter className="p-4 md:p-6 pt-0 md:pt-0 flex flex-col gap-3">
                     <Button 
-                      className="w-full h-10 md:h-11 text-sm md:text-base" 
+                      className="w-full h-11 md:h-12 text-sm md:text-base font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-lg hover:shadow-xl transition-all" 
                       size="lg" 
                       onClick={handleBookTicket}
                       disabled={bookingLoading || isSoldOut}
@@ -321,21 +337,21 @@ const EventDetailsPage = () => {
                 </Card>
 
                 {/* Share Section */}
-                <Card className="overflow-hidden">
-                  <CardContent className="p-4 md:p-6">
+                <Card className="border-secondary/50 shadow-lg overflow-hidden">
+                  <CardContent className="p-5 md:p-6">
                     <div className="flex items-center gap-2 mb-4">
-                      <Share2 className="h-4 w-4 text-primary" />
-                      <h3 className="font-semibold text-sm md:text-base">Share this event</h3>
+                      <Share2 className="h-5 w-5 text-rose-500" />
+                      <h3 className="font-bold text-sm md:text-base">Share this event</h3>
                     </div>
                     <div className="flex gap-2">
-                      <div className="flex-1 bg-muted px-3 py-2 rounded-md text-xs md:text-sm text-muted-foreground truncate border border-border">
+                      <div className="flex-1 bg-secondary/30 px-4 py-3 rounded-xl text-xs md:text-sm text-gray-300 truncate border border-gray-600 hover:border-gray-500 transition-colors">
                         {typeof window !== 'undefined' ? `${window.location.origin}/events/${eventId}` : ''}
                       </div>
                       <Button 
                         size="sm" 
-                        variant="secondary" 
+                        variant="outline"
                         onClick={handleCopyLink}
-                        className="shrink-0"
+                        className="shrink-0 border-gray-600 hover:bg-rose-500/10 hover:border-rose-500/50 transition-all"
                       >
                         {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                       </Button>
