@@ -179,7 +179,14 @@ const SignUpContent = () => {
         } else {
           toast.success('Login Successful', { id: toastId });
         }
-        router.push("/dashboard/org");
+        
+        // Use callbackUrl if provided, otherwise redirect to dashboard
+        if (callbackUrl) {
+          const decodedUrl = decodeURIComponent(callbackUrl);
+          router.replace(decodedUrl);
+        } else {
+          router.replace("/dashboard/org");
+        }
       } catch (err) {
         console.error('Google signup error object:', err);
         console.log('Error Response Data:', err.response?.data);

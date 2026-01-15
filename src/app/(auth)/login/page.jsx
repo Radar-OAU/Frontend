@@ -78,7 +78,14 @@ const LoginContent = () => {
         login({ user_id, email }, access, refresh, userRole);
 
         toast.success("Login successful!");
-        router.push("/dashboard");
+        
+        // Use callbackUrl if provided, otherwise redirect to dashboard
+        if (callbackUrl) {
+          const decodedUrl = decodeURIComponent(callbackUrl);
+          router.replace(decodedUrl);
+        } else {
+          router.replace("/dashboard");
+        }
       } catch (err) {
         console.error("Google login error:", err);
         const message = err.message?.includes('registered as') 
