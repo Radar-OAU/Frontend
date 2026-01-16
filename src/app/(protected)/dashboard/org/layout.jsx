@@ -4,26 +4,16 @@ import Sidebar from "@/components/organizersDashboardComponents/Sidebar"
 import OrganizerHeader from "@/components/OrganizerHeader"
 import { useRoleAuth } from "@/hooks/useRoleAuth"
 import React from 'react'
-import { DashboardHeaderSkeleton, SidebarSkeleton, AnalyticsSkeleton } from "@/components/skeletons";
+import { DashboardLayoutSkeleton, OrganizerDashboardSkeleton } from "@/components/skeletons";
 
 const organizersDashboardLayout = ({ children }) => {
   const { loading, authorized } = useRoleAuth('organizer');
 
   if (loading || !authorized) {
     return (
-      <div className="min-h-screen bg-black">
-        <DashboardHeaderSkeleton />
-        <div className="flex">
-          <div className="hidden md:block w-64">
-            <SidebarSkeleton />
-          </div>
-          <main className="flex-1 p-4 md:p-8">
-            <div className="container mx-auto max-w-7xl">
-              <AnalyticsSkeleton />
-            </div>
-          </main>
-        </div>
-      </div>
+      <DashboardLayoutSkeleton>
+        <OrganizerDashboardSkeleton />
+      </DashboardLayoutSkeleton>
     );
   }
 

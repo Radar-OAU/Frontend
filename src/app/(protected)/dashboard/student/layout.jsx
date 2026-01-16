@@ -4,26 +4,16 @@ import Sidebar from '@/components/studentDashboardComponents/Sidebar'
 import { useRoleAuth } from '@/hooks/useRoleAuth'
 import React from 'react'
 import Logo from '@/components/Logo'
-import { DashboardHeaderSkeleton, SidebarSkeleton, AnalyticsSkeleton } from "@/components/skeletons";
+import { DashboardLayoutSkeleton, StudentDashboardSkeleton } from "@/components/skeletons";
 
 const StudentDashboardLayout = ({children}) => {
   const { loading, authorized } = useRoleAuth('student');
 
   if (loading || !authorized) {
     return (
-      <div className="min-h-screen bg-black">
-        <DashboardHeaderSkeleton />
-        <div className="flex">
-          <div className="hidden md:block w-64">
-            <SidebarSkeleton />
-          </div>
-          <main className="flex-1 p-4 md:p-8">
-            <div className="container mx-auto max-w-7xl">
-              <AnalyticsSkeleton />
-            </div>
-          </main>
-        </div>
-      </div>
+      <DashboardLayoutSkeleton>
+        <StudentDashboardSkeleton />
+      </DashboardLayoutSkeleton>
     );
   }
 

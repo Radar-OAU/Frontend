@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import useAuthStore from "@/store/authStore";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { AnalyticsSkeleton } from "@/components/skeletons";
+import { StudentDashboardSkeleton } from "@/components/skeletons";
 
 const StudentDashboardOverview = () => {
   const { user } = useAuthStore();
@@ -51,11 +51,7 @@ const StudentDashboardOverview = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen p-4 md:p-8 pt-6 md:pt-10 max-w-7xl mx-auto">
-        <AnalyticsSkeleton />
-      </div>
-    );
+    return <StudentDashboardSkeleton />;
   }
 
   // Calculations

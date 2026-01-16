@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import useAuthStore from "../../../../store/authStore";
 import { toast } from "react-hot-toast";
 import useOrganizerStore from "../../../../store/orgStore";
-import { AnalyticsSkeleton } from "@/components/skeletons";
+import { OrganizerDashboardSkeleton } from "@/components/skeletons";
 import OtpPinInput from "@/components/OtpPinInput";
 import { getImageUrl } from "../../../../lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -322,17 +322,7 @@ export default function Overview() {
   }, [lastUpdate]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
-        <div className="space-y-10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="space-y-2">
-              <AnalyticsSkeleton />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <OrganizerDashboardSkeleton />;
   }
 
   if (!analytics) {
