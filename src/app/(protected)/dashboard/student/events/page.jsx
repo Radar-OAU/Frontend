@@ -7,6 +7,7 @@ import { Loader2, MapPin, Calendar as CalendarIcon, Search, Clock } from "lucide
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { getImageUrl } from "@/lib/utils";
+import { EventsGridSkeleton } from "@/components/skeletons";
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -74,11 +75,7 @@ const EventsPage = () => {
   const filteredEvents = getFilteredAndSortedEvents();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <EventsGridSkeleton />;
   }
 
   return (

@@ -1,4 +1,4 @@
-# Radar Event Platform - Complete API Documentation
+# TreEvents Event Platform - Complete API Documentation
 
 Complete API documentation for frontend developers. This document covers all endpoints, request/response formats, and implementation examples.
 
@@ -1399,7 +1399,7 @@ const eventTypes = config.event_types; // Array of {value, label}
     "event_location": "OAU Campus",
     "event_date": "2024-12-15T10:00:00Z",
     "event_price": 5000.00,  // Minimum price from ticket categories (for display purposes)
-    "event_image": "https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/radar/events/tech.jpg",
+    "event_image": "https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/TreEvents/events/tech.jpg",
     "event_type": "tech",
     "pricing_type": "paid"
   },
@@ -1651,7 +1651,7 @@ const response = await fetch('http://localhost:8000/event/', {
       "is_active": true
     }
   ],
-  "image": "https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/radar/events/tech.jpg"
+  "image": "https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/TreEvents/events/tech.jpg"
 }
 ```
 
@@ -1852,7 +1852,7 @@ await createEvent(freeEventData);
    ```
 
 **Note:** 
-- Images are uploaded to Cloudinary and stored in the `radar/events/` folder
+- Images are uploaded to Cloudinary and stored in the `TreEvents/events/` folder
 - The returned image URL will be a Cloudinary CDN URL
 - If image is sent as a dict/object, it will be ignored (set to null)
 - Always use FormData when creating events (even without images) for consistency
@@ -3262,23 +3262,23 @@ All event images are uploaded to **Cloudinary** and served via their CDN. This p
 
 ### Image URL Format
 
-Images are stored in the `radar/events/` folder and URLs follow this format:
+Images are stored in the `TreEvents/events/` folder and URLs follow this format:
 ```
-https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/radar/events/{filename}.{ext}
+https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/TreEvents/events/{filename}.{ext}
 ```
 
 ### Image Upload Requirements
 
 - **Supported formats:** JPEG, PNG, GIF, WebP
 - **Max file size:** 10MB (Cloudinary default)
-- **Storage location:** `radar/events/` folder in Cloudinary
+- **Storage location:** `TreEvents/events/` folder in Cloudinary
 - **Content-Type:** `multipart/form-data` (use FormData)
 
 ### Example Image Response
 
 ```json
 {
-  "image": "https://res.cloudinary.com/dyup8vl0j/image/upload/v1766324617/radar/events/fsz2wfyxpd2p6ayefwud.png"
+  "image": "https://res.cloudinary.com/dyup8vl0j/image/upload/v1766324617/TreEvents/events/fsz2wfyxpd2p6ayefwud.png"
 }
 ```
 
@@ -4093,7 +4093,7 @@ async function getEventsSummary() {
 {
   "status": "healthy",
   "timestamp": "2024-12-30T10:00:00Z",
-  "service": "Radar API",
+  "service": "TreEvents API",
   "database": "connected"
 }
 ```
@@ -4103,7 +4103,7 @@ async function getEventsSummary() {
 {
   "status": "degraded",
   "timestamp": "2024-12-30T10:00:00Z",
-  "service": "Radar API",
+  "service": "TreEvents API",
   "database": "disconnected",
   "database_error": "Connection timeout"
 }
@@ -5571,7 +5571,7 @@ await processWithdrawal('WDR-ABC123', 'failed', 'Invalid bank details');
     "max_events_per_organizer": 50,
     "min_withdrawal_amount": "1000.00",
     "max_withdrawal_amount": "1000000.00",
-    "support_email": "support@radar.app",
+    "support_email": "support@TreEvents.app",
     "updated_at": "2024-12-15T10:00:00Z",
     "updated_by": "admin@example.com"
   },
@@ -5638,7 +5638,7 @@ async function getSystemSettings() {
   "max_events_per_organizer": 50,
   "min_withdrawal_amount": 1000.00,
   "max_withdrawal_amount": 1000000.00,
-  "support_email": "support@radar.app"
+  "support_email": "support@TreEvents.app"
 }
 ```
 
@@ -5656,7 +5656,7 @@ async function getSystemSettings() {
     "max_events_per_organizer": 50,
     "min_withdrawal_amount": "1000.00",
     "max_withdrawal_amount": "1000000.00",
-    "support_email": "support@radar.app",
+    "support_email": "support@TreEvents.app",
     "updated_at": "2024-12-15T11:00:00Z",
     "updated_by": "admin@example.com"
   },

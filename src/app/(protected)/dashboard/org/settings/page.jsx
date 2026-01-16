@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Select from '@/components/ui/custom-select';
-import Loading from '@/components/ui/Loading';
+import { ProfileSkeleton } from '@/components/skeletons';
 
 export default function Settings() {
   const router = useRouter();
@@ -475,32 +475,7 @@ export default function Settings() {
                </div>
 
                {loadingBank ? (
-                  <div className="space-y-5">
-                    <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 shadow-xl space-y-5">
-                      {/* Bank Select Skeleton */}
-                      <div className="space-y-2">
-                        <div className="h-3 w-20 bg-white/5 rounded animate-pulse" />
-                        <div className="h-12 w-full bg-white/5 rounded-xl animate-pulse" />
-                      </div>
-                      
-                      {/* Account Number Skeleton */}
-                      <div className="space-y-2">
-                        <div className="h-3 w-28 bg-white/5 rounded animate-pulse" />
-                        <div className="h-12 w-full bg-white/5 rounded-xl animate-pulse" />
-                      </div>
-                      
-                      {/* Account Name Skeleton */}
-                      <div className="space-y-2">
-                        <div className="h-3 w-24 bg-white/5 rounded animate-pulse" />
-                        <div className="h-12 w-full bg-white/5 rounded-xl animate-pulse" />
-                      </div>
-                    </div>
-                    
-                    {/* Button Skeleton */}
-                    <div className="flex justify-end pt-2">
-                      <div className="h-10 w-40 bg-white/5 rounded-xl animate-pulse" />
-                    </div>
-                  </div>
+                  <ProfileSkeleton />
                ) : (
                  <form onSubmit={handleBankUpdate} className="space-y-5">
                    <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 shadow-xl space-y-5">

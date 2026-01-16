@@ -3,25 +3,17 @@
 import Sidebar from "@/components/organizersDashboardComponents/Sidebar"
 import OrganizerHeader from "@/components/OrganizerHeader"
 import { useRoleAuth } from "@/hooks/useRoleAuth"
-import { Loader2 } from "lucide-react"
 import React from 'react'
+import { DashboardLayoutSkeleton, OrganizerDashboardSkeleton } from "@/components/skeletons";
 
 const organizersDashboardLayout = ({ children }) => {
   const { loading, authorized } = useRoleAuth('organizer');
 
-  if (loading) {
+  if (loading || !authorized) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <Loader2 className="h-10 w-10 animate-spin text-rose-500" />
-      </div>
-    );
-  }
-
-  if (!authorized) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <Loader2 className="h-10 w-10 animate-spin text-rose-500" />
-      </div>
+      <DashboardLayoutSkeleton>
+        <OrganizerDashboardSkeleton />
+      </DashboardLayoutSkeleton>
     );
   }
 

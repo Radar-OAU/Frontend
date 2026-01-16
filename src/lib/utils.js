@@ -75,8 +75,11 @@ export function getImageUrl(path) {
   // Pattern: /image/upload/... or /video/upload/... or starts with image/upload or video/upload
   if (imagePath.match(/^\/?(?:image|video)\/upload\//)) {
     // Use the Cloudinary cloud name from environment or default
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dyup8vl0j";
-    const cleanPath = imagePath.startsWith("/") ? imagePath.substring(1) : imagePath;
+    const cloudName =
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dyup8vl0j";
+    const cleanPath = imagePath.startsWith("/")
+      ? imagePath.substring(1)
+      : imagePath;
     return `https://res.cloudinary.com/${cloudName}/${cleanPath}`;
   }
 

@@ -5,6 +5,7 @@ import { Loader2, History, Filter } from "lucide-react";
 import { adminService } from "@/lib/admin";
 import { toast } from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TableSkeleton } from "@/components/skeletons";
 import {
   Select,
   SelectContent,
@@ -93,15 +94,14 @@ export default function AuditLogsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {loading ? (
+                   {loading ? (
                     <tr>
-                      <td colSpan={5} className="p-10 text-center">
-                         <div className="flex flex-col items-center justify-center gap-2">
-                           <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                         </div>
+                      <td colSpan={5} className="p-4">
+                        <TableSkeleton />
                       </td>
                     </tr>
-                  ) : logs.length === 0 ? (
+                  )
+ : logs.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-8 text-center text-xs text-muted-foreground">
                         No audit logs found.

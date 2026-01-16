@@ -9,13 +9,17 @@ import { Loader2, Bell, Menu, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { AdminSidebar } from "../../components/admin/Sidebar";
-import { ModeToggle } from "../../components/ModeToggle";
+import { 
+  AdminLayoutSkeleton,
+  AdminDashboardSkeleton 
+} from "@/components/skeletons";
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const { token, role, isAuthenticated } = useAuthStore();
   const [isClient, setIsClient] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const isLoginPage = pathname === "/lighthouse/login";
@@ -33,19 +37,22 @@ export default function AdminLayout({ children }) {
     if (!isClient) return;
 
     // Check auth
-    // Note: Role check is case-sensitive, backend might return 'admin'.
-    // Also, allow 'superuser' or other potential admin roles if applicable.
-    // For now, checking 'Admin' and 'admin'.
-    if (!token || (role !== 'Admin' && role !== 'admin' && !role?.toLowerCase().includes('admin'))) {
+    const isAdmin = token && (role === 'Admin' || role === 'admin' || role?.toLowerCase().includes('admin'));
+    
+    if (!isAdmin) {
       if (!isLoginPage) {
         router.push("/lighthouse/login");
+        return;
       }
     } else {
       // If authenticated and on login page, redirect to dashboard
       if (isLoginPage) {
         router.push("/lighthouse/dashboard");
+        return;
       }
     }
+    
+    setLoadingAuth(false);
   }, [isClient, token, role, isLoginPage, router]);
 
 
@@ -69,6 +76,14 @@ export default function AdminLayout({ children }) {
              {children}
           </div>
       )
+  }
+
+  if (loadingAuth || !isClient) {
+    return (
+      <AdminLayoutSkeleton>
+        <AdminDashboardSkeleton />
+      </AdminLayoutSkeleton>
+    );
   }
 
   return (
@@ -117,7 +132,6 @@ export default function AdminLayout({ children }) {
             <h2 className="font-semibold text-sm">{getTitle()}</h2>
           </div>
           <div className="flex items-center gap-4">
-            <ModeToggle />
             <div className="flex items-center gap-3">
               <span className="hidden sm:inline text-sm font-medium">Hi, Admin</span>
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border border-primary/20">

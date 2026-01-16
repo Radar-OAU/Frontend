@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import api from "@/lib/axios";
-import { Menu, X, User, LogOut, LayoutDashboard, Home, Calendar, Ticket } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard, Home, Calendar, Ticket, Zap } from "lucide-react";
 import Logo from "./Logo";
 import { Button } from "./ui/button";
 import useAuthStore from "@/store/authStore";
@@ -80,6 +80,12 @@ const Header = () => {
             <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Home
             </Link>
+            <Link href="/events" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Find Events
+            </Link>
+            <Link href="/features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Features
+            </Link>
             {user ? (
               <>
                 {!pathname.startsWith('/dashboard') && (
@@ -87,8 +93,8 @@ const Header = () => {
                     Dashboard
                   </Link>
                 )}
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 ml-2">
+                  <span className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full border border-border">
                     Hi, {user.Preferred_name || user.firstname || user.Firstname || user.Organization_Name || user.email?.split('@')[0]}
                   </span>
                   {!pathname.startsWith('/dashboard') && (
@@ -105,18 +111,18 @@ const Header = () => {
                 </div>
               </>
             ) : (
-              <>
+              <div className="flex items-center gap-3">
                 <Link href="/login">
-                  <Button variant="ghost" className="text-gray-300 hover:text-white">
+                  <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
                     Login
                   </Button>
                 </Link>
                 <Link href="/signup">
-                  <Button className="bg-rose-600 hover:bg-rose-700 text-white">
+                  <Button className="bg-primary hover:bg-primary/90 text-white px-6">
                     Get Started
                   </Button>
                 </Link>
-              </>
+              </div>
             )}
           </nav>
 
@@ -220,6 +226,17 @@ const Header = () => {
                           <Home className="h-5 w-5" />
                           Home
                         </Link>
+                        <Link
+                          href="/features"
+                          onClick={closeMenu}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${pathname === "/features"
+                            ? "bg-rose-600/10 text-rose-500"
+                            : "hover:bg-gray-800 text-gray-300 hover:text-white"
+                            }`}
+                        >
+                          <Zap className="h-5 w-5" />
+                          Features
+                        </Link>
                         {sidebarLinks.map((link) => (
                           <Link
                             key={link.name}
@@ -258,6 +275,14 @@ const Header = () => {
                       >
                         <Home className="h-5 w-5" />
                         Home
+                      </Link>
+                      <Link
+                        href="/features"
+                        onClick={closeMenu}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
+                      >
+                        <Zap className="h-5 w-5" />
+                        Features
                       </Link>
                       <Link
                         href="/events"

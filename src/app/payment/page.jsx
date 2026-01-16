@@ -1,22 +1,3 @@
-/**
- * Payment Callback Page
- * 
- * Handles Paystack payment redirects after checkout
- * 
- * Expected URL patterns:
- * - Success: /payment?reference=xxx&status=success
- * - Failed: /payment?status=failed
- * - Cancelled: /payment?status=cancelled
- * 
- * Backend callback URL should be configured as:
- * https://radar.samkiel.dev/payment?status=success
- * 
- * The page will:
- * 1. Extract payment reference from URL query params
- * 2. Verify payment with backend API (POST /tickets/verify-payment/)
- * 3. Display success/failure message with ticket details
- * 4. Redirect user to appropriate page (my tickets or events)
- */
 
 "use client";
 

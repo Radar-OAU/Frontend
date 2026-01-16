@@ -66,7 +66,7 @@ export function AdminSidebar({ className }) {
     <div className={`flex flex-col w-56 border-r bg-card h-full ${className || ''}`}>
       <div className="p-4 border-b">
         <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-          Radar Admin
+          TreEvents Admin
         </h1>
       </div>
       <nav className="flex-1 p-3 space-y-1">
