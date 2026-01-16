@@ -20,7 +20,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { WalletSkeleton } from '@/components/skeletons';
+import { WalletPageSkeleton } from '@/components/skeletons';
 import PinPromptModal from '@/components/PinPromptModal';
 import { hasPinSet } from '@/lib/pinPrompt';
 
@@ -124,7 +124,7 @@ export default function PayoutPage() {
   };
 
   if (loading) {
-    return <WalletSkeleton />;
+    return <WalletPageSkeleton />;
   }
 
   return (

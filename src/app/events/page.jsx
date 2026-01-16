@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getImageUrl } from "@/lib/utils";
-import { EventCardSkeleton } from "@/components/skeletons";
+import { EventsGridSkeleton } from "@/components/skeletons";
 
 const PublicEventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -131,11 +131,7 @@ const PublicEventsPage = () => {
 
         {/* Content */}
         {loading ? (
-             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-               {[1, 2, 3, 4, 5, 6].map((i) => (
-                 <EventCardSkeleton key={i} />
-               ))}
-             </div>
+          <EventsGridSkeleton showBackButton />
         )
  : events.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 rounded-3xl bg-white/5 border border-white/10">

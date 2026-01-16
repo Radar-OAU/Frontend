@@ -7,7 +7,7 @@ import { Loader2, Copy, Check, ExternalLink, Plus, Clock, Search } from "lucide-
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../../../../lib/utils";
 import { Input } from "@/components/ui/input";
-import { EventCardSkeleton } from "@/components/skeletons";
+import { OrganizerEventsPageSkeleton } from "@/components/skeletons";
 
 const MyEvent = () => {
   const router = useRouter();
@@ -194,11 +194,7 @@ const MyEvent = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-           {[1, 2, 3, 4, 5, 6].map((i) => (
-               <EventCardSkeleton key={i} />
-           ))}
-        </div>
+        <OrganizerEventsPageSkeleton />
       ) : events.length === 0 ? (
         <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-16 text-center space-y-6 max-w-2xl mx-auto shadow-2xl">
           <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
