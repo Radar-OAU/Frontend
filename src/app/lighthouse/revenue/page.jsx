@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { adminService } from "../../../lib/admin";
 import { Loader2, DollarSign, Calendar, Users, BarChart3, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { AnalyticsSkeleton, TableSkeleton } from "@/components/skeletons";
 
 export default function RevenuePage() {
   const [loading, setLoading] = useState(true);
@@ -28,11 +29,7 @@ export default function RevenuePage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   const totalRevenue = stats?.total_revenue || 0;
