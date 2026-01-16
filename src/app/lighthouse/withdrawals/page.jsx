@@ -104,13 +104,14 @@ export default function WithdrawalsPage() {
                  </tr>
                </thead>
                <tbody className="divide-y">
-                 {loading ? (
-                   <tr>
-                     <td colSpan={6} className="p-10 text-center">
-                        <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
-                     </td>
-                   </tr>
-                 ) : currentItems.length === 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="p-4">
+                        <TableSkeleton />
+                      </td>
+                    </tr>
+                  )
+ : currentItems.length === 0 ? (
                    <tr>
                      <td colSpan={6} className="p-8 text-center text-xs text-muted-foreground">
                        No withdrawals found.
