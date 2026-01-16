@@ -190,11 +190,8 @@ export default function UsersPage() {
               <tbody className="divide-y">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="p-10 text-center">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                        <span className="text-xs text-muted-foreground">Loading users...</span>
-                      </div>
+                    <td colSpan={6} className="p-4">
+                      <TableSkeleton />
                     </td>
                   </tr>
                 ) : currentItems.length === 0 ? (
