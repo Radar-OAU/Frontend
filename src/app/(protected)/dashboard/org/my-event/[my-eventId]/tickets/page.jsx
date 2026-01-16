@@ -7,6 +7,8 @@ import { Plus, Trash2, Edit2, ArrowLeft, Loader2, Save, X, Ticket, AlertTriangle
 import toast from "react-hot-toast";
 import PinPromptModal from "@/components/PinPromptModal";
 
+import { TableSkeleton } from "@/components/skeletons";
+
 export default function ManageTicketsPage() {
     const router = useRouter();
     const params = useParams();
@@ -187,8 +189,15 @@ export default function ManageTicketsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-black text-white">
-                <Loader2 className="animate-spin w-8 h-8 text-rose-500" />
+            <div className="min-h-screen bg-black text-white p-4 md:p-8 max-w-5xl mx-auto space-y-10">
+                <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 bg-white/5 rounded-full animate-pulse" />
+                    <div className="space-y-2">
+                        <div className="h-8 w-64 bg-white/5 rounded-lg animate-pulse" />
+                        <div className="h-4 w-48 bg-white/5 rounded animate-pulse" />
+                    </div>
+                </div>
+                <TableSkeleton />
             </div>
         );
     }

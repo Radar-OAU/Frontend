@@ -9,13 +9,18 @@ import { Loader2, Bell, Menu, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { AdminSidebar } from "../../components/admin/Sidebar";
-import { ModeToggle } from "../../components/ModeToggle";
+import { 
+  DashboardHeaderSkeleton, 
+  SidebarSkeleton, 
+  AnalyticsSkeleton 
+} from "@/components/skeletons";
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const { token, role, isAuthenticated } = useAuthStore();
   const [isClient, setIsClient] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const isLoginPage = pathname === "/lighthouse/login";
