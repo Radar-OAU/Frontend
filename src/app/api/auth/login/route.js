@@ -7,7 +7,7 @@ function getBackendBaseUrl() {
   return (
     process.env.API_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://TreEvents-ufvb.onrender.com/"
+    "https://radar-ufvb.onrender.com/"
   );
 }
 
