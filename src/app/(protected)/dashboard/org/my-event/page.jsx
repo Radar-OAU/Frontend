@@ -7,7 +7,7 @@ import { Loader2, Copy, Check, ExternalLink, Plus, Clock, Search } from "lucide-
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../../../../lib/utils";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { EventCardSkeleton } from "@/components/skeletons";
 
 const MyEvent = () => {
   const router = useRouter();
