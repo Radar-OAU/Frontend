@@ -22,3 +22,5 @@ export { TicketsPageSkeleton as TicketListSkeleton } from "./pages/TicketsPageSk
 export { WalletPageSkeleton as WalletSkeleton } from "./pages/WalletPageSkeleton";
 
 export { AdminTableSkeleton as TableSkeleton } from "./pages/AdminTableSkeleton";
+
+export { ProfilePageSkeleton as ProfileSkeleton } from "./pages/ProfilePageSkeleton";

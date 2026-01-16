@@ -8,6 +8,10 @@ export { WalletPageSkeleton } from "./WalletPageSkeleton";
 export { AdminDashboardSkeleton } from "./AdminDashboardSkeleton";
 export { AdminTableSkeleton } from "./AdminTableSkeleton";
 export {
+  ProfilePageSkeleton,
+  SettingsPageSkeleton,
+} from "./ProfilePageSkeleton";
+export {
   DashboardHeaderSkeleton,
   SidebarSkeleton,
   DashboardLayoutSkeleton,
