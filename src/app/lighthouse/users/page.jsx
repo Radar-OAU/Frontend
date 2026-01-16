@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TableSkeleton } from "@/components/skeletons";
+import { AdminTableSkeleton } from "@/components/skeletons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -191,7 +191,7 @@ export default function UsersPage() {
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="p-4">
-                      <TableSkeleton />
+                      <AdminTableSkeleton columns={6} rows={5} showFilters={false} showSearch={false} />
                     </td>
                   </tr>
                 ) : currentItems.length === 0 ? (

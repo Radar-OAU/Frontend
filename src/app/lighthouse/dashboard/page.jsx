@@ -11,7 +11,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import { AnalyticsSkeleton } from "@/components/skeletons";
+import { AdminDashboardSkeleton } from "@/components/skeletons";
 import { adminService } from "../../../lib/admin";
 import { toast } from "react-hot-toast";
 
@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (loading) {
-    return <AnalyticsSkeleton />;
+    return <AdminDashboardSkeleton />;
   }
 
   return (

@@ -9,7 +9,7 @@ import { toast } from "react-hot-toast";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TableSkeleton } from "@/components/skeletons";
+import { AdminTableSkeleton } from "@/components/skeletons";
 
 export default function EventsPage() {
   const [loading, setLoading] = useState(true);
@@ -88,15 +88,7 @@ export default function EventsPage() {
   }, [filter, searchQuery]);
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="h-8 w-48 bg-muted animate-pulse rounded-lg" />
-          <div className="h-4 w-72 bg-muted animate-pulse rounded" />
-        </div>
-        <TableSkeleton />
-      </div>
-    );
+    return <AdminTableSkeleton columns={5} rows={8} />;
   }
 
   return (
