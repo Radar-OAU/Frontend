@@ -63,7 +63,7 @@ const DETAILED_FEATURES = [
     color: 'blue',
     title: 'Digital-First',
     subtitle: 'Ticketing Evolution',
-    description: 'Experience the most seamless ticket purchasing flow ever created for the 2026 season. From discovery to checkout in under 30 seconds. Your tickets are stored securely in your Radar wallet and accessible offline.',
+    description: 'Experience the most seamless ticket purchasing flow ever created for the 2026 season. From discovery to checkout in under 30 seconds. Your tickets are stored securely in your TreEvents wallet and accessible offline.',
     points: [
       'Offline-ready digital tickets',
       'Apple & Google Wallet integration',
@@ -256,7 +256,7 @@ const FeaturesPage = () => {
             
             <h2 className="text-4xl md:text-6xl font-black mb-8 relative z-10">Start Your 2026 Season Today</h2>
             <p className="text-xl text-white/80 mb-12 max-w-2xl mx-auto relative z-10">
-              Join thousands of organizers and attendees already using Radar to power their experiences in 2026.
+              Join thousands of organizers and attendees already using TreEvents to power their experiences in 2026.
             </p>
             <div className="flex flex-wrap justify-center gap-6 relative z-10">
               <Link href="/signup">

@@ -297,7 +297,7 @@ const PricingPage = () => {
             
             <h2 className="text-4xl md:text-6xl font-black mb-8 relative z-10">Host Your Biggest Show Yet</h2>
             <p className="text-xl text-white/80 mb-12 max-w-2xl mx-auto relative z-10 leading-relaxed">
-              Join thousands of organizers powering their 2026 events with TreEvents' industry-leading payment engine.
+              Join thousands of organizers powering their 2026 events with TreEvents's industry-leading payment engine.
             </p>
             <div className="flex flex-wrap justify-center gap-6 relative z-10">
               <Link href="/signup">

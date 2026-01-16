@@ -28,7 +28,7 @@ export const metadata = {
   authors: [{ name: "TreEvents Team" }],
   creator: "TreEvents",
   publisher: "TreEvents",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://radar-events.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://TreEvents-events.app'),
   openGraph: {
     type: "website",
     locale: "en_US",

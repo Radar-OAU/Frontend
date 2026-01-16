@@ -75,8 +75,11 @@ export function getImageUrl(path) {
   // Pattern: /image/upload/... or /video/upload/... or starts with image/upload or video/upload
   if (imagePath.match(/^\/?(?:image|video)\/upload\//)) {
     // Use the Cloudinary cloud name from environment or default
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dyup8vl0j";
-    const cleanPath = imagePath.startsWith("/") ? imagePath.substring(1) : imagePath;
+    const cloudName =
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dyup8vl0j";
+    const cleanPath = imagePath.startsWith("/")
+      ? imagePath.substring(1)
+      : imagePath;
     return `https://res.cloudinary.com/${cloudName}/${cleanPath}`;
   }
 
@@ -86,7 +89,7 @@ export function getImageUrl(path) {
 
   // Use dynamic base URL from environment or fallback
   const apiBase =
-    process.env.NEXT_PUBLIC_API_URL || "https://radar-ufvb.onrender.com";
+    process.env.NEXT_PUBLIC_API_URL || "https://TreEvents-ufvb.onrender.com";
   const baseUrl = apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase;
 
   // Ensure we don't have double slashes

@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 
 // Import token refresh timer functions (dynamic import to avoid circular dependency)
 let startTokenRefreshTimer, stopTokenRefreshTimer;
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   import("../lib/axios").then((module) => {
     startTokenRefreshTimer = module.startTokenRefreshTimer;
     stopTokenRefreshTimer = module.stopTokenRefreshTimer;
@@ -21,12 +21,12 @@ const useAuthStore = create(
       isAuthenticated: false,
       login: (userData, token, refresh, role) => {
         // FIRST: Clear organizer store and user-specific data BEFORE setting new user
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           // Clear the organizer Zustand store
-          localStorage.removeItem('organizer-storage');
+          localStorage.removeItem("organizer-storage");
 
           // IMPORTANT: Clear PIN reminder dismissal so new users see it
-          localStorage.removeItem('radar_pin_reminder_dismissed');
+          localStorage.removeItem("TreEvents_pin_reminder_dismissed");
 
           // IMMEDIATELY write to localStorage to prevent race conditions
           // This ensures token is available before any page navigation
@@ -41,7 +41,7 @@ const useAuthStore = create(
             },
             version: 0,
           };
-          localStorage.setItem('auth-storage', JSON.stringify(authData));
+          localStorage.setItem("auth-storage", JSON.stringify(authData));
         }
 
         // THEN: Set new user data in Zustand state

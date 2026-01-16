@@ -9,7 +9,7 @@
  * - Cancelled: /payment?status=cancelled
  * 
  * Backend callback URL should be configured as:
- * https://radar.samkiel.dev/payment?status=success
+ * https://TreEvents.samkiel.dev/payment?status=success
  * 
  * The page will:
  * 1. Extract payment reference from URL query params

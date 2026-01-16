@@ -5,7 +5,7 @@ import useAuthStore from "../store/authStore";
 const api = axios.create({
   // Prefer NEXT_PUBLIC_API_URL from environment; fall back to the provided endpoint
   baseURL:
-    process.env.NEXT_PUBLIC_API_URL || "https://radar-ufvb.onrender.com/",
+    process.env.NEXT_PUBLIC_API_URL || "https://TreEvents-ufvb.onrender.com/",
   headers: {
     "Content-Type": "application/json", // Axios will override if FormData is used
   },
@@ -36,7 +36,10 @@ function startTokenRefreshTimer() {
     }
 
     try {
-      const refreshUrl = `${api.defaults.baseURL?.replace(/\/$/, "")}/token/refresh/`;
+      const refreshUrl = `${api.defaults.baseURL?.replace(
+        /\/$/,
+        ""
+      )}/token/refresh/`;
       const res = await axios.post(refreshUrl, { refresh: refreshToken });
       const newAccess = res?.data?.access;
 
@@ -51,7 +54,7 @@ function startTokenRefreshTimer() {
 
         // Update default header
         api.defaults.headers.common.Authorization = `Bearer ${newAccess}`;
-        
+
         console.log("✅ Token auto-refreshed successfully");
       }
     } catch (err) {
@@ -112,7 +115,8 @@ function isTokenNotValidResponse(response) {
   const code = response?.data?.code;
   return (
     response?.status === 401 &&
-    (detail === "Given token not valid for any token type" || code === "token_not_valid")
+    (detail === "Given token not valid for any token type" ||
+      code === "token_not_valid")
   );
 }
 

@@ -50,7 +50,7 @@ const Footer = () => {
             </Link>
             <p className="text-muted-foreground text-base max-w-xs leading-relaxed">
               Empowering event organizers and attendees with a seamless, 
-              tech-driven experience. Your gateway to the best events.
+              tech-driven experience. Your TreEvents for the best events.
             </p>
             <div className="flex gap-4">
               {socialLinks.map((social) => (
