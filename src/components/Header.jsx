@@ -226,6 +226,17 @@ const Header = () => {
                           <Home className="h-5 w-5" />
                           Home
                         </Link>
+                        <Link
+                          href="/features"
+                          onClick={closeMenu}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ${pathname === "/features"
+                            ? "bg-rose-600/10 text-rose-500"
+                            : "hover:bg-gray-800 text-gray-300 hover:text-white"
+                            }`}
+                        >
+                          <Zap className="h-5 w-5" />
+                          Features
+                        </Link>
                         {sidebarLinks.map((link) => (
                           <Link
                             key={link.name}
@@ -264,6 +275,14 @@ const Header = () => {
                       >
                         <Home className="h-5 w-5" />
                         Home
+                      </Link>
+                      <Link
+                        href="/features"
+                        onClick={closeMenu}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors w-full"
+                      >
+                        <Zap className="h-5 w-5" />
+                        Features
                       </Link>
                       <Link
                         href="/events"

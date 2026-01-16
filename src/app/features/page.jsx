@@ -16,8 +16,7 @@ import {
   Globe,
   Bell
 } from 'lucide-react';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+
 
 const FeatureCard = ({ icon: Icon, title, description, delay }) => (
   <motion.div
@@ -53,7 +52,7 @@ const FeaturesPage = () => {
 
   return (
     <div className="min-h-screen bg-background selection:bg-primary/30">
-      <Header />
+
 
       <main className="pt-32 pb-20 overflow-hidden">
         {/* Hero Section */}
@@ -332,7 +331,7 @@ const FeaturesPage = () => {
         </section>
       </main>
 
-      <Footer />
+
     </div>
   );
 };
