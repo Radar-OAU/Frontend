@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import useAuthStore from "../../store/authStore";
-import { Menu, X, Bell } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { ModeToggle } from "../../components/ModeToggle";
 import { Button } from "../../components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { AdminSidebar } from "../../components/admin/Sidebar";
@@ -141,10 +142,7 @@ export default function AdminLayout({ children }) {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-            </Button>
+            <ModeToggle />
             <div className="h-8 w-px bg-border/40 hidden sm:block" />
             <div className="flex items-center gap-2.5">
               <span className="hidden sm:inline text-sm font-medium text-muted-foreground">Admin</span>
