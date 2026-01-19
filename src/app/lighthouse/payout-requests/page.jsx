@@ -10,7 +10,9 @@ import {
   AlertCircle,
   User,
   Building2,
-  Wallet
+  Wallet,
+  Copy,
+  Check
 } from "lucide-react";
 import { adminService } from "@/lib/admin";
 import { toast } from "react-hot-toast";
@@ -25,8 +27,10 @@ export default function PayoutRequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [processing, setProcessing] = useState(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [adminNotes, setAdminNotes] = useState("");
+  const [copiedField, setCopiedField] = useState(null);
   const itemsPerPage = 20;
 
   useEffect(() => {
@@ -43,25 +47,49 @@ export default function PayoutRequestsPage() {
       setRequests(data.payout_requests || []);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to fetch payout requests");
+      if (error.response?.status === 500 || error.response?.status === 404) {
+        toast.error("Payout requests endpoint not available. Backend may need to implement this feature.");
+      } else {
+        toast.error("Failed to fetch payout requests");
+      }
+      setRequests([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (requestId) => {
-    if (!confirm("Are you sure you want to APPROVE this payout request? This will debit the organizer's wallet.")) return;
+  const handleApproveClick = (request) => {
+    setSelectedRequest(request);
+    setCopiedField(null);
+    setShowApproveModal(true);
+  };
+
+  const handleApprove = async () => {
+    if (!selectedRequest) return;
     
-    setProcessing(requestId);
+    setProcessing(selectedRequest.request_id);
     try {
-      await adminService.updatePayoutRequestStatus(requestId, 'approved');
-      toast.success("Payout request approved! Wallet debited. Now transfer money manually and mark transaction as completed.");
+      await adminService.updatePayoutRequestStatus(selectedRequest.request_id, 'approved');
+      toast.success("Payout request approved! Wallet debited. Now transfer money manually and mark transaction as completed.", { duration: 6000 });
+      setShowApproveModal(false);
+      setSelectedRequest(null);
       fetchRequests();
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.error || "Failed to approve request");
     } finally {
       setProcessing(null);
+    }
+  };
+
+  const copyToClipboard = async (text, fieldName) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      toast.success(`${fieldName} copied!`);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch {
+      toast.error("Failed to copy");
     }
   };
 
@@ -201,12 +229,31 @@ export default function PayoutRequestsPage() {
                          </div>
                        </td>
                        <td className="p-3">
-                         <div className="flex items-center gap-2">
-                            <Banknote className="w-3 h-3 text-muted-foreground" />
-                            <span className="font-medium">{req.bank_name}</span>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">{req.account_name}</div>
-                          <div className="text-[10px] text-muted-foreground font-mono">{req.bank_account_number}</div>
+                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 space-y-1 min-w-[180px]">
+                           <div className="flex items-center gap-1.5">
+                             <Building2 className="w-3 h-3 text-blue-500" />
+                             <span className="font-medium text-[11px]">{req.bank_name}</span>
+                           </div>
+                           <div className="flex items-center gap-1.5">
+                             <User className="w-3 h-3 text-green-500" />
+                             <span className="text-[11px] text-muted-foreground">{req.account_name}</span>
+                           </div>
+                           <div className="flex items-center gap-1.5">
+                             <Banknote className="w-3 h-3 text-amber-500" />
+                             <span className="text-[11px] font-mono font-semibold">{req.bank_account_number}</span>
+                             <button
+                               onClick={() => copyToClipboard(req.bank_account_number, 'Account number')}
+                               className="ml-auto p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                               title="Copy account number"
+                             >
+                               {copiedField === 'Account number' ? (
+                                 <Check className="w-3 h-3 text-green-500" />
+                               ) : (
+                                 <Copy className="w-3 h-3 text-gray-400" />
+                               )}
+                             </button>
+                           </div>
+                         </div>
                        </td>
                        <td className="p-3 font-bold text-base">
                          ₦{Number(req.amount).toLocaleString()}
@@ -239,7 +286,7 @@ export default function PayoutRequestsPage() {
                                variant="ghost"
                                className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                                title="Approve"
-                               onClick={() => handleApprove(req.request_id)}
+                               onClick={() => handleApproveClick(req)}
                                disabled={processing === req.request_id}
                              >
                                {processing === req.request_id ? (
@@ -350,6 +397,93 @@ export default function PayoutRequestsPage() {
                   <XCircle className="w-4 h-4 mr-2" />
                 )}
                 Reject Request
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Modal */}
+      {showApproveModal && selectedRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 max-w-lg w-full shadow-xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+              </div>
+              <h3 className="text-lg font-bold">Approve Payout Request</h3>
+            </div>
+            
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              <p>You are about to approve the payout request from <strong>{selectedRequest.organizer_name}</strong> for:</p>
+              <p className="text-2xl font-bold text-green-600 my-2">₦{Number(selectedRequest.amount).toLocaleString()}</p>
+              <p className="text-amber-600 dark:text-amber-400 text-xs font-medium">⚠️ This will debit the organizer's wallet immediately.</p>
+            </div>
+
+            {/* Bank Details Card */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+              <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">Bank Details for Transfer</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-blue-500" />
+                    <span className="text-xs text-gray-500">Bank</span>
+                  </div>
+                  <span className="font-semibold text-sm">{selectedRequest.bank_name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-green-500" />
+                    <span className="text-xs text-gray-500">Account Name</span>
+                  </div>
+                  <span className="font-semibold text-sm">{selectedRequest.account_name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Banknote className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs text-gray-500">Account Number</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-base font-mono">{selectedRequest.bank_account_number}</span>
+                    <button
+                      onClick={() => copyToClipboard(selectedRequest.bank_account_number, 'Account number')}
+                      className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Copy account number"
+                    >
+                      {copiedField === 'Account number' ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowApproveModal(false);
+                  setSelectedRequest(null);
+                  setCopiedField(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                onClick={handleApprove}
+                disabled={processing === selectedRequest.request_id}
+              >
+                {processing === selectedRequest.request_id ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                )}
+                Approve & Debit Wallet
               </Button>
             </div>
           </div>
