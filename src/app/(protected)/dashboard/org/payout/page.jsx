@@ -131,7 +131,10 @@ export default function PayoutPage() {
     try {
       setWithdrawing(true);
       const res = await api.post('/wallet/withdraw/', { amount: pendingWithdrawal });
-      toast.success(res.data.message || "Payout request submitted! You'll be notified when it's processed.");
+      toast.success(
+        `Payout request of ₦${Number(pendingWithdrawal).toLocaleString()} submitted successfully! Your request is being processed and awaiting admin approval. You'll receive a notification once it's completed.`,
+        { duration: 6000 }
+      );
       setWithdrawAmount('');
       setPendingWithdrawal(null);
       fetchData(); // Refresh balances
