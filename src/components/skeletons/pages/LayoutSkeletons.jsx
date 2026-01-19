@@ -2,59 +2,63 @@
 
 import { SkeletonBox, SkeletonLine, SkeletonCircle } from "../primitives";
 
-/**
- * DashboardHeaderSkeleton
- * Matches the header layout used across dashboard layouts
- */
 export const DashboardHeaderSkeleton = () => (
-  <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:px-6">
+  <header className="h-16 border-b border-border/40 px-4 md:px-6 flex items-center justify-between bg-card/30 backdrop-blur-sm">
     <div className="flex items-center gap-4">
-      <SkeletonBox width="40px" height="40px" borderRadius="10px" />
-      <SkeletonLine width="120px" height="1.5rem" />
+      <SkeletonBox width="36px" height="36px" borderRadius="0.5rem" className="md:hidden" />
+      <div className="space-y-1">
+        <SkeletonLine width="100px" height="1rem" />
+        <SkeletonLine width="160px" height="0.75rem" className="hidden sm:block" />
+      </div>
     </div>
-    <div className="flex items-center gap-4">
-      <SkeletonBox width="100px" height="32px" className="hidden sm:block" />
-      <SkeletonCircle size="36px" />
+    <div className="flex items-center gap-3">
+      <SkeletonBox width="36px" height="36px" borderRadius="0.5rem" />
+      <div className="h-8 w-px bg-border/40 hidden sm:block" />
+      <div className="flex items-center gap-2.5">
+        <SkeletonLine width="50px" height="0.875rem" className="hidden sm:block" />
+        <SkeletonCircle size="36px" />
+      </div>
     </div>
   </header>
 );
 
-/**
- * SidebarSkeleton
- * Matches the sidebar layout used across dashboard layouts
- */
 export const SidebarSkeleton = () => (
-  <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r bg-background px-4 py-6">
-    <div className="flex items-center gap-3 px-2 mb-8">
-      <SkeletonBox width="32px" height="32px" />
-      <SkeletonLine width="100px" height="1.5rem" />
-    </div>
-    <div className="flex-1 space-y-4">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center gap-3 px-2 py-2">
-          <SkeletonBox width="20px" height="20px" />
-          <SkeletonLine width="60%" height="1rem" />
-        </div>
-      ))}
-    </div>
-    <div className="mt-auto px-2 pt-4 border-t">
-      <div className="flex items-center gap-3 py-2">
-        <SkeletonCircle size="32px" />
+  <div className="flex flex-col w-60 border-r border-border/40 bg-card/50 backdrop-blur-sm h-full">
+    <div className="p-5 border-b border-border/40">
+      <div className="flex items-center gap-2.5">
+        <SkeletonBox width="32px" height="32px" borderRadius="0.5rem" />
         <div className="space-y-1">
-          <SkeletonLine width="80px" height="0.75rem" />
-          <SkeletonLine width="100px" height="0.75rem" />
+          <SkeletonLine width="80px" height="0.875rem" />
+          <SkeletonLine width="60px" height="0.5rem" />
         </div>
       </div>
     </div>
-  </aside>
+    <nav className="flex-1 px-3 py-4 space-y-6">
+      {[1, 2, 3, 4].map((group) => (
+        <div key={group}>
+          <SkeletonLine width="60px" height="0.5rem" className="px-3 mb-2" />
+          <div className="space-y-1">
+            {[1, 2].map((item) => (
+              <div key={item} className="flex items-center gap-3 px-3 py-2.5 rounded-lg">
+                <SkeletonBox width="18px" height="18px" borderRadius="0.25rem" />
+                <SkeletonLine width="80px" height="0.8rem" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </nav>
+    <div className="p-3 border-t border-border/40">
+      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg">
+        <SkeletonBox width="18px" height="18px" borderRadius="0.25rem" />
+        <SkeletonLine width="60px" height="0.8rem" />
+      </div>
+    </div>
+  </div>
 );
 
-/**
- * DashboardLayoutSkeleton
- * Complete dashboard layout skeleton for layouts that show full page loading
- */
 export const DashboardLayoutSkeleton = ({ children }) => (
-  <div className="min-h-screen bg-black">
+  <div className="min-h-screen bg-background">
     <DashboardHeaderSkeleton />
     <div className="flex">
       <div className="hidden md:block w-64">
@@ -69,27 +73,20 @@ export const DashboardLayoutSkeleton = ({ children }) => (
   </div>
 );
 
-/**
- * AdminLayoutSkeleton
- * Complete admin layout skeleton matching /lighthouse layout
- */
 export const AdminLayoutSkeleton = ({ children }) => (
   <div className="flex h-screen bg-background overflow-hidden">
-    {/* Sidebar Skeleton */}
-    <div className="hidden md:block w-64 border-r bg-card h-full">
+    <div className="hidden md:flex h-screen sticky top-0">
       <SidebarSkeleton />
     </div>
     
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-      {/* Header Skeleton */}
-      <div className="h-14 border-b bg-card">
-        <DashboardHeaderSkeleton />
-      </div>
+    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <DashboardHeaderSkeleton />
       
-      {/* Main Content */}
-      <main className="flex-1 p-8 overflow-auto">
-        <div className="max-w-6xl mx-auto">
-          {children}
+      <main className="flex-1 overflow-auto">
+        <div className="p-4 md:p-6 lg:p-8">
+          <div className="max-w-6xl mx-auto">
+            {children}
+          </div>
         </div>
       </main>
     </div>

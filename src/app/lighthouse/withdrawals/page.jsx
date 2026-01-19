@@ -4,9 +4,44 @@ import { useEffect, useState } from "react";
 import { Loader2, CheckCircle, XCircle, CreditCard, AlertCircle } from "lucide-react";
 import { adminService } from "@/lib/admin";
 import { toast } from "react-hot-toast";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TableSkeleton } from "@/components/skeletons";
+import { AdminTableSkeleton } from "@/components/skeletons";
+import { useConfirmModal } from "@/components/ui/confirmation-modal";
+import { cn, formatCurrency } from "@/lib/utils";
+
+function TabButton({ active, children, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap",
+        active
+          ? "bg-foreground text-background"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StatusBadge({ status }) {
+  const config = {
+    completed: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    failed: "bg-red-500/10 text-red-600 border-red-500/20",
+    pending: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  };
+  
+  return (
+    <span className={cn(
+      "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border",
+      config[status] || config.pending
+    )}>
+      {status}
+    </span>
+  );
+}
 
 export default function WithdrawalsPage() {
   const [loading, setLoading] = useState(true);
@@ -75,13 +110,15 @@ export default function WithdrawalsPage() {
   const currentItems = withdrawals.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(withdrawals.length / itemsPerPage);
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
-
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter]);
+
+  const pendingCount = withdrawals.filter(w => w.status === 'pending').length;
+
+  if (loading) {
+    return <AdminTableSkeleton columns={6} rows={8} />;
+  }
 
   return (
     <div className="space-y-4">
@@ -92,21 +129,18 @@ export default function WithdrawalsPage() {
             Transactions from approved payout requests. Mark as completed after manual transfer.
           </p>
         </div>
-        <div className="flex gap-2 bg-muted p-1 rounded-lg">
-          {statuses.map((status) => (
-            <button
-               key={status}
-               onClick={() => setStatusFilter(status)}
-               className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
-                 statusFilter === status 
-                   ? "bg-white shadow text-foreground" 
-                   : "text-muted-foreground hover:text-foreground"
-               }`}
-             >
-               {status.charAt(0).toUpperCase() + status.slice(1)}
-             </button>
-          ))}
-        </div>
+      )}
+
+      <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-xl border border-border/40">
+        {tabs.map((tab) => (
+          <TabButton
+            key={tab.id}
+            active={statusFilter === tab.id}
+            onClick={() => setStatusFilter(tab.id)}
+          >
+            {tab.label}
+          </TabButton>
+        ))}
       </div>
 
       {/* Info Banner for Pending */}
@@ -226,30 +260,37 @@ export default function WithdrawalsPage() {
          </CardContent>
        </Card>
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Prev
-          </Button>
-          <span className="text-sm text-gray-400">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-4 border-t border-border/40">
+            <p className="text-xs text-muted-foreground">
+              Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, withdrawals.length)} of {withdrawals.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">
+                {currentPage} / {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

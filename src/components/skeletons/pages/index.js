@@ -17,3 +17,7 @@ export {
   DashboardLayoutSkeleton,
   AdminLayoutSkeleton,
 } from "./LayoutSkeletons";
+export {
+  AdminEventDetailsSkeleton,
+  AdminSettingsSkeleton,
+} from "./AdminSkeletons";

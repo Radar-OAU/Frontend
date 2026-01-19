@@ -6197,3 +6197,1197 @@ The API follows professional Django/DRF best practices:
 ---
 
 This documentation covers all endpoints with request/response examples and frontend implementation guides. Use this as your reference for frontend development! 🚀
+# Radar Admin Module Documentation
+
+## Overview
+
+The Admin Module provides a comprehensive set of endpoints for platform administrators to manage users, events, tickets, withdrawals, and system settings. All admin endpoints require authentication with a staff/superuser account.
+
+**Base URL:** `/api/admin/`
+
+---
+
+## Table of Contents
+
+1. [Authentication](#1-authentication)
+2. [Dashboard](#2-dashboard)
+3. [User Management](#3-user-management)
+4. [Event Management](#4-event-management)
+5. [Ticket Management](#5-ticket-management)
+6. [Withdrawal Management](#6-withdrawal-management)
+7. [Payment Transactions](#7-payment-transactions)
+8. [System Settings](#8-system-settings)
+9. [Audit Logs](#9-audit-logs)
+10. [Models](#10-models)
+11. [Error Handling](#11-error-handling)
+
+---
+
+## 1. Authentication
+
+### 1.1 Admin Login
+
+Authenticate as an admin user and receive JWT tokens.
+
+**Endpoint:** `POST /api/admin/auth/login/`
+
+**Authentication Required:** No
+
+**Request Body:**
+```json
+{
+  "email": "admin@example.com",
+  "password": "your_password"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Login successful",
+  "email": "admin@example.com",
+  "is_staff": true,
+  "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+**Error Response (401):**
+```json
+{
+  "error": "Invalid credentials or insufficient permissions"
+}
+```
+
+**Notes:**
+- The user must have `is_staff=True` to log in
+- The `username` field in Django User must match the email
+- Use the `access` token in the `Authorization` header for subsequent requests
+
+---
+
+### 1.2 Admin Logout
+
+Logout the admin user.
+
+**Endpoint:** `POST /api/admin/auth/logout/`
+
+**Authentication Required:** Yes (Admin)
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Logout successful"
+}
+```
+
+---
+
+## 2. Dashboard
+
+### 2.1 Dashboard Analytics
+
+Get comprehensive platform statistics.
+
+**Endpoint:** `GET /api/admin/dashboard/analytics/`
+
+**Authentication Required:** Yes (Admin)
+
+**Success Response (200):**
+```json
+{
+  "analytics": {
+    "total_users": 150,
+    "total_students": 120,
+    "total_organisers": 30,
+    "total_events": 45,
+    "total_revenue": 125000.00
+  },
+  "message": "Dashboard analytics retrieved successfully"
+}
+```
+
+**Field Descriptions:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_users` | Integer | Total Django User accounts |
+| `total_students` | Integer | Total StudentRegistration records |
+| `total_organisers` | Integer | Total OrganizerRegistration records |
+| `total_events` | Integer | Total Event records |
+| `total_revenue` | Decimal | Platform revenue (5% of confirmed ticket sales) |
+
+**Caching:** Results are cached for 2 minutes.
+
+---
+
+### 2.2 Recent Events
+
+Get recently created events.
+
+**Endpoint:** `GET /api/admin/dashboard/recent-events/`
+
+**Authentication Required:** Yes (Admin)
+
+**Query Parameters:**
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `limit` | Integer | 10 | 100 | Number of events to return |
+
+**Example Request:**
+```
+GET /api/admin/dashboard/recent-events/?limit=5
+```
+
+**Success Response (200):**
+```json
+{
+  "events": [
+    {
+      "event_id": "evt_abc123",
+      "event_name": "Tech Conference 2026",
+      "organisation_name": "TechOrg Ltd",
+      "date": "2026-03-15T09:00:00Z",
+      "status": "verified",
+      "event_type": "conference",
+      "location": "Lagos, Nigeria",
+      "pricing_type": "paid",
+      "price": 5000.00,
+      "created_at": "2026-01-10T14:30:00Z"
+    }
+  ],
+  "count": 5,
+  "message": "Recent events retrieved successfully"
+}
+```
+
+**Caching:** Results are cached for 3 minutes.
+
+---
+
+## 3. User Management
+
+### 3.1 List All Users
+
+Get all users with server-side filtering and pagination.
+
+**Endpoint:** `GET /api/admin/users/`
+
+**Authentication Required:** Yes (Admin)
+
+**Query Parameters:**
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `page` | Integer | 1 | - | Page number (1-indexed) |
+| `page_size` | Integer | 20 | 100 | Items per page |
+| `role` | String | null | - | Filter by role: `student`, `organizer`, or omit for all |
+
+**Example Requests:**
+```
+GET /api/admin/users/
+GET /api/admin/users/?role=student&page=1&page_size=20
+GET /api/admin/users/?role=organizer&page=2
+```
+
+**Success Response (200):**
+```json
+{
+  "users": [
+    {
+      "id": "org_abc123",
+      "email": "organizer@example.com",
+      "role": "organizer",
+      "name": "TechOrg Ltd",
+      "phone": "+2348012345678",
+      "created_at": "2026-01-05T10:00:00Z",
+      "total_events": 5,
+      "event_preferences": null
+    },
+    {
+      "id": "1",
+      "email": "student@example.com",
+      "role": "student",
+      "name": "John Doe",
+      "phone": null,
+      "created_at": "2026-01-08T15:30:00Z",
+      "total_events": null,
+      "event_preferences": ["music", "tech"]
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 5,
+    "total_count": 100,
+    "page_size": 20,
+    "has_next": true,
+    "has_previous": false
+  },
+  "filters": {
+    "role": null
+  },
+  "message": "Users retrieved successfully"
+}
+```
+
+**Caching:** Results are cached for 2 minutes.
+
+---
+
+### 3.2 Get User Details
+
+Get detailed information about a specific user.
+
+**Endpoint:** `GET /api/admin/users/<user_id>/?role=<role>`
+
+**Authentication Required:** Yes (Admin)
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `user_id` | String | User ID (student id or organiser_id) |
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | String | Yes | `student` or `organizer` |
+
+**Example Request:**
+```
+GET /api/admin/users/org_abc123/?role=organizer
+```
+
+**Success Response for Student (200):**
+```json
+{
+  "user": {
+    "id": "1",
+    "email": "student@example.com",
+    "role": "student",
+    "name": "John Doe",
+    "firstname": "John",
+    "lastname": "Doe",
+    "preferred_name": "Johnny",
+    "date_of_birth": "2000-05-15",
+    "phone": null,
+    "is_active": true,
+    "created_at": "2026-01-08T15:30:00Z",
+    "event_preferences": ["music", "tech"],
+    "ticket_count": 12
+  },
+  "message": "User details retrieved successfully"
+}
+```
+
+**Success Response for Organizer (200):**
+```json
+{
+  "user": {
+    "id": "org_abc123",
+    "email": "organizer@example.com",
+    "role": "organizer",
+    "name": "TechOrg Ltd",
+    "phone": "+2348012345678",
+    "is_active": true,
+    "is_verified": true,
+    "created_at": "2026-01-05T10:00:00Z",
+    "total_events": 5,
+    "wallet_balance": 150000.00,
+    "total_earnings": 500000.00
+  },
+  "message": "User details retrieved successfully"
+}
+```
+
+---
+
+### 3.3 Toggle User Status (Enable/Disable)
+
+Enable or disable a user account.
+
+**Endpoint:** `PATCH /api/admin/users/<user_id>/status/?role=<role>`
+
+**Authentication Required:** Yes (Admin)
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `user_id` | String | User ID |
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | String | Yes | `student` or `organizer` |
+
+**Request Body:**
+```json
+{
+  "is_active": false
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "User disabled successfully",
+  "id": "org_abc123",
+  "email": "organizer@example.com",
+  "is_active": false
+}
+```
+
+**Notes:**
+- Disabling a user prevents them from logging in
+- Also updates the associated Django User's `is_active` field
+
+---
+
+### 3.4 Verify/Unverify Organizer
+
+Toggle organizer verification status.
+
+**Endpoint:** `PATCH /api/admin/users/<organiser_id>/verify/`
+
+**Authentication Required:** Yes (Admin)
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `organiser_id` | String | Organizer ID |
+
+**Request Body:**
+```json
+{
+  "is_verified": true
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Organizer verified successfully",
+  "id": "org_abc123",
+  "email": "organizer@example.com",
+  "is_verified": true
+}
+```
+
+**Notes:**
+- Verified organizers may have additional privileges
+- This is separate from account activation status
+
+---
+
+### 3.5 Delete User
+
+Permanently delete a user account and all associated data.
+
+**Endpoint:** `DELETE /api/admin/users/<user_id>/delete/?role=<role>`
+
+**Authentication Required:** Yes (Admin)
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `user_id` | String | User ID |
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | String | Yes | `student` or `organizer` |
+
+**Success Response (200):**
+```json
+{
+  "message": "User deleted successfully",
+  "id": "org_abc123",
+  "email": "organizer@example.com",
+  "role": "organizer",
+  "deleted": true
+}
+```
+
+**⚠️ Warning:**
+- This action is **irreversible**
+- Deletes the Django User account
+- For organizers: cascades to profile, events, wallet, transactions
+- For students: cascades to profile and ticket records
+
+---
+
+## 4. Event Management
+
+### 4.1 List All Events
+
+Get all events in the system.
+
+**Endpoint:** `GET /api/admin/events/`
+
+**Authentication Required:** Yes (Admin)
+
+**Success Response (200):**
+```json
+{
+  "events": [
+    {
+      "event_id": "evt_abc123",
+      "event_name": "Tech Conference 2026",
+      "organisation_name": "TechOrg Ltd",
+      "date": "2026-03-15T09:00:00Z",
+      "status": "verified",
+      "event_type": "conference",
+      "location": "Lagos, Nigeria",
+      "pricing_type": "paid",
+      "price": 5000.00,
+      "capacity": 500,
+      "created_at": "2026-01-10T14:30:00Z"
+    }
+  ],
+  "count": 45,
+  "message": "All events retrieved successfully"
+}
+```
+
+**Caching:** Results are cached for 5 minutes.
+
+---
+
+### 4.2 Update Event Status
+
+Approve, verify, or deny an event.
+
+**Endpoint:** `PATCH /api/admin/events/<event_id>/status/`
+
+**Authentication Required:** Yes (Admin)
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `event_id` | String | Event ID |
+
+**Request Body:**
+```json
+{
+  "status": "verified"
+}
+```
+
+**Valid Status Values:**
+- `pending` - Awaiting review
+- `verified` - Approved and visible to users
+- `denied` - Rejected by admin
+
+**Success Response (200):**
+```json
+{
+  "message": "Event status updated to verified",
+  "event_id": "evt_abc123",
+  "event_name": "Tech Conference 2026",
+  "status": "verified"
+}
+```
+
+---
+
+### 4.3 Feature/Unfeature Event
+
+Toggle event featured status for homepage display.
+
+**Endpoint:** `PATCH /api/admin/events/<event_id>/featured/`
+
+**Authentication Required:** Yes (Admin)
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `event_id` | String | Event ID |
+
+**Request Body:**
+```json
+{
+  "is_featured": true
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Event featured successfully",
+  "event_id": "evt_abc123",
+  "event_name": "Tech Conference 2026",
+  "is_featured": true
+}
+```
+
+---
+
+### 4.4 Delete Event
+
+Permanently delete an event and all associated tickets.
+
+**Endpoint:** `DELETE /api/admin/events/<event_id>/delete/`
+
+**Authentication Required:** Yes (Admin)
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `event_id` | String | Event ID |
+
+**Success Response (200):**
+```json
+{
+  "message": "Event deleted successfully",
+  "event_id": "evt_abc123",
+  "event_name": "Tech Conference 2026",
+  "deleted": true
+}
+```
+
+**⚠️ Warning:**
+- This action is **irreversible**
+- All associated tickets will be deleted
+- Consider denying events instead of deleting
+
+---
+
+## 5. Ticket Management
+
+### 5.1 List All Tickets
+
+Get all tickets with pagination and filtering.
+
+**Endpoint:** `GET /api/admin/tickets/`
+
+**Authentication Required:** Yes (Admin)
+
+**Query Parameters:**
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `page` | Integer | 1 | - | Page number |
+| `page_size` | Integer | 20 | 100 | Items per page |
+| `status` | String | null | - | Filter by status |
+| `event_id` | String | null | - | Filter by event ID |
+
+**Valid Status Values:**
+- `pending`
+- `confirmed`
+- `cancelled`
+- `checked_in`
+
+**Example Request:**
+```
+GET /api/admin/tickets/?status=confirmed&page=1&page_size=20
+GET /api/admin/tickets/?event_id=evt_abc123
+```
+
+**Success Response (200):**
+```json
+{
+  "tickets": [
+    {
+      "ticket_id": "tkt_xyz789",
+      "event_id": "evt_abc123",
+      "event_name": "Tech Conference 2026",
+      "student_email": "student@example.com",
+      "student_name": "John Doe",
+      "quantity": 2,
+      "total_price": 10000.00,
+      "status": "confirmed",
+      "seat_number": "A1, A2",
+      "created_at": "2026-01-12T09:00:00Z"
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 10,
+    "total_count": 200,
+    "page_size": 20,
+    "has_next": true,
+    "has_previous": false
+  },
+  "filters": {
+    "status": "confirmed",
+    "event_id": null
+  },
+  "message": "Tickets retrieved successfully"
+}
+```
+
+---
+
+## 6. Withdrawal Management
+
+### 6.1 List All Withdrawals
+
+Get all withdrawal requests with pagination.
+
+**Endpoint:** `GET /api/admin/withdrawals/`
+
+**Authentication Required:** Yes (Admin)
+
+**Query Parameters:**
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `page` | Integer | 1 | - | Page number |
+| `page_size` | Integer | 20 | 100 | Items per page |
+| `status` | String | null | - | Filter by status |
+
+**Valid Status Values:**
+- `pending` - Awaiting admin action
+- `completed` - Successfully processed
+- `failed` - Rejected or failed
+
+**Example Request:**
+```
+GET /api/admin/withdrawals/?status=pending
+```
+
+**Success Response (200):**
+```json
+{
+  "withdrawals": [
+    {
+      "transaction_id": "txn_abc123",
+      "organizer_email": "organizer@example.com",
+      "organizer_name": "TechOrg Ltd",
+      "amount": 50000.00,
+      "status": "pending",
+      "bank_name": "GTBank",
+      "account_name": "TechOrg Limited",
+      "transfer_reference": null,
+      "created_at": "2026-01-10T11:00:00Z",
+      "completed_at": null
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 3,
+    "total_count": 45,
+    "page_size": 20,
+    "has_next": true,
+    "has_previous": false
+  },
+  "filters": {
+    "status": "pending"
+  },
+  "message": "Withdrawals retrieved successfully"
+}
+```
+
+---
+
+### 6.2 Approve/Reject Withdrawal
+
+Update the status of a withdrawal request.
+
+**Endpoint:** `PATCH /api/admin/withdrawals/<transaction_id>/status/`
+
+**Authentication Required:** Yes (Admin)
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `transaction_id` | String | Transaction ID |
+
+**Request Body:**
+```json
+{
+  "status": "completed"
+}
+```
+
+**Valid Status Values:**
+- `completed` - Approve the withdrawal
+- `failed` - Reject the withdrawal
+
+**Success Response (200):**
+```json
+{
+  "message": "Withdrawal approved successfully",
+  "transaction_id": "txn_abc123",
+  "status": "completed",
+  "amount": 50000.00
+}
+```
+
+**Notes:**
+- Only `pending` withdrawals can be updated
+- Rejecting a withdrawal (`failed`) automatically refunds the amount to the organizer's wallet
+
+---
+
+## 7. Payment Transactions
+
+### 7.1 List All Payment Transactions
+
+Get all ticket payment transactions with user details, event details, and payment information.
+
+**Endpoint:** `GET /api/admin/payment-transactions/`
+
+**Authentication Required:** Yes (Admin)
+
+**Query Parameters:**
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `limit` | Integer | 50 | 200 | Number of results per page |
+| `offset` | Integer | 0 | - | Number of results to skip |
+| `status` | String | null | - | Filter by transaction status |
+| `event_id` | String | null | - | Filter by event ID |
+| `user_email` | String | null | - | Filter by user/student email |
+| `organizer_email` | String | null | - | Filter by organizer email |
+| `date_from` | String | null | - | Filter transactions from this date (YYYY-MM-DD) |
+| `date_to` | String | null | - | Filter transactions to this date (YYYY-MM-DD) |
+
+**Valid Status Values:**
+- `pending` - Payment pending
+- `completed` - Payment completed
+- `failed` - Payment failed
+- `cancelled` - Payment cancelled
+
+**Example Request:**
+```
+GET /api/admin/payment-transactions/?status=completed&limit=50&offset=0&event_id=event:ABC123
+```
+
+**Success Response (200):**
+```json
+{
+  "transactions": [
+    {
+      "transaction_id": "transaction:ABC12-XYZ34",
+      "paystack_reference": "ref_123456",
+      "amount": "5000.00",
+      "platform_fee": "300.00",
+      "organizer_earnings": "4700.00",
+      "status": "completed",
+      "status_display": "Completed",
+      "user_name": "John Doe",
+      "user_email": "john@example.com",
+      "user_firstname": "John",
+      "user_lastname": "Doe",
+      "event_id": "event:ABC123",
+      "event_name": "Tech Conference 2024",
+      "event_date": "2024-12-15T10:00:00Z",
+      "event_location": "Convention Center",
+      "ticket_id": "ticket:TC-12345",
+      "booking_id": "booking:ABC12-XYZ34",
+      "ticket_quantity": 1,
+      "ticket_status": "confirmed",
+      "category_name": "Early Bird",
+      "category_price": "5000.00",
+      "organizer_name": "Event Organizer",
+      "organizer_email": "organizer@example.com",
+      "created_at": "2024-12-01T10:00:00Z",
+      "completed_at": "2024-12-01T10:05:00Z"
+    }
+  ],
+  "count": 1,
+  "total_count": 150,
+  "limit": 50,
+  "offset": 0,
+  "has_more": true,
+  "message": "Payment transactions retrieved successfully"
+}
+```
+
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `transaction_id` | String | Unique transaction ID |
+| `paystack_reference` | String | Paystack payment reference |
+| `amount` | Decimal | Total transaction amount |
+| `platform_fee` | Decimal | Platform fee deducted |
+| `organizer_earnings` | Decimal | Amount credited to organizer |
+| `status` | String | Transaction status |
+| `status_display` | String | Human-readable status |
+| `user_name` | String | Full name of ticket buyer |
+| `user_email` | String | Email of ticket buyer |
+| `user_firstname` | String | First name of ticket buyer |
+| `user_lastname` | String | Last name of ticket buyer |
+| `event_id` | String | Event ID |
+| `event_name` | String | Event name |
+| `event_date` | DateTime | Event date and time |
+| `event_location` | String | Event location |
+| `ticket_id` | String | Ticket ID |
+| `booking_id` | String | Booking ID (groups multiple tickets) |
+| `ticket_quantity` | Integer | Number of tickets in this transaction |
+| `ticket_status` | String | Ticket status (pending, confirmed, etc.) |
+| `category_name` | String | Ticket category name |
+| `category_price` | Decimal | Ticket category price |
+| `organizer_name` | String | Organizer full name |
+| `organizer_email` | String | Organizer email |
+| `created_at` | DateTime | Transaction creation timestamp |
+| `completed_at` | DateTime | Transaction completion timestamp |
+
+**Notes:**
+- Returns only `ticket_sale` transaction type
+- Results are ordered by creation date (newest first)
+- Use pagination (`limit` and `offset`) for large datasets
+- Date filters use UTC timezone
+
+**Example: Filter by Date Range**
+```
+GET /api/admin/payment-transactions/?date_from=2024-12-01&date_to=2024-12-31
+```
+
+**Example: Filter by User Email**
+```
+GET /api/admin/payment-transactions/?user_email=john@example.com
+```
+
+**Example: Filter by Organizer**
+```
+GET /api/admin/payment-transactions/?organizer_email=organizer@example.com
+```
+
+---
+
+## 8. System Settings
+
+### 8.1 Get System Settings
+
+Retrieve current platform-wide settings.
+
+**Endpoint:** `GET /api/admin/settings/`
+
+**Authentication Required:** Yes (Admin)
+
+**Success Response (200):**
+```json
+{
+  "settings": {
+    "platform_fee_percentage": 0.05,
+    "maintenance_mode": false,
+    "maintenance_message": "We're currently performing maintenance. Please check back soon.",
+    "allow_student_registration": true,
+    "allow_organizer_registration": true,
+    "require_event_approval": true,
+    "max_events_per_organizer": 50,
+    "min_withdrawal_amount": 1000.00,
+    "max_withdrawal_amount": 1000000.00,
+    "support_email": "support@radar.app",
+    "updated_at": "2026-01-10T15:00:00Z",
+    "updated_by": "admin@radar.app"
+  },
+  "message": "System settings retrieved successfully"
+}
+```
+
+---
+
+### 8.2 Update System Settings
+
+Update one or more platform settings.
+
+**Endpoint:** `PATCH /api/admin/settings/`
+
+**Authentication Required:** Yes (Admin)
+
+**Request Body (all fields optional):**
+```json
+{
+  "platform_fee_percentage": 0.07,
+  "maintenance_mode": true,
+  "maintenance_message": "Scheduled maintenance until 6 PM",
+  "allow_student_registration": true,
+  "allow_organizer_registration": false,
+  "require_event_approval": true,
+  "max_events_per_organizer": 100,
+  "min_withdrawal_amount": 2000.00,
+  "max_withdrawal_amount": 500000.00,
+  "support_email": "help@radar.app"
+}
+```
+
+**Setting Descriptions:**
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `platform_fee_percentage` | Decimal | 0.05 | Platform fee (0.05 = 5%) |
+| `maintenance_mode` | Boolean | false | Enable maintenance mode |
+| `maintenance_message` | String | - | Message shown during maintenance |
+| `allow_student_registration` | Boolean | true | Allow new student signups |
+| `allow_organizer_registration` | Boolean | true | Allow new organizer signups |
+| `require_event_approval` | Boolean | true | Require admin approval for events |
+| `max_events_per_organizer` | Integer | 50 | Max events per organizer |
+| `min_withdrawal_amount` | Decimal | 1000.00 | Minimum withdrawal (Naira) |
+| `max_withdrawal_amount` | Decimal | 1000000.00 | Maximum withdrawal (Naira) |
+| `support_email` | Email | support@radar.app | Support email address |
+
+**Success Response (200):**
+```json
+{
+  "settings": {
+    "platform_fee_percentage": 0.07,
+    "maintenance_mode": true,
+    "maintenance_message": "Scheduled maintenance until 6 PM",
+    "allow_student_registration": true,
+    "allow_organizer_registration": false,
+    "require_event_approval": true,
+    "max_events_per_organizer": 100,
+    "min_withdrawal_amount": 2000.00,
+    "max_withdrawal_amount": 500000.00,
+    "support_email": "help@radar.app",
+    "updated_at": "2026-01-10T16:30:00Z",
+    "updated_by": "admin@radar.app"
+  },
+  "message": "System settings updated successfully"
+}
+```
+
+**Notes:**
+- Only include fields you want to update
+- Changes are logged in the audit log
+- Cache is invalidated on update
+
+---
+
+## 9. Audit Logs
+
+### 9.1 Get Audit Logs
+
+Retrieve admin action history.
+
+**Endpoint:** `GET /api/admin/audit-logs/`
+
+**Authentication Required:** Yes (Admin)
+
+**Query Parameters:**
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `page` | Integer | 1 | - | Page number |
+| `page_size` | Integer | 20 | 100 | Items per page |
+| `action` | String | null | - | Filter by action type |
+| `admin_email` | String | null | - | Filter by admin email |
+
+**Valid Action Types:**
+| Action | Description |
+|--------|-------------|
+| `settings_update` | System settings changed |
+| `user_disable` | User account disabled |
+| `user_enable` | User account enabled |
+| `user_delete` | User account deleted |
+| `organizer_verify` | Organizer verified |
+| `organizer_unverify` | Organizer unverified |
+| `event_approve` | Event approved |
+| `event_deny` | Event denied |
+| `event_feature` | Event featured |
+| `event_unfeature` | Event unfeatured |
+| `event_delete` | Event deleted |
+| `withdrawal_approve` | Withdrawal approved |
+| `withdrawal_reject` | Withdrawal rejected |
+
+**Example Request:**
+```
+GET /api/admin/audit-logs/?action=settings_update&page=1
+```
+
+**Success Response (200):**
+```json
+{
+  "logs": [
+    {
+      "id": 1,
+      "admin_email": "admin@radar.app",
+      "action": "settings_update",
+      "target_type": "settings",
+      "target_id": "system_settings",
+      "details": {
+        "changes": {
+          "platform_fee_percentage": {
+            "old": "0.05",
+            "new": "0.07"
+          }
+        }
+      },
+      "ip_address": "192.168.1.1",
+      "created_at": "2026-01-10T16:30:00Z"
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 5,
+    "total_count": 100,
+    "page_size": 20,
+    "has_next": true,
+    "has_previous": false
+  },
+  "filters": {
+    "action": "settings_update",
+    "admin_email": null
+  },
+  "message": "Audit logs retrieved successfully"
+}
+```
+
+---
+
+## 10. Models
+
+### 10.1 SystemSettings Model
+
+Singleton model for platform-wide configuration.
+
+```python
+class SystemSettings(models.Model):
+    # Platform Fee
+    platform_fee_percentage = DecimalField(default=0.05)  # 5%
+    
+    # Maintenance
+    maintenance_mode = BooleanField(default=False)
+    maintenance_message = TextField(default="...")
+    
+    # Registration
+    allow_student_registration = BooleanField(default=True)
+    allow_organizer_registration = BooleanField(default=True)
+    
+    # Events
+    require_event_approval = BooleanField(default=True)
+    max_events_per_organizer = IntegerField(default=50)
+    
+    # Withdrawals
+    min_withdrawal_amount = DecimalField(default=1000.00)
+    max_withdrawal_amount = DecimalField(default=1000000.00)
+    
+    # Email
+    support_email = EmailField(default="support@radar.app")
+    
+    # Metadata
+    updated_at = DateTimeField(auto_now=True)
+    updated_by = CharField(max_length=255)
+```
+
+**Usage:**
+```python
+from radar.admin.models import SystemSettings
+
+# Get settings (creates if not exists)
+settings = SystemSettings.get_settings()
+
+# Access values
+fee = settings.platform_fee_percentage
+```
+
+---
+
+### 10.2 AuditLog Model
+
+Track all admin actions for accountability.
+
+```python
+class AuditLog(models.Model):
+    admin_email = EmailField()
+    action = CharField(max_length=50, choices=ACTION_CHOICES)
+    target_type = CharField(max_length=50)
+    target_id = CharField(max_length=255)
+    details = JSONField(default=dict)
+    ip_address = GenericIPAddressField(null=True)
+    created_at = DateTimeField(auto_now_add=True)
+```
+
+---
+
+## 11. Error Handling
+
+### Standard Error Responses
+
+**400 Bad Request:**
+```json
+{
+  "error": "Invalid role. Must be 'student', 'organizer', or omit for all."
+}
+```
+
+**401 Unauthorized:**
+```json
+{
+  "detail": "Authentication credentials were not provided."
+}
+```
+
+**403 Forbidden:**
+```json
+{
+  "detail": "You do not have permission to perform this action."
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "error": "User with ID xyz not found"
+}
+```
+
+**500 Internal Server Error:**
+```json
+{
+  "error": "Failed to retrieve users"
+}
+```
+
+---
+
+## Quick Reference: All Admin Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| **Authentication** | | |
+| POST | `/api/admin/auth/login/` | Admin login |
+| POST | `/api/admin/auth/logout/` | Admin logout |
+| **Dashboard** | | |
+| GET | `/api/admin/dashboard/analytics/` | Get platform statistics |
+| GET | `/api/admin/dashboard/recent-events/` | Get recent events |
+| **Users** | | |
+| GET | `/api/admin/users/` | List all users (paginated) |
+| GET | `/api/admin/users/<id>/?role=` | Get user details |
+| PATCH | `/api/admin/users/<id>/status/?role=` | Enable/disable user |
+| PATCH | `/api/admin/users/<id>/verify/` | Verify organizer |
+| DELETE | `/api/admin/users/<id>/delete/?role=` | Delete user |
+| **Events** | | |
+| GET | `/api/admin/events/` | List all events |
+| PATCH | `/api/admin/events/<id>/status/` | Update event status |
+| PATCH | `/api/admin/events/<id>/featured/` | Feature/unfeature event |
+| DELETE | `/api/admin/events/<id>/delete/` | Delete event |
+| **Tickets** | | |
+| GET | `/api/admin/tickets/` | List all tickets (paginated) |
+| **Withdrawals** | | |
+| GET | `/api/admin/withdrawals/` | List all withdrawals (paginated) |
+| PATCH | `/api/admin/withdrawals/<id>/status/` | Approve/reject withdrawal |
+| **Settings** | | |
+| GET | `/api/admin/settings/` | Get system settings |
+| PATCH | `/api/admin/settings/` | Update system settings |
+| **Audit** | | |
+| GET | `/api/admin/audit-logs/` | Get audit logs (paginated) |
+
+---
+
+## Authorization Header Format
+
+For all authenticated endpoints, include the JWT access token:
+
+```
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+```
+
+---
+
+## Caching Strategy
+
+| Endpoint | Cache Duration |
+|----------|----------------|
+| Dashboard Analytics | 2 minutes |
+| Recent Events | 3 minutes |
+| All Events | 5 minutes |
+| Users List | 2 minutes |
+
+Caches are automatically invalidated when relevant data is modified.
+
+---
+
+*Last Updated: January 10, 2026*
+

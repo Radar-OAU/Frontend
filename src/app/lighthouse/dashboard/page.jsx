@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 import { AdminDashboardSkeleton } from "@/components/skeletons";
 import { adminService } from "../../../lib/admin";
 import { toast } from "react-hot-toast";
+import { cn, formatCurrency } from "@/lib/utils";
 
 function MetricCard({ title, value, icon: Icon, description, highlight = false, href = null }) {
   const content = (
@@ -72,6 +73,8 @@ export default function AdminDashboardPage() {
     return <AdminDashboardSkeleton />;
   }
 
+  const pendingEvents = recentEvents.filter(e => e.status === 'pending').length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -88,21 +91,21 @@ export default function AdminDashboardPage() {
           title="Total Users" 
           value={(stats?.total_students || 0) + (stats?.total_organisers || 0)} 
           icon={Users}
-          description={`${stats?.total_students || 0} Students, ${stats?.total_organisers || 0} Organizers`}
+          subtitle={`${stats?.total_students || 0} students · ${stats?.total_organisers || 0} organizers`}
         />
-        <MetricCard 
-          title="Active Events" 
+        <StatCard 
+          title="Total Events" 
           value={stats?.total_events || 0} 
           icon={Calendar}
-          description="Total events created"
+          subtitle="Events on platform"
         />
-        <MetricCard 
+        <StatCard 
           title="Total Revenue" 
-          value={`₦${stats?.total_revenue?.toLocaleString() || '0'}`} 
+          value={formatCurrency(stats?.total_revenue || 0)} 
           icon={DollarSign}
-          description="Platform earnings"
+          subtitle="Platform earnings"
         />
-        <MetricCard 
+        <StatCard 
           title="Organizers" 
           value={stats?.total_organisers || 0} 
           icon={Building2}
@@ -118,58 +121,85 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 shadow-sm">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-base">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {recentEvents.length === 0 ? (
-                <p className="text-muted-foreground text-xs">No recent events found.</p>
-              ) : (
-                recentEvents.map((event) => (
-                  <div key={event.event_id} className="flex items-center text-sm">
-                    <div className="space-y-0.5">
-                      <p className="font-medium leading-none">
-                        <Link href={`/lighthouse/events/${event.event_id}`} className="hover:underline hover:text-primary transition-colors">
-                          {event.event_name}
-                        </Link>
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">{event.organisation_name}</p>
-                    </div>
-                    <div className="ml-auto font-medium">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-semibold tracking-wide ${
-                        event.status === 'verified' ? 'bg-green-100 text-green-700' :
-                        event.status === 'denied' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {event.status}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Card className="lg:col-span-3 border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Recent Events</CardTitle>
+              <Link 
+                href="/lighthouse/events" 
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+              >
+                View all
+                <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {recentEvents.length === 0 ? (
+              <div className="py-8 text-center">
+                <Calendar className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+                <p className="text-sm text-muted-foreground">No events yet</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {recentEvents.map((event) => (
+                  <Link
+                    key={event.event_id} 
+                    href={`/lighthouse/events/${event.event_id}`}
+                    className="flex items-center justify-between p-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                        {event.event_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {event.organisation_name}
+                      </p>
+                    </div>
+                    <StatusBadge status={event.status} />
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
         
-        <Card className="col-span-3 shadow-sm">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-base">Quick Actions</CardTitle>
+        <Card className="lg:col-span-2 border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Manage platform settings and approvals.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Link href="/lighthouse/events" className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium">
-                <Calendar className="w-3 h-3" />
-                Events
+          <CardContent className="pt-0 space-y-4">
+            {pendingEvents > 0 && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <div className="flex items-center gap-2 text-amber-600">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm font-medium">{pendingEvents} pending event{pendingEvents > 1 ? 's' : ''}</span>
+                </div>
+                <p className="text-xs text-amber-600/70 mt-1">Requires review</p>
+              </div>
+            )}
+            
+            <div className="grid gap-2">
+              <Link 
+                href="/lighthouse/events?filter=pending" 
+                className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Review Events</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
               </Link>
-              <Link href="/lighthouse/users" className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium">
-                <Users className="w-3 h-3" />
-                Users
+              <Link 
+                href="/lighthouse/users" 
+                className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Manage Users</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
               </Link>
               <Link href="/lighthouse/payout-requests" className={`flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium ${(stats?.pending_payout_requests || 0) > 0 ? 'border-amber-500/50 bg-amber-50/50 text-amber-700' : ''}`}>
                 <Banknote className="w-3 h-3" />
