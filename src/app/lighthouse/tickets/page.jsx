@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AdminTableSkeleton } from "@/components/skeletons";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 function TabButton({ active, children, onClick }) {
   return (
@@ -151,7 +151,7 @@ export default function TicketsPage() {
                       <StatusBadge status={t.status} />
                     </td>
                     <td className="p-4 hidden lg:table-cell">
-                      <p className="text-sm font-semibold text-foreground">₦{Number(t.total_price).toLocaleString()}</p>
+                      <p className="text-sm font-semibold text-foreground">{formatCurrency(t.total_price)}</p>
                     </td>
                     <td className="p-4 text-right">
                       <p className="text-sm text-muted-foreground">

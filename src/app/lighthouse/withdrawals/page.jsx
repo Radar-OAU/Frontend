@@ -193,7 +193,7 @@ export default function WithdrawalsPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <p className="text-sm font-semibold text-foreground">₦{Number(w.amount).toLocaleString()}</p>
+                      <p className="text-sm font-semibold text-foreground">{formatCurrency(w.amount)}</p>
                     </td>
                     <td className="p-4">
                       <StatusBadge status={w.status} />
