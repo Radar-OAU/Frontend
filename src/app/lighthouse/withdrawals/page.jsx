@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AdminTableSkeleton } from "@/components/skeletons";
 import { useConfirmModal } from "@/components/ui/confirmation-modal";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 function TabButton({ active, children, onClick }) {
   return (

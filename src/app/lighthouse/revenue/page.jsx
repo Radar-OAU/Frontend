@@ -23,7 +23,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AdminRevenueSkeleton } from "@/components/skeletons";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 function StatCard({ title, value, subtitle, icon: Icon, trend, trendValue }) {
   return (
@@ -221,25 +221,25 @@ export default function RevenuePage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Total Revenue" 
-          value={`₦${totalRevenue.toLocaleString()}`} 
+          value={formatCurrency(totalRevenue)} 
           subtitle="Platform fees collected"
           icon={DollarSign}
         />
         <StatCard 
           title="Total Transactions" 
           value={totalTransactions.toLocaleString()} 
-          subtitle={`₦${totalTransactionValue.toLocaleString()} processed`}
+          subtitle={`${formatCurrency(totalTransactionValue)} processed`}
           icon={Receipt}
         />
         <StatCard 
           title="Platform Fees" 
-          value={`₦${totalPlatformFees.toLocaleString()}`} 
+          value={formatCurrency(totalPlatformFees)} 
           subtitle="From recent transactions"
           icon={TrendingUp}
         />
         <StatCard 
           title="Pending Payouts" 
-          value={`₦${pendingWithdrawalAmount.toLocaleString()}`} 
+          value={formatCurrency(pendingWithdrawalAmount)} 
           subtitle={`${pendingWithdrawals.length} pending requests`}
           icon={CreditCard}
         />
@@ -257,7 +257,7 @@ export default function RevenuePage() {
                 <p className="text-sm font-medium text-foreground">Total Platform Revenue</p>
                 <p className="text-xs text-muted-foreground">All-time earnings</p>
               </div>
-              <p className="text-lg font-semibold text-foreground">₦{totalRevenue.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-foreground">{formatCurrency(totalRevenue)}</p>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-border/40">
               <div>
@@ -265,7 +265,7 @@ export default function RevenuePage() {
                 <p className="text-xs text-muted-foreground">Revenue per event</p>
               </div>
               <p className="text-lg font-semibold text-foreground">
-                ₦{avgRevenuePerEvent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {formatCurrency(avgRevenuePerEvent, false)}
               </p>
             </div>
             <div className="flex items-center justify-between py-3">
@@ -274,7 +274,7 @@ export default function RevenuePage() {
                 <p className="text-xs text-muted-foreground">Revenue per organizer</p>
               </div>
               <p className="text-lg font-semibold text-foreground">
-                ₦{avgRevenuePerOrganizer.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {formatCurrency(avgRevenuePerOrganizer, false)}
               </p>
             </div>
           </CardContent>
@@ -433,10 +433,10 @@ export default function RevenuePage() {
                             </div>
                           </td>
                           <td className="py-3">
-                            <p className="text-sm font-semibold text-foreground">₦{Number(txn.amount || 0).toLocaleString()}</p>
+                            <p className="text-sm font-semibold text-foreground">{formatCurrency(txn.amount || 0)}</p>
                           </td>
                           <td className="py-3 hidden lg:table-cell">
-                            <p className="text-sm text-emerald-600 font-medium">₦{Number(txn.platform_fee || 0).toLocaleString()}</p>
+                            <p className="text-sm text-emerald-600 font-medium">{formatCurrency(txn.platform_fee || 0)}</p>
                           </td>
                           <td className="py-3">
                             <StatusBadge status={txn.status || 'pending'} />
@@ -527,7 +527,7 @@ export default function RevenuePage() {
                             </div>
                           </td>
                           <td className="py-3">
-                            <p className="text-sm font-semibold text-foreground">₦{Number(withdrawal.amount || 0).toLocaleString()}</p>
+                            <p className="text-sm font-semibold text-foreground">{formatCurrency(withdrawal.amount || 0)}</p>
                           </td>
                           <td className="py-3">
                             <StatusBadge status={withdrawal.status || 'pending'} />

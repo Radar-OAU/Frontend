@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 import { AdminDashboardSkeleton } from "@/components/skeletons";
 import { adminService } from "../../../lib/admin";
 import { toast } from "react-hot-toast";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 function StatCard({ title, value, icon: Icon, subtitle, trend }) {
   return (
@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard 
           title="Total Revenue" 
-          value={`₦${(stats?.total_revenue || 0).toLocaleString()}`} 
+          value={formatCurrency(stats?.total_revenue || 0)} 
           icon={DollarSign}
           subtitle="Platform earnings"
         />
