@@ -217,7 +217,9 @@ export default function PayoutsPage() {
   const handleMarkCompleted = async (transactionId) => {
     try {
       setProcessing(prev => ({ ...prev, [transactionId]: 'completing' }));
-      await adminService.updateWithdrawalStatus(transactionId, 'completed');
+      // Strip 'payout:' prefix if present - the withdrawal API expects clean IDs
+      const cleanId = transactionId?.replace(/^payout:/, '') || transactionId;
+      await adminService.updateWithdrawalStatus(cleanId, 'completed');
       toast.success("Transaction marked as completed");
       fetchPayoutRequests();
     } catch (error) {
