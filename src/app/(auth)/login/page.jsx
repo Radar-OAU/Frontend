@@ -86,8 +86,7 @@ const LoginContent = () => {
         userRole = userRole.charAt(0).toUpperCase() + userRole.slice(1).toLowerCase();
         
         login({ user_id, email, ...res.data }, access, refresh, userRole);
-
-        toast.success(is_new_user ? "Account created successfully!" : "Login successful!", { id: toastId });
+      toast.success("Login successful!", { id: toastId });
         
         // Use callbackUrl if provided, otherwise redirect to dashboard
         if (callbackUrl) {
