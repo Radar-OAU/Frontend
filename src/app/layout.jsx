@@ -5,6 +5,8 @@ import { Toaster } from "react-hot-toast";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { Suspense } from "react";
 import AdminAwareLayout from "@/components/AdminAwareLayout";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -90,6 +92,8 @@ export default function RootLayout({ children }) {
             <AdminAwareLayout>
               {children}
             </AdminAwareLayout>
+            <Analytics />
+            <SpeedInsights />
           </ThemeProvider>
         </GoogleAuthProvider>
       </body>
