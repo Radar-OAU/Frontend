@@ -182,6 +182,14 @@ export default function CreateEvent() {
       return;
     }
 
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error("Image size must be less than 5MB");
+      e.target.value = "";
+      return;
+    }
+
     setImageFile(file);
 
     // allow re-selecting same file again
@@ -714,6 +722,9 @@ export default function CreateEvent() {
                     <Camera className="w-8 h-8 mb-2 text-gray-500 group-hover:text-rose-400 transition-colors" />
                     <span className="text-xs text-gray-500 group-hover:text-rose-400 font-medium">
                       Click to upload cover image
+                    </span>
+                    <span className="text-[10px] text-gray-600 mt-1">
+                      PNG, JPG up to 5MB
                     </span>
                   </div>
                 </div>
