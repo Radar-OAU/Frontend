@@ -218,23 +218,31 @@ export default function PayoutsPage() {
     try {
       setProcessing(prev => ({ ...prev, [payoutRequest.request_id]: 'completing' }));
       
-      // Workaround: Fetch pending withdrawals and find the matching transaction
-      // by organizer email and amount
-      const withdrawalsData = await adminService.getAllWithdrawals({ status: 'pending', page_size: 100 });
-      const withdrawals = withdrawalsData.withdrawals || [];
+      // Try to get transaction ID from the request object first (preferred method)
+      // The backend should return the transaction ID in the 'transaction' or 'transaction_id' field
+      let transactionId = payoutRequest.transaction || payoutRequest.transaction_id;
       
-      // Find matching transaction by organizer email and amount
-      const matchingTransaction = withdrawals.find(w => 
-        w.organizer_email === payoutRequest.organizer_email && 
-        parseFloat(w.amount) === parseFloat(payoutRequest.amount)
-      );
+      // If not directly available, fall back to the lookup workaround
+      if (!transactionId) {
+        console.log("Transaction ID not directly on request, searching in withdrawals...");
+        const withdrawalsData = await adminService.getAllWithdrawals({ status: 'pending', page_size: 100 });
+        const withdrawals = withdrawalsData.withdrawals || [];
+        
+        const matchingTransaction = withdrawals.find(w => 
+          w.organizer_email === payoutRequest.organizer_email && 
+          parseFloat(w.amount) === parseFloat(payoutRequest.amount)
+        );
+        
+        if (matchingTransaction) {
+          transactionId = matchingTransaction.transaction_id;
+        }
+      }
       
-      if (!matchingTransaction) {
-        toast.error("Could not find matching transaction. It may have already been completed or the payout wasn't properly approved.");
+      if (!transactionId) {
+        toast.error("Could not find matching transaction ID. Please ensure the payout was properly approved.");
         return;
       }
       
-      const transactionId = matchingTransaction.transaction_id;
       await adminService.updateWithdrawalStatus(transactionId, 'completed');
       toast.success("Payout marked as completed");
       fetchPayoutRequests();

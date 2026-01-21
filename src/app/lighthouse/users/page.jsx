@@ -49,7 +49,7 @@ function StatusBadge({ active }) {
 }
 
 function RoleBadge({ role }) {
-  const isOrganizer = role === 'organizer';
+  const isOrganizer = role?.toLowerCase() === 'organizer';
   return (
     <span className={cn(
       "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border",
@@ -124,7 +124,7 @@ export default function UsersPage() {
   };
 
   const handleVerifyOrganizer = async (user) => {
-    if (user.role !== 'organizer') return;
+    if (user.role?.toLowerCase() !== 'organizer') return;
     
     const isUnverifying = user.is_verified;
     const confirmed = await confirm({
@@ -252,7 +252,7 @@ export default function UsersPage() {
                             <p className="text-sm font-medium text-foreground truncate max-w-[150px]">
                               {user.name || "Unknown User"}
                             </p>
-                            {user.role === 'organizer' && user.is_verified && (
+                            {user.role?.toLowerCase() === 'organizer' && user.is_verified && (
                               <ShieldCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                             )}
                           </div>
@@ -306,7 +306,7 @@ export default function UsersPage() {
                             )}
                           </DropdownMenuItem>
                           
-                          {user.role === 'organizer' && (
+                          {user.role?.toLowerCase() === 'organizer' && (
                             <DropdownMenuItem onClick={() => handleVerifyOrganizer(user)}>
                               <ShieldCheck className="mr-2 h-4 w-4 text-blue-500" />
                               {user.is_verified ? 'Remove Verification' : 'Verify Organizer'}

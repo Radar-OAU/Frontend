@@ -46,12 +46,13 @@ const sidebarItems = [
       {
         title: "Payout Requests",
         href: "/lighthouse/payouts",
-        icon: CreditCard,
+        icon: Banknote,
+        showBadge: true,
       },
       {
         title: "Withdrawals",
         href: "/lighthouse/withdrawals",
-        icon: CreditCard,
+        icon: History,
       },
       {
         title: "Revenue",
@@ -93,48 +94,70 @@ export function AdminSidebar({ className }) {
     return () => clearInterval(interval);
   }, []);
 
+  const renderLink = (item) => {
+    const isActive = pathname === item.href;
+    const Icon = item.icon;
+    
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 text-sm",
+          isActive
+            ? "bg-primary/10 text-primary font-medium shadow-xs"
+            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <Icon className={cn("w-4 h-4", isActive ? "text-primary" : "text-muted-foreground/70")} />
+        <span className="flex-1">{item.title}</span>
+        {item.showBadge && pendingCount > 0 && (
+          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full min-w-[18px] text-center">
+            {pendingCount}
+          </span>
+        )}
+      </Link>
+    );
+  };
+
   return (
     <div className={cn(
       "flex flex-col w-60 border-r border-border/40 bg-card/50 backdrop-blur-sm h-full",
       className
     )}>
       <div className="p-5 border-b border-border/40">
-        <div className="flex items-center gap-2.5">
+        <Link href="/lighthouse/dashboard" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-            <span className="text-background font-bold text-sm">T</span>
+            <span className="text-background font-bold text-sm">A</span>
           </div>
           <div>
             <h1 className="text-sm font-semibold text-foreground">Axile</h1>
             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Admin Console</p>
           </div>
-        </div>
+        </Link>
       </div>
-      <nav className="flex-1 p-3 space-y-1">
-        {sidebarItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <item.icon className="w-4 h-4" />
-              <span>{item.title}</span>
-              {item.showBadge && pendingCount > 0 && (
-                <span className="ml-auto px-2 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full">
-                  {pendingCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+
+      <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+        <div className="space-y-1">
+          {sidebarItems.map((item, index) => {
+            if (item.items) {
+              return (
+                <div key={item.label || index} className="pt-2">
+                  <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                    {item.label}
+                  </p>
+                  <div className="space-y-1">
+                    {item.items.map(subItem => renderLink(subItem))}
+                  </div>
+                </div>
+              );
+            }
+            return renderLink(item);
+          })}
+        </div>
       </nav>
 
-      <div className="p-3 border-t border-border/40 mt-auto">
+      <div className="p-3 border-t border-border/40 mt-auto bg-card/80 backdrop-blur-md">
         <button
           onClick={logout}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-[13px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200"

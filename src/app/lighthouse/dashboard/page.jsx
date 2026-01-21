@@ -11,7 +11,8 @@ import {
   ArrowRight,
   Loader2,
   Banknote,
-  AlertCircle
+  AlertCircle,
+  Clock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { AdminDashboardSkeleton } from "@/components/skeletons";
@@ -138,7 +139,7 @@ export default function AdminDashboardPage() {
           icon={Banknote}
           description="Awaiting review"
           highlight={(stats?.pending_payout_requests || 0) > 0}
-          href="/lighthouse/payout-requests"
+          href="/lighthouse/payouts"
         />
       </div>
 
@@ -222,7 +223,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
               </Link>
-              <Link href="/lighthouse/payout-requests" className={`flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium ${(stats?.pending_payout_requests || 0) > 0 ? 'border-amber-500/50 bg-amber-50/50 text-amber-700' : ''}`}>
+              <Link href="/lighthouse/payouts" className={`flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-muted transition-colors text-xs font-medium ${(stats?.pending_payout_requests || 0) > 0 ? 'border-amber-500/50 bg-amber-50/50 text-amber-700' : ''}`}>
                 <Banknote className="w-3 h-3" />
                 Payouts {(stats?.pending_payout_requests || 0) > 0 && `(${stats.pending_payout_requests})`}
               </Link>
