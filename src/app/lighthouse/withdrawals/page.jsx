@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, CheckCircle, XCircle, CreditCard, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, CreditCard, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { adminService } from "@/lib/admin";
 import { toast } from "react-hot-toast";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AdminTableSkeleton } from "@/components/skeletons";
 import { useConfirmModal } from "@/components/ui/confirmation-modal";
@@ -114,6 +114,13 @@ export default function WithdrawalsPage() {
     setCurrentPage(1);
   }, [statusFilter]);
 
+  const tabs = [
+    { id: "all", label: "All" },
+    { id: "pending", label: "Pending" },
+    { id: "completed", label: "Completed" },
+    { id: "failed", label: "Failed" },
+  ];
+
   const pendingCount = withdrawals.filter(w => w.status === 'pending').length;
 
   if (loading) {
@@ -173,7 +180,7 @@ export default function WithdrawalsPage() {
                   {loading ? (
                     <tr>
                       <td colSpan={7} className="p-4">
-                        <TableSkeleton />
+                        <AdminTableSkeleton />
                       </td>
                     </tr>
                   ) : currentItems.length === 0 ? (
