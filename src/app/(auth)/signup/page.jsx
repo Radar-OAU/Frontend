@@ -186,7 +186,13 @@ const SignUpContent = () => {
           const decodedUrl = decodeURIComponent(callbackUrl);
           router.replace(decodedUrl);
         } else {
-          router.replace("/dashboard/org");
+          // Redirect based on role
+          const normalizedRole = userRole.toLowerCase().trim();
+          if (normalizedRole === 'organizer' || normalizedRole === 'org') {
+            router.replace("/dashboard/org");
+          } else {
+            router.replace("/dashboard/student/my-tickets");
+          }
         }
       } catch (err) {
         console.error('Google signup error object:', err);
