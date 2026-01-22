@@ -325,7 +325,7 @@ const EventDetailsClient = ({ event_id, initialEvent }) => {
                                 </span>
                                 <span className="text-xs font-bold text-white">₦{(parseFloat(cat.price) || 0).toLocaleString()}</span>
                               </div>
-                              {cat.description && <p className="text-[10px] text-gray-500 line-clamp-1">{cat.description}</p>}
+                              {cat.description && <p className="text-[10px] text-gray-500">{cat.description}</p>}
                               {cat.is_sold_out && <span className="text-[10px] text-rose-500 font-bold uppercase mt-1">Sold Out</span>}
                             </button>
                           ))}
