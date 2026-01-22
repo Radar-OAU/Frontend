@@ -232,7 +232,7 @@ const EventDetailsPage = () => {
             {/* Booking Card & Share Section */}
             <div className="md:col-span-1">
               <div className="sticky top-24 space-y-6">
-                <Card>
+                <Card className="border-gray-700">
                   <CardHeader className="p-4 md:p-6">
                     <CardTitle className="text-lg md:text-xl">Book Tickets</CardTitle>
                   </CardHeader>
@@ -240,11 +240,47 @@ const EventDetailsPage = () => {
                     {/* Sold Out Banner */}
                     {isSoldOut && (
                       <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium text-center animate-in fade-in zoom-in-95 duration-300">
-                        😔 No more tickets available for this category
+                        😔 This ticket category is sold out
                       </div>
                     )}
-                    
-                    {/* Quantity Selector */}
+
+                    {/* Category Selector */}
+                    {event.ticket_categories?.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-xs md:text-sm">Ticket Category</Label>
+                        <div className="grid grid-cols-1 gap-2">
+                          {event.ticket_categories?.map((cat) => (
+                            <button
+                              key={cat.category_id}
+                              type="button"
+                              disabled={!cat.is_active || cat.is_sold_out}
+                              onClick={() => setSelectedCategory(cat)}
+                              className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
+                                selectedCategory?.category_id === cat.category_id
+                                  ? "border-rose-600 bg-rose-600/5 ring-1 ring-rose-600"
+                                  : "border-gray-600 bg-gray-600/5 hover:border-gray-500"
+                              } ${(!cat.is_active || cat.is_sold_out) ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
+                            >
+                              <div className="flex justify-between items-center mb-1">
+                                <span className={`text-sm font-bold ${selectedCategory?.category_id === cat.category_id ? "text-rose-500" : "text-white"}`}>
+                                  {cat.name}
+                                </span>
+                                <span className="text-xs font-bold text-white">₦{(parseFloat(cat.price) || 0).toLocaleString()}</span>
+                              </div>
+                              {cat.description && <p className="text-[10px] text-gray-500">{cat.description}</p>}
+                              {cat.is_sold_out && <span className="text-[10px] text-rose-500 font-bold uppercase mt-1">Sold Out</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {!event.ticket_categories?.length && event.pricing_type === 'paid' && (
+                      <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm text-center">
+                        No ticket categories available yet. Please check back later.
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label className="text-xs md:text-sm text-muted-foreground">Quantity</Label>
                       <Select
@@ -252,7 +288,7 @@ const EventDetailsPage = () => {
                         onValueChange={(val) => setQuantity(parseInt(val))}
                         disabled={bookingLoading}
                       >
-                        <SelectTrigger className="h-10">
+                        <SelectTrigger className="h-10 border-gray-600 bg-gray-600/5">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -268,69 +304,30 @@ const EventDetailsPage = () => {
                       </p>
                     </div>
 
-                    {/* Category Selector */}
-                    {event.ticket_categories?.length > 0 && (
-                      <div className="space-y-2">
-                        <Label htmlFor="category" className="text-xs md:text-sm">Ticket Category</Label>
-                        <div className="grid grid-cols-1 gap-2">
-                          {event.ticket_categories?.map((cat) => (
-                            <button
-                              key={cat.category_id}
-                              type="button"
-                              disabled={!cat.is_active || cat.is_sold_out}
-                              onClick={() => setSelectedCategory(cat)}
-                              className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
-                                selectedCategory?.category_id === cat.category_id
-                                  ? "border-rose-600 bg-rose-600/5 ring-1 ring-rose-600"
-                                  : "border-gray-600 bg-gray-600/5 hover:border-gray-500"
-                              } ${(!cat.is_active || cat.is_sold_out) ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
-                            >
-                              <div className="flex justify-between items-center mb-1">
-                                <span className={`text-sm font-bold ${selectedCategory?.category_id === cat.category_id ? "text-rose-500" : "text-gray-300"}`}>
-                                  {cat.name}
-                                </span>
-                                <span className="text-xs font-bold text-gray-300">₦{(parseFloat(cat.price) || 0).toLocaleString()}</span>
-                              </div>
-                              {cat.description && <p className="text-[10px] text-muted-foreground line-clamp-2">{cat.description}</p>}
-                              {cat.is_sold_out && <span className="text-[10px] text-rose-500 font-bold uppercase mt-1">Sold Out</span>}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {!event.ticket_categories?.length && event.pricing_type === 'paid' && (
-                      <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs text-center">
-                        No ticket categories available yet.
-                      </div>
-                    )}
-
                     {/* Price Summary */}
                     <div className="pt-4 border-t border-gray-600 space-y-2">
                       <div className="flex justify-between text-xs md:text-sm text-gray-400">
                         <span>Price per ticket</span>
-                        <span className="text-gray-200">
-                          {event.pricing_type === 'free'
-                            ? 'Free'
-                            : selectedCategory
-                              ? `₦${Number(selectedCategory.price).toLocaleString()}`
-                              : `From ₦${displayEventPrice.toLocaleString()}`}
+                        <span className="text-white">
+                          {selectedCategory
+                            ? `₦${Number(selectedCategory.price).toLocaleString()}`
+                            : (event.pricing_type === 'free' ? 'Free' : `From ₦${displayEventPrice.toLocaleString()}`)}
                         </span>
                       </div>
-                      <div className="flex justify-between font-bold text-base md:text-lg text-gray-300">
+                      <div className="flex justify-between font-bold text-base md:text-lg">
                         <span>Total</span>
                         <span className="text-rose-500">
-                          {event.pricing_type === 'free' 
-                            ? 'Free' 
+                          {event.pricing_type === 'free'
+                            ? 'Free'
                             : `₦${(parseFloat(String(selectedCategory?.price ?? displayEventPrice)) * quantity).toLocaleString()}`}
                         </span>
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="p-4 md:p-6 pt-0 md:pt-0 flex flex-col gap-3">
-                    <Button 
-                      className="w-full h-11 md:h-12 text-sm md:text-base font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-lg hover:shadow-xl transition-all" 
-                      size="lg" 
+                  <CardFooter className="p-4 md:p-6 pt-0 md:pt-0">
+                    <Button
+                      className="w-full h-10 md:h-11 text-sm md:text-base"
+                      size="lg"
                       onClick={handleBookTicket}
                       disabled={bookingLoading || isSoldOut}
                     >
@@ -355,21 +352,21 @@ const EventDetailsPage = () => {
                 </Card>
 
                 {/* Share Section */}
-                <Card className="border-secondary/50 shadow-lg overflow-hidden">
-                  <CardContent className="p-5 md:p-6">
+                <Card className="overflow-hidden border-gray-700">
+                  <CardContent className="p-4 md:p-6">
                     <div className="flex items-center gap-2 mb-4">
-                      <Share2 className="h-5 w-5 text-rose-500" />
-                      <h3 className="font-bold text-sm md:text-base">Share this event</h3>
+                      <Share2 className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm md:text-base">Share this event</h3>
                     </div>
                     <div className="flex gap-2">
-                      <div className="flex-1 bg-secondary/30 px-4 py-3 rounded-xl text-xs md:text-sm text-gray-300 truncate border border-gray-600 hover:border-gray-500 transition-colors">
+                      <div className="flex-1 bg-muted px-3 py-2 rounded-md text-xs md:text-sm text-muted-foreground truncate border border-gray-700">
                         {shareUrl || 'Loading...'}
                       </div>
                       <Button 
                         size="sm" 
-                        variant="outline"
+                        variant="secondary" 
                         onClick={handleCopyLink}
-                        className="shrink-0 border-gray-600 hover:bg-rose-500/10 hover:border-rose-500/50 transition-all"
+                        className="shrink-0"
                       >
                         {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                       </Button>
