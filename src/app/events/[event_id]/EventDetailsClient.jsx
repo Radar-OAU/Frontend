@@ -36,9 +36,21 @@ const EventDetailsClient = ({ event_id, initialEvent }) => {
   const [quantity, setQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+
+  // Set share URL on client side only to avoid hydration mismatch
+  useEffect(() => {
+    if (event) {
+      // Use event_slug if available, fallback to event_id
+      const identifier = event.event_slug || event.event_id;
+      setShareUrl(`${window.location.origin}/events/${identifier}`);
+    }
+  }, [event]);
 
   const handleCopyLink = () => {
-    const link = window.location.href;
+    // Use event_slug if available, fallback to event_id
+    const identifier = event?.event_slug || event?.event_id || eventId;
+    const link = `${window.location.origin}/events/${identifier}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
       toast.success("Link copied to clipboard!");
@@ -48,10 +60,30 @@ const EventDetailsClient = ({ event_id, initialEvent }) => {
 
   useEffect(() => {
     const fetchEventDetails = async () => {
+      // Skip fetching if we already have initialEvent from server
+      if (initialEvent) {
+        // Just set up categories from initialEvent
+        let cats = [];
+        if (Array.isArray(initialEvent.ticket_categories)) {
+          cats = initialEvent.ticket_categories;
+        }
+        setCategories(cats);
+        
+        if (cats.length > 0) {
+          const active = cats.filter((c) => c?.is_active !== false);
+          const regular = active.find(
+            (c) => (c?.name || "").toLowerCase().includes("regular") && !c?.is_sold_out
+          );
+          const firstAvailable = active.find((c) => !c?.is_sold_out);
+          setSelectedCategory(regular || firstAvailable || active[0] || cats[0]);
+        }
+        setLoading(false);
+        return;
+      }
+      
       if (!eventId) return;
 
       try {
-        // Only fetch if we don't have initialEvent or if we want to ensure fresh data
         const response = await api.get(`/events/${eventId}/details/`);
         setEvent(response.data);
         
@@ -82,9 +114,7 @@ const EventDetailsClient = ({ event_id, initialEvent }) => {
         }
       } catch (error) {
         console.error("Error fetching event details:", error);
-        if (!initialEvent) {
-          toast.error("Failed to load event details");
-        }
+        toast.error("Failed to load event details");
       } finally {
         setLoading(false);
       }
@@ -277,7 +307,7 @@ const EventDetailsClient = ({ event_id, initialEvent }) => {
                     {/* Category Selector */}
                     {categories.length > 0 && (
                       <div className="space-y-3">
-                        <Label className="text-xs md:text-sm">Ticket Category</Label>
+                        <Label className="text-xs md:text-sm mb-2">Ticket Category</Label>
                         <div className="grid grid-cols-1 gap-2">
                           {categories.map((cat) => (
                             <button
@@ -295,7 +325,7 @@ const EventDetailsClient = ({ event_id, initialEvent }) => {
                                 </span>
                                 <span className="text-xs font-bold text-white">₦{(parseFloat(cat.price) || 0).toLocaleString()}</span>
                               </div>
-                              {cat.description && <p className="text-[10px] text-gray-500 line-clamp-1">{cat.description}</p>}
+                              {cat.description && <p className="text-[12px] text-white">{cat.description}</p>}
                               {cat.is_sold_out && <span className="text-[10px] text-rose-500 font-bold uppercase mt-1">Sold Out</span>}
                             </button>
                           ))}
@@ -388,7 +418,7 @@ const EventDetailsClient = ({ event_id, initialEvent }) => {
                     </div>
                     <div className="flex gap-2">
                       <div className="flex-1 bg-muted px-3 py-2 rounded-md text-xs md:text-sm text-muted-foreground truncate border border-gray-700">
-                        {typeof window !== 'undefined' ? `${window.location.origin}/events/${eventId}` : ''}
+                        {shareUrl || 'Loading...'}
                       </div>
                       <Button 
                         size="sm" 

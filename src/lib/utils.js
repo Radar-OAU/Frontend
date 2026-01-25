@@ -136,32 +136,10 @@ export function formatNumber(value) {
 }
 
 /**
- * Generates a URL-friendly slug from event name only
- * Creates clean URLs like: /events/tech-conference-2024
- * @param {string} name - Event name
- * @returns {string} URL-friendly slug
- */
-export function generateEventSlug(name) {
-  if (!name) return "";
-  
-  // Convert name to lowercase, replace spaces with hyphens, remove special chars
-  const slug = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "") // Remove special characters except spaces and hyphens
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
-  
-  return slug;
-}
-
-/**
- * Gets the event URL for sharing/linking
- * @param {string} name - Event name
+ * Gets the event URL for sharing/linking using event ID
+ * @param {string} eventId - Event ID
  * @returns {string} Full event URL path
  */
-export function getEventUrl(name) {
-  const slug = generateEventSlug(name);
-  return `/events/${slug}`;
+export function getEventUrl(eventId) {
+  return `/events/${eventId}`;
 }

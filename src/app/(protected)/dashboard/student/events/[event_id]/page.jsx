@@ -17,7 +17,7 @@ import {
 import { Loader2, MapPin, Calendar, Clock, Ticket, Info, CheckCircle2, Share2, Copy, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
-import { getImageUrl, generateEventSlug } from "@/lib/utils";
+import { getImageUrl } from "@/lib/utils";
 import { EventDetailsSkeleton } from "@/components/skeletons";
 
 const EventDetailsPage = () => {
@@ -35,11 +35,21 @@ const EventDetailsPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+
+  // Set share URL on client side only to avoid hydration mismatch
+  useEffect(() => {
+    if (event) {
+      // Use event_slug if available, fallback to event_id
+      const identifier = event.event_slug || event.event_id;
+      setShareUrl(`${window.location.origin}/events/${encodeURIComponent(identifier)}`);
+    }
+  }, [event]);
 
   const handleCopyLink = () => {
-    // Generate slug-based URL for sharing (name only)
-    const eventSlug = event ? generateEventSlug(event.name) : slug;
-    const link = `${window.location.origin}/events/${eventSlug}`;
+    // Use event_slug if available, fallback to event_id
+    const identifier = event?.event_slug || event?.event_id || slug;
+    const link = `${window.location.origin}/events/${encodeURIComponent(identifier)}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
       toast.success("Link copied to clipboard!");
@@ -52,51 +62,9 @@ const EventDetailsPage = () => {
       if (!slug) return;
       
       try {
-        let eventData = null;
-        let foundEventId = null;
-
-        // Check if slug is already an event ID (legacy support)
-        if (slug.startsWith("event:") || slug.startsWith("event%3A")) {
-          const decodedId = decodeURIComponent(slug);
-          const response = await api.get(`/events/${decodedId}/details/`);
-          eventData = response.data;
-          foundEventId = decodedId;
-        } else {
-          // Fetch all events and find by slug match
-          const allEventsRes = await api.get("/event/");
-          const eventsData = Array.isArray(allEventsRes.data) 
-            ? allEventsRes.data 
-            : (allEventsRes.data.events || []);
-          
-          // Normalize the URL slug for comparison
-          const normalizedSlug = slug.toLowerCase().trim();
-          
-          // Find event where generated slug matches the URL slug
-          const matchedEvent = eventsData.find(ev => {
-            const eventName = ev.name || ev.event_name;
-            const eventSlug = generateEventSlug(eventName);
-            return eventSlug === normalizedSlug;
-          });
-          
-          if (matchedEvent) {
-            const detailsRes = await api.get(`/events/${matchedEvent.event_id}/details/`);
-            eventData = detailsRes.data;
-            foundEventId = matchedEvent.event_id;
-          } else {
-            // Try direct lookup as fallback (in case slug IS the event ID)
-            try {
-              const directRes = await api.get(`/events/${slug}/details/`);
-              if (directRes.data) {
-                eventData = directRes.data;
-                foundEventId = slug;
-              }
-            } catch {
-              toast.error("Event not found");
-              setLoading(false);
-              return;
-            }
-          }
-        }
+        // Use event ID directly for fetching
+        const response = await api.get(`/events/${slug}/details/`);
+        const eventData = response.data;
 
         if (!eventData) {
           toast.error("Event not found");
@@ -105,7 +73,7 @@ const EventDetailsPage = () => {
         }
 
         setEvent(eventData);
-        setEventId(foundEventId);
+        setEventId(slug);
         
         // Set default category if available
         if (eventData.ticket_categories && eventData.ticket_categories.length > 0) {
@@ -264,7 +232,7 @@ const EventDetailsPage = () => {
             {/* Booking Card & Share Section */}
             <div className="md:col-span-1">
               <div className="sticky top-24 space-y-6">
-                <Card>
+                <Card className="border-gray-700">
                   <CardHeader className="p-4 md:p-6">
                     <CardTitle className="text-lg md:text-xl">Book Tickets</CardTitle>
                   </CardHeader>
@@ -272,38 +240,14 @@ const EventDetailsPage = () => {
                     {/* Sold Out Banner */}
                     {isSoldOut && (
                       <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium text-center animate-in fade-in zoom-in-95 duration-300">
-                        😔 No more tickets available for this category
+                        😔 This ticket category is sold out
                       </div>
                     )}
-                    
-                    {/* Quantity Selector */}
-                    <div className="space-y-2">
-                      <Label className="text-xs md:text-sm text-muted-foreground">Quantity</Label>
-                      <Select
-                        value={quantity.toString()}
-                        onValueChange={(val) => setQuantity(parseInt(val))}
-                        disabled={bookingLoading}
-                      >
-                        <SelectTrigger className="h-10">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: event?.max_quantity_per_booking || 3 }, (_, i) => i + 1).map((num) => (
-                            <SelectItem key={num} value={num.toString()}>
-                              {num} {num === 1 ? 'Ticket' : 'Tickets'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-[10px] md:text-xs text-muted-foreground/80">
-                        Maximum {event?.max_quantity_per_booking || 3} tickets per booking. Each ticket gets a unique QR code.
-                      </p>
-                    </div>
 
                     {/* Category Selector */}
                     {event.ticket_categories?.length > 0 && (
-                      <div className="space-y-2">
-                        <Label htmlFor="category" className="text-xs md:text-sm">Ticket Category</Label>
+                      <div className="space-y-3">
+                        <Label className="text-xs md:text-sm">Ticket Category</Label>
                         <div className="grid grid-cols-1 gap-2">
                           {event.ticket_categories?.map((cat) => (
                             <button
@@ -323,7 +267,7 @@ const EventDetailsPage = () => {
                                 </span>
                                 <span className="text-xs font-bold text-white">₦{(parseFloat(cat.price) || 0).toLocaleString()}</span>
                               </div>
-                              {cat.description && <p className="text-[10px] text-muted-foreground line-clamp-2">{cat.description}</p>}
+                              {cat.description && <p className="text-[10px] text-gray-500">{cat.description}</p>}
                               {cat.is_sold_out && <span className="text-[10px] text-rose-500 font-bold uppercase mt-1">Sold Out</span>}
                             </button>
                           ))}
@@ -332,37 +276,58 @@ const EventDetailsPage = () => {
                     )}
 
                     {!event.ticket_categories?.length && event.pricing_type === 'paid' && (
-                      <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs text-center">
-                        No ticket categories available yet.
+                      <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm text-center">
+                        No ticket categories available yet. Please check back later.
                       </div>
                     )}
+
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm text-muted-foreground">Quantity</Label>
+                      <Select
+                        value={quantity.toString()}
+                        onValueChange={(val) => setQuantity(parseInt(val))}
+                        disabled={bookingLoading}
+                      >
+                        <SelectTrigger className="h-10 border-gray-600 bg-gray-600/5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: event?.max_quantity_per_booking || 3 }, (_, i) => i + 1).map((num) => (
+                            <SelectItem key={num} value={num.toString()}>
+                              {num} {num === 1 ? 'Ticket' : 'Tickets'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] md:text-xs text-muted-foreground/80">
+                        Maximum {event?.max_quantity_per_booking || 3} tickets per booking. Each ticket gets a unique QR code.
+                      </p>
+                    </div>
 
                     {/* Price Summary */}
                     <div className="pt-4 border-t border-gray-600 space-y-2">
                       <div className="flex justify-between text-xs md:text-sm text-gray-400">
                         <span>Price per ticket</span>
-                        <span className="text-gray-200">
-                          {event.pricing_type === 'free'
-                            ? 'Free'
-                            : selectedCategory
-                              ? `₦${Number(selectedCategory.price).toLocaleString()}`
-                              : `From ₦${displayEventPrice.toLocaleString()}`}
+                        <span className="text-white">
+                          {selectedCategory
+                            ? `₦${Number(selectedCategory.price).toLocaleString()}`
+                            : (event.pricing_type === 'free' ? 'Free' : `From ₦${displayEventPrice.toLocaleString()}`)}
                         </span>
                       </div>
-                      <div className="flex justify-between font-bold text-base md:text-lg text-white">
+                      <div className="flex justify-between font-bold text-base md:text-lg">
                         <span>Total</span>
                         <span className="text-rose-500">
-                          {event.pricing_type === 'free' 
-                            ? 'Free' 
+                          {event.pricing_type === 'free'
+                            ? 'Free'
                             : `₦${(parseFloat(String(selectedCategory?.price ?? displayEventPrice)) * quantity).toLocaleString()}`}
                         </span>
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="p-4 md:p-6 pt-0 md:pt-0 flex flex-col gap-3">
-                    <Button 
-                      className="w-full h-11 md:h-12 text-sm md:text-base font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-lg hover:shadow-xl transition-all" 
-                      size="lg" 
+                  <CardFooter className="p-4 md:p-6 pt-0 md:pt-0">
+                    <Button
+                      className="w-full h-10 md:h-11 text-sm md:text-base"
+                      size="lg"
                       onClick={handleBookTicket}
                       disabled={bookingLoading || isSoldOut}
                     >
@@ -387,21 +352,21 @@ const EventDetailsPage = () => {
                 </Card>
 
                 {/* Share Section */}
-                <Card className="border-secondary/50 shadow-lg overflow-hidden">
-                  <CardContent className="p-5 md:p-6">
+                <Card className="overflow-hidden border-gray-700">
+                  <CardContent className="p-4 md:p-6">
                     <div className="flex items-center gap-2 mb-4">
-                      <Share2 className="h-5 w-5 text-rose-500" />
-                      <h3 className="font-bold text-sm md:text-base">Share this event</h3>
+                      <Share2 className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm md:text-base">Share this event</h3>
                     </div>
                     <div className="flex gap-2">
-                      <div className="flex-1 bg-secondary/30 px-4 py-3 rounded-xl text-xs md:text-sm text-gray-300 truncate border border-gray-600 hover:border-gray-500 transition-colors">
-                        {typeof window !== 'undefined' ? `${window.location.origin}/events/${event ? generateEventSlug(event.name) : slug}` : ''}
+                      <div className="flex-1 bg-muted px-3 py-2 rounded-md text-xs md:text-sm text-muted-foreground truncate border border-gray-700">
+                        {shareUrl || 'Loading...'}
                       </div>
                       <Button 
                         size="sm" 
-                        variant="outline"
+                        variant="secondary" 
                         onClick={handleCopyLink}
-                        className="shrink-0 border-gray-600 hover:bg-rose-500/10 hover:border-rose-500/50 transition-all"
+                        className="shrink-0"
                       >
                         {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                       </Button>
