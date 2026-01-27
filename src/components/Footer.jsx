@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Twitter, Instagram, Linkedin, Github, ChevronRight } from 'lucide-react';
+import { Twitter, Instagram, Linkedin, Music2, ChevronRight } from 'lucide-react';
 import Logo from './Logo';
 
 const Footer = () => {
@@ -30,9 +30,9 @@ const Footer = () => {
 
   const socialLinks = [
     { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
-    { icon: Instagram, href: 'https://instagram.com', label: 'Instagram' },
+    { icon: Instagram, href: 'https://www.instagram.com/axile.ng', label: 'Instagram' },
     { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
-    { icon: Github, href: 'https://github.com', label: 'GitHub' },
+    { icon: Music2, href: 'https://www.tiktok.com/@axile.ng', label: 'TikTok' },
   ];
 
   return (
@@ -46,7 +46,7 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="lg:col-span-2 space-y-6">
             <Link href="/" className="inline-block">
-              <Logo textSize="text-2xl" iconSize="h-8 w-8" />
+              <Logo />
             </Link>
             <p className="text-muted-foreground text-base max-w-xs leading-relaxed">
               Empowering event organizers and attendees with a seamless, 
