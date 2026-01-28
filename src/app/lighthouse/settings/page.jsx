@@ -27,11 +27,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
-    platform_fee_percentage: 0,
-    platform_fee_fixed: 0,
-    paystack_fee_percentage: 0,
-    paystack_fee_fixed: 0,
-    paystack_fee_threshold: 0,
+    platform_fee_percentage: 0.06,
+    platform_fee_fixed: 80.00,
+    paystack_fee_percentage: 0.015,
+    paystack_fee_fixed: 100.00,
+    paystack_fee_threshold: 2500.00,
     maintenance_mode: false,
     maintenance_message: "",
     allow_student_registration: true,
@@ -87,7 +87,7 @@ export default function SettingsPage() {
         <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Platform Fees</CardTitle>
-            <CardDescription className="text-xs">Configure platform fees for paid events</CardDescription>
+            <CardDescription className="text-xs">Default platform fee configuration (can be overridden per event)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -106,13 +106,89 @@ export default function SettingsPage() {
                   className="bg-background/50 border-border/40"
                   placeholder="0.06"
                 />
-                <p className="text-[10px] text-muted-foreground">
-                  {(settings.platform_fee_percentage * 100).toFixed(2)}% of ticket price
-                </p>
+                <p className="text-[10px] text-muted-foreground">Current: {((settings.platform_fee_percentage || 0) * 100).toFixed(1)}%</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="platform_fee_fixed" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Platform Fixed Fee (₦)
+                  Fixed Platform Fee (₦)
+                </Label>
+                <Input 
+                  id="platform_fee_fixed"
+                  type="number" 
+                  step="1" 
+                  value={settings.platform_fee_fixed || 80}
+                  onChange={(e) => handleChange("platform_fee_fixed", parseFloat(e.target.value))}
+                  className="bg-background/50 border-border/40"
+                />
+                <p className="text-[10px] text-muted-foreground">Added per ticket purchase</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Paystack Fees</CardTitle>
+            <CardDescription className="text-xs">Payment gateway fee configuration (charged to customers)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="paystack_fee_pct" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Paystack Fee (%)
+                </Label>
+                <Input 
+                  id="paystack_fee_pct"
+                  type="number" 
+                  step="0.001" 
+                  value={settings.paystack_fee_percentage || 0.015}
+                  onChange={(e) => handleChange("paystack_fee_percentage", parseFloat(e.target.value))}
+                  className="bg-background/50 border-border/40"
+                />
+                <p className="text-[10px] text-muted-foreground">Current: {((settings.paystack_fee_percentage || 0.015) * 100).toFixed(2)}%</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paystack_fee_fixed" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Fixed Paystack Fee (₦)
+                </Label>
+                <Input 
+                  id="paystack_fee_fixed"
+                  type="number" 
+                  step="1" 
+                  value={settings.paystack_fee_fixed || 100}
+                  onChange={(e) => handleChange("paystack_fee_fixed", parseFloat(e.target.value))}
+                  className="bg-background/50 border-border/40"
+                />
+                <p className="text-[10px] text-muted-foreground">Applied when above threshold</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paystack_threshold" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Fee Threshold (₦)
+                </Label>
+                <Input 
+                  id="paystack_threshold"
+                  type="number" 
+                  step="100" 
+                  value={settings.paystack_fee_threshold || 2500}
+                  onChange={(e) => handleChange("paystack_fee_threshold", parseFloat(e.target.value))}
+                  className="bg-background/50 border-border/40"
+                />
+                <p className="text-[10px] text-muted-foreground">₦100 waived under this amount</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">General</CardTitle>
+            <CardDescription className="text-xs">Support and contact configuration</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="support_email" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Support Email
                 </Label>
                 <Input 
                   id="platform_fee_fixed"

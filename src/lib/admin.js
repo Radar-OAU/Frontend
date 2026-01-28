@@ -234,4 +234,33 @@ export const adminService = {
     const response = await api.get(`/api/admin/audit-logs/?${queryString}`);
     return response.data;
   },
+
+  // Payment Forms (Manual Bank Transfer Confirmations)
+  getPaymentForms: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const response = await api.get(`/api/admin/payment-forms/?${queryString}`);
+    return response.data;
+  },
+  updatePaymentFormStatus: async (formId, status, adminNotes = null) => {
+    const body = { status };
+    if (adminNotes) body.admin_notes = adminNotes;
+    const response = await api.patch(
+      `/api/admin/payment-forms/${formId}/status/`,
+      body,
+    );
+    return response.data;
+  },
+
+  // Event Platform Fee
+  getEventPlatformFee: async (eventId) => {
+    const response = await api.get(`/api/admin/events/${eventId}/platform-fee/`);
+    return response.data;
+  },
+  updateEventPlatformFee: async (eventId, feeData) => {
+    const response = await api.patch(
+      `/api/admin/events/${eventId}/platform-fee/`,
+      feeData,
+    );
+    return response.data;
+  },
 };

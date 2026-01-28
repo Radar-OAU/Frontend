@@ -70,7 +70,7 @@ const ManualTransferTab = ({ summary }) => {
 
       <Button 
         onClick={() => setIsModalOpen(true)}
-        className="w-full h-14 text-lg variant-outline border-primary/20 hover:bg-primary/5 transition-all"
+        className="w-full h-11 md:h-14 text-sm md:text-base variant-outline border-primary/20 hover:bg-primary/5 transition-all"
         variant="outline"
       >
         I’ve sent the money

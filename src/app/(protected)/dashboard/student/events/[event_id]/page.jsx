@@ -143,7 +143,8 @@ const EventDetailsPage = () => {
     const totalQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
     
     // Calculate combined platform fee (service fee + Paystack fee)
-    const paystackFee = event.pricing_type === 'free' ? 0 : calculatePaystackFee(subtotal);
+    // Paystack calculates fee on total amount INCLUDING platform service fee
+    const paystackFee = event.pricing_type === 'free' ? 0 : calculatePaystackFee(subtotal + PLATFORM_SERVICE_FEE);
     const platformFee = event.pricing_type === 'free' ? 0 : PLATFORM_SERVICE_FEE + paystackFee;
     const total = subtotal + platformFee;
 
