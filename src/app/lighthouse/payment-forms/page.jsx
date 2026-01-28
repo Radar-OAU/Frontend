@@ -1,0 +1,467 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  Clock,
+  AlertCircle,
+  User,
+  CreditCard,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Search
+} from "lucide-react";
+import { adminService } from "@/lib/admin";
+import { toast } from "react-hot-toast";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { AdminTableSkeleton } from "@/components/skeletons";
+import { formatCurrency, cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select-component";
+
+function StatusBadge({ status }) {
+  const styles = {
+    pending: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    confirmed: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    rejected: "bg-red-500/10 text-red-600 border-red-500/20",
+  };
+
+  const icons = {
+    pending: Clock,
+    confirmed: CheckCircle,
+    rejected: XCircle,
+  };
+
+  const Icon = icons[status] || AlertCircle;
+
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
+      styles[status] || "bg-muted text-muted-foreground border-border"
+    )}>
+      <Icon className="w-3 h-3" />
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, variant }) {
+  const variantStyles = {
+    default: "text-foreground",
+    pending: "text-amber-500",
+    confirmed: "text-emerald-500",
+    rejected: "text-red-500",
+  };
+
+  return (
+    <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+            <p className={cn("text-2xl font-semibold tracking-tight", variantStyles[variant] || variantStyles.default)}>{value}</p>
+          </div>
+          <div className="h-10 w-10 rounded-lg bg-muted/50 flex items-center justify-center">
+            <Icon className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function PaymentFormsPage() {
+  const [loading, setLoading] = useState(true);
+  const [forms, setForms] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [processing, setProcessing] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedForm, setSelectedForm] = useState(null);
+  const [adminNotes, setAdminNotes] = useState("");
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    fetchForms();
+  }, [statusFilter, currentPage]);
+
+  const fetchForms = async () => {
+    setLoading(true);
+    try {
+      const params = { page: currentPage, page_size: itemsPerPage };
+      if (statusFilter !== "all") params.status = statusFilter;
+      
+      const data = await adminService.getPaymentForms(params);
+      setForms(data.payment_forms || []);
+      setPagination(data.pagination || null);
+    } catch (error) {
+      console.error(error);
+      if (error.response?.status === 500 || error.response?.status === 404) {
+        toast.error("Payment forms endpoint not available yet.");
+      } else {
+        toast.error("Failed to fetch payment forms");
+      }
+      setForms([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmClick = (form) => {
+    setSelectedForm(form);
+    setAdminNotes("");
+    setShowConfirmModal(true);
+  };
+
+  const handleRejectClick = (form) => {
+    setSelectedForm(form);
+    setAdminNotes("");
+    setShowRejectModal(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedForm) return;
+    
+    setProcessing(selectedForm.id);
+    try {
+      await adminService.updatePaymentFormStatus(selectedForm.id, 'confirmed', adminNotes || null);
+      toast.success("Payment confirmed successfully!");
+      setShowConfirmModal(false);
+      setSelectedForm(null);
+      setAdminNotes("");
+      fetchForms();
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.error || "Failed to confirm payment");
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedForm) return;
+    
+    if (!adminNotes.trim()) {
+      toast.error("Please provide a reason for rejection");
+      return;
+    }
+
+    setProcessing(selectedForm.id);
+    try {
+      await adminService.updatePaymentFormStatus(selectedForm.id, 'rejected', adminNotes);
+      toast.success("Payment form rejected");
+      setShowRejectModal(false);
+      setSelectedForm(null);
+      setAdminNotes("");
+      fetchForms();
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.error || "Failed to reject payment");
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleString("en-NG", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  };
+
+  // Stats
+  const pendingCount = forms.filter(f => f.status === 'pending').length;
+  const confirmedCount = forms.filter(f => f.status === 'confirmed').length;
+  const rejectedCount = forms.filter(f => f.status === 'rejected').length;
+  const totalAmount = forms.reduce((sum, f) => sum + (parseFloat(f.amount_sent) || 0), 0);
+
+  // Filter by search
+  const filteredForms = forms.filter(form => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      form.Firstname?.toLowerCase().includes(query) ||
+      form.Lastname?.toLowerCase().includes(query) ||
+      String(form.amount_sent).includes(query)
+    );
+  });
+
+  if (loading && forms.length === 0) {
+    return <AdminTableSkeleton columns={6} rows={8} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard title="Total Forms" value={forms.length} icon={CreditCard} />
+        <StatCard title="Pending" value={pendingCount} icon={Clock} variant="pending" />
+        <StatCard title="Confirmed" value={confirmedCount} icon={CheckCircle} variant="confirmed" />
+        <StatCard title="Rejected" value={rejectedCount} icon={XCircle} variant="rejected" />
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or amount..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-card/50 border-border/40"
+          />
+        </div>
+        <div className="w-[180px]">
+          <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}>
+            <SelectTrigger className="bg-card/50 border-border/40">
+              <div className="flex items-center gap-2 text-sm">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+                <SelectValue placeholder="Filter status" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <Card className="border-border/40 bg-card/50 backdrop-blur-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border/40 bg-muted/30">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Submitted</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Processed</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wide">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/40">
+              {filteredForms.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                    <CreditCard className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                    <p className="text-sm">No payment forms found</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredForms.map((form) => (
+                  <tr key={form.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {form.Firstname} {form.Lastname}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-foreground">{formatCurrency(form.amount_sent)}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm text-muted-foreground">{formatDate(form.sent_at)}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={form.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {form.confirmed_at ? (
+                        <div>
+                          <p className="text-sm text-muted-foreground">{formatDate(form.confirmed_at)}</p>
+                          {form.confirmed_by && (
+                            <p className="text-xs text-muted-foreground/70">by {form.confirmed_by}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">—</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {form.status === 'pending' && (
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
+                            onClick={() => handleConfirmClick(form)}
+                            disabled={processing === form.id}
+                          >
+                            {processing === form.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Confirm
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 text-red-600 hover:text-red-700 hover:bg-red-500/10"
+                            onClick={() => handleRejectClick(form)}
+                            disabled={processing === form.id}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                      {form.status !== 'pending' && form.admin_notes && (
+                        <p className="text-xs text-muted-foreground italic max-w-[200px] truncate" title={form.admin_notes}>
+                          {form.admin_notes}
+                        </p>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Pagination */}
+      {pagination && pagination.total_pages > 1 && (
+        <div className="flex items-center justify-between px-2">
+          <p className="text-sm text-muted-foreground">
+            Page {pagination.current_page} of {pagination.total_pages} ({pagination.total_count} total)
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={!pagination.has_previous}
+              className="h-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => p + 1)}
+              disabled={!pagination.has_next}
+              className="h-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {showConfirmModal && selectedForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowConfirmModal(false)} />
+          <div className="relative bg-card border border-border rounded-lg shadow-lg w-full max-w-md p-6 z-10">
+            <h3 className="text-lg font-semibold mb-4">Confirm Payment</h3>
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Name:</span>
+                <span className="font-medium">{selectedForm.Firstname} {selectedForm.Lastname}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Amount:</span>
+                <span className="font-medium text-emerald-600">{formatCurrency(selectedForm.amount_sent)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Submitted:</span>
+                <span className="font-medium">{formatDate(selectedForm.sent_at)}</span>
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              <label className="text-sm font-medium">Admin Notes (optional)</label>
+              <Input
+                placeholder="e.g., Payment verified via bank statement"
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowConfirmModal(false)}>
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700" 
+                onClick={handleConfirm}
+                disabled={processing}
+              >
+                {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Confirm Payment
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {showRejectModal && selectedForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowRejectModal(false)} />
+          <div className="relative bg-card border border-border rounded-lg shadow-lg w-full max-w-md p-6 z-10">
+            <h3 className="text-lg font-semibold mb-4">Reject Payment Form</h3>
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Name:</span>
+                <span className="font-medium">{selectedForm.Firstname} {selectedForm.Lastname}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Amount:</span>
+                <span className="font-medium">{formatCurrency(selectedForm.amount_sent)}</span>
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              <label className="text-sm font-medium">Reason for Rejection <span className="text-red-500">*</span></label>
+              <Input
+                placeholder="e.g., Amount mismatch, Payment not found"
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowRejectModal(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                className="flex-1" 
+                onClick={handleReject}
+                disabled={processing || !adminNotes.trim()}
+              >
+                {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Reject
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
