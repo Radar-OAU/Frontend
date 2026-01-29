@@ -154,7 +154,9 @@ const EventDetailsClient = ({ event_id, initialEvent }) => {
       }
     });
 
-    const platformFee = subtotal > 0 ? PLATFORM_FEE + calculatePaystackFee(subtotal) : 0;
+    // Paystack calculates fee on total amount INCLUDING platform service fee
+    const paystackFee = subtotal > 0 ? calculatePaystackFee(subtotal + PLATFORM_FEE) : 0;
+    const platformFee = subtotal > 0 ? PLATFORM_FEE + paystackFee : 0;
     const total = subtotal + platformFee;
 
     return { selectedItems, subtotal, platformFee, total, totalQuantity };

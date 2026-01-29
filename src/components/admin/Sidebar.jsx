@@ -14,7 +14,8 @@ import {
   CreditCard,
   Settings,
   History,
-  Banknote
+  Banknote,
+  FileText
 } from "lucide-react";
 import useAuthStore from "../../store/authStore";
 import { adminService } from "@/lib/admin";
@@ -54,6 +55,11 @@ const sidebarItems = [
         title: "Withdrawals",
         href: "/lighthouse/withdrawals",
         icon: History,
+      },
+      {
+        title: "Payment Forms",
+        href: "/lighthouse/payment-forms",
+        icon: FileText,
       },
       {
         title: "Revenue",
