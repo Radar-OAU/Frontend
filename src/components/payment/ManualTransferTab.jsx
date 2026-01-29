@@ -10,9 +10,9 @@ const ManualTransferTab = ({ summary }) => {
 
   // Example bank details - in a real app, these might come from an API or config
   const bankDetails = {
-    accountName: "AXILE MULTIMEDIA LTD",
-    accountNumber: "1234567890",
-    bankName: "Example Bank PLC",
+    accountName: "Fawole Taiwo Oluwatomisin",
+    accountNumber: "2005212352",
+    bankName: "Kuda",
   };
 
   const handleCopy = () => {
